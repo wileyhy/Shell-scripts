@@ -2,7 +2,7 @@
 # benchmark-hashing-programs.sh
 # Wiley Young 2025 GPLv3
 #
-# Compare hash speeds at nane-seconds per byte, averaged over
+# Compare hash speeds at nanoseconds per byte, averaged over
 # some thousands of iterations.
 
 
