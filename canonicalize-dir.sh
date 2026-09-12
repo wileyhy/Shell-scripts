@@ -2,6 +2,8 @@
 # candr.sh / canonicalize-dir.sh
 # shellcheck disable=SC2319,SC2292
 #
+#  Script is finished - 12 Sept 2026 WY
+#
 # Manual canonicalization of directories.
 #
 # Written for any POSIX-2008 compliant shell. This script can be
