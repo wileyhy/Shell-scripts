@@ -1,5 +1,8 @@
 #!/bin/bash
 # benchmark-hashing-programs.sh
+#
+#   Script is unfinished - 12 Sept 2026 WY
+#
 # Wiley Young 2025,2026 GPLv3
 #
 # Compare hash speeds at nanoseconds per byte, averaged over
