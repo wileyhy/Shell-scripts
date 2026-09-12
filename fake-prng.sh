@@ -2,6 +2,7 @@
 # fake-prng.sh - Version 1.0
 # shellcheck disable=SC2319,SC2312
 
+  # Script is finished - 12 Sept 2026 WY
 
 ##<> Debug
 #reset #<>
