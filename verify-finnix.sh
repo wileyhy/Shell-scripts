@@ -1,5 +1,7 @@
 #! /bin/sh
 # verify-finnix.sh
+#
+#   Script is finished - 12 Sept 2026 WY
 # 
 # Relevant websites, c. Jan 2026
 # 	https://www.finnix.org
