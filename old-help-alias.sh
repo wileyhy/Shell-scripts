@@ -1,5 +1,7 @@
 #!/bin/bash
 #!
+#!   Script is superceded. - 12 Sept 2026 WY
+#!
 #! help-alias.sh, Version 1.4
 #!
 #!   For bash\s help builtin, written in bash 5.2, there is an additional
