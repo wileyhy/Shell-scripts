@@ -257,7 +257,8 @@ output_1_gpg=$( gpg --verify -- "${gpg_abspth}" "${iso_abspth}" 2>&1 \
 )
 string_3_gpg="gpg: Signature made"
 output_2_gpg=$( printf '%s' "${output_1_gpg}" \
-  | grep -e ^"${string_3_gpg}"
+  | grep -e ^"${string_3_gpg}" \
+  ||:
 )
 :
 # Some output must exist
@@ -276,7 +277,8 @@ then
     string_4_gpg=" using RSA key "
     output_3_gpg=$( printf '%s' "${output_1_gpg}" \
       | grep -e "${string_4_gpg}" \
-      | grep -iEe '[0-9a-f]{40}'
+      | grep -iEe '[0-9a-f]{40}' \
+      ||:
     )
     :
     # An RSA key must exist
@@ -291,7 +293,8 @@ then
               print arr[xx]
               }
             }
-          }'
+          }' \
+        ||:
         )
     else
       : "f:$?:${LINENO}" #>
@@ -327,9 +330,12 @@ fi
   : "string_2_jsn:          ${string_2_jsn}"
   : "string_3_gpg:          ${string_3_gpg}"
   : "string_4_gpg:          ${string_4_gpg}"
+  #set +x
   #exit "${LINENO}" #>
   #set -x
   :
+  # Bug, add \||:\ in comsubs which are in assignment stmts bc errexit.
+
   :
 # Obtain an updated copy of the PGP public signing key from online
 if [ -n "${output_4_gpg}" ]
@@ -379,8 +385,13 @@ then
     : "f:$?:${LINENO}" #>
   fi
 
+  # Bug, 
+  #   There really should be a second identical \gpg --verify\ command
+  # as output_7_gpg, because the --receive-keys was run between the two:
+  # the outputs may have changed.
+
   # Verify the ISO file using PGP
-  output_8_awk=$( printf '%s' "${output_1_gpg=}" \
+  output_8_awk=$( printf '%s' "${output_1_gpg}" \
     | awk '/^gpg: Good signature from/ {
       if (/[Ff]innix/) {
         print "Good"
@@ -395,7 +406,7 @@ then
     printf 'Good signature from Finnix\n'
 
     # Optional
-    output_9_sed=$( printf '%s' "${output_1_gpg=}" \
+    output_9_sed=$( printf '%s' "${output_1_gpg}" \
       | grep 'Primary key fingerprint: ' \
       | sed 's,^Primary key fingerprint: ,,'
     )
@@ -412,9 +423,10 @@ fi
   :;:;:
   : "output_5_gpg:        ${output_5_gpg}"
   : "output_6_gpg:        ${output_6_gpg}"
-  : "output_1_gpg=:        ${output_1_gpg=}"
+  : "output_1_gpg:        ${output_1_gpg}"
   : "output_8_awk:        ${output_8_awk}"
   : "output_9_sed:        ${output_9_sed}"
+  #set +x
   #exit "${LINENO}" #>
   #set -x
   :
@@ -424,8 +436,8 @@ for HH in md5 sha256 sha512
 do
   unset value
   jq '.finnix .releases ."'"${maj_vers}"'" .architectures .amd64
-    .files ."finnix-251.iso" .checksums .'"${HH}" \
-    ./"${maj_vers}.json" \
+      .files ."finnix-251.iso" .checksums .'"${HH}" \
+      ./"${maj_vers}.json" \
     | tee "${hash_ff}" >/dev/null
   sleep .1
 
@@ -443,6 +455,7 @@ do
 done
 unset HH
   :;:;:
+  #set -x
   : ": value: ${value}"
   #exit "${LINENO}" #>
   #set -x
@@ -451,7 +464,10 @@ unset HH
 # Verify the cryptographic signatures listed in the JSON file
 
 # GPG data
-local_pgp_ff=finnix-251.iso.gpg2
+local_pgp_ff=${gpg_abspth}2
+
+  #exit "${LINENO}" #>
+
 pgp_sig=$( jq '.finnix .releases ."'"${maj_vers}"'" .architectures .amd64 .files ."finnix-'"${maj_vers}"'.iso" .signatures[] | select(.type == "openpgp") | .signature' "${jsn_abspth}"
 )
 pgp_sig=${pgp_sig#'"'}
@@ -479,7 +495,10 @@ else
   __error_exit__ "${LINENO}" "Data not found"
 fi
 
+  # Bug, remove the secondary file from disk, \local_pgp_ff\; 
+  #   Also \hash_ff\ and \local_ssh_ff\.
 
+  # Bug, hardcoded file.
 
 local_ssh_ff=finnix-251.iso.sig
 ssh_sig=$( jq '.finnix .releases ."251" .architectures .amd64 .files
@@ -517,5 +536,6 @@ else
 fi
 
 # Done
+printf 'Script is exiting normally.\n'
 exit 00
 
