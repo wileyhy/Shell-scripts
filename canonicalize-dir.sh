@@ -1,16 +1,20 @@
-#!/bin/bash
+#!/bin/sh
 # candr.sh / canonicalize-dir.sh
 #  hellcheck disable=SC2319,SC2292
 #
 #   Script is unfinished - 29 Oct 2026 WY
 #
+#
 #   Manual canonicalization of directories. Output can be in brief or
 # verbose formats; brief is default. Script accepts multiple operands.
 #
 #   Written for any POSIX-2008 compliant shell. This script can be
-# executed successfully in resticted mode. With a few adjustments,
-# a list of directories can be canonicalized in the same execution.
+# executed successfully in resticted mode.
 #   (c) Wiley Young 2026
+#
+#   Both \realpath\ and \readlink\ weren\t specified in POSIX until
+# 2024, so it\s likely that there are numerous systems which do not
+# offer any utilities which canonicalize file paths.
 #
 # Tested:
 #
@@ -19,31 +23,81 @@
 #
 # Note, you can\t put redirection operators in parameter expansions.
 
+
+
   #> Debug
-  reset #>
-  clear #>
-  #set -x #>
+  reset; clear #>
+  set -x #>
   set -e #>
   set -u #>
   : #>
   : "pound: $#" #>
   : "ampersand:" "${@:-}" #>
+  : "\$0: <$0>, <${0#./}> "
   : "\$1: ${1:-}" #>
   : "\$2: ${2:-}" #>
   :
   :
 
 
-: "Variables"
+: "List of commands"
+command -v \
+  ":" \
+  "awk" \
+  "break" \
+  "cd" \
+  "clear" \
+  "command" \
+  "continue" \
+  "dirname" \
+  "echo" \
+  "exit" \
+  "file" \
+  "find" \
+  "getconf" \
+  "grep" \
+  "pathchk" \
+  "pwd" \
+  "printf" \
+  "reset" \
+  "sed" \
+  "set" \
+  "sh" \
+  "shift" \
+  "test" \
+  "true" \
+  "unalias"
+
+
+# Use \unalias\, as POSIX suggests. On older systems, who knows?
+unalias -a
+
+
+# Use \strings\
+for aA
+do
+  bB=$( printf '%s' "${aA}" | strings -n 1 )
+  if test "${aA}" = "${bB}"
+  then
+    : "t:0"
+  else
+    : "f:$?"
+    printf 'Input contains a non-printable string(s); exiting.\n'
+    exit 1
+  fi
+done
+
+
+: "Environment Variables"
+# Use \getconf\.
+# See man pages under POSIX 2008
+
+
+: "Script Variables"
 global_return_code=0
-posparm_canpth_exists=
-posparm_tty_output=
-script_nm=candr.sh
-setting_verbose_on=
-string_header="${script_nm}:"
-string_nsfod="(No such file or directory)"
-# ^Note, String copied from STDERR of \file\.
-usage_msg="Usage:
+output_verbose_on=
+nsfod="(No such file or directory)"
+usage_msg="Usage: the first argument may be an option flag.
     candr.sh [-b|-v] [FILE] ..."
 :
   #set -x #>
@@ -52,7 +106,7 @@ usage_msg="Usage:
 :
 :
 : "Input required."
-if [ "$#" -eq 0 ]
+if test "$#" -eq 0
 then
   : "t:0:${LINENO}" #>
   # Print the \usage_msg\ to STDERR and \exit\ with return code 1.
@@ -68,24 +122,24 @@ fi
 case "$1" in
   -v | --verbose )
     : "\\case\\ branch: \\--verbose\\."
-    setting_verbose_on=yes
+    output_verbose_on=yes
     shift
     ;;
   -b | --brief )
     : "\\case\\ branch: \\--brief\\."
-    setting_verbose_on=no
+    output_verbose_on=no
     shift
     ;;
   * )
-    : "\\case\\ branch: no UNIX or GNU options: \\--brief\\."
-    setting_verbose_on=no
+    : "\\case\\ branch: no options: use default: \\--brief\\."
+    output_verbose_on=no
     # No \shift\ command.
     ;;
 esac
 :
 :
 
-# Pseudocode
+# Pseudocode re function __print_output__
 #
 # GL-scriptnm = defined
 # GL-printformat=[-b|-v]          (per execution)
@@ -121,48 +175,41 @@ esac
 #
 #
 # exit GL-rtncode
-#
+
 
 : "Define function: __print_output__."
+#
+# Usage:    __print_output__ [Script input] [canpth|nsfod] [redirection]
+# Usage:    __print_output__ "${dD}" "${canpth}"      # normal output to STOUT
+# Usage:    __print_output__ "${dD}" "${nsfod}" >&2   # redirect output to STDOUT
+#
 __print_output__()
 {
     #set -x #>
     : #>
     : "pound: $#" #>
     : "ampersand:" "$@" #>
-    : "\$1: $1" #>
-    : "\$2: $2" #>
-    : "\$global_return_code: $global_return_code" #>
-    : "\$posparm_canpth_exists: $posparm_canpth_exists" #>
-    : "\$setting_verbose_on: $setting_verbose_on" #>
-    : "\$posparm_tty_output: $posparm_tty_output" #>
+    : "\$1: $1"
+    : "\$global_return_code: ${global_return_code}" #>
+    : "\$output_verbose_on: ${output_verbose_on}" #>
     #exit "${LINENO}" #>
     : #>
     : #>
 
-  : "\\case\\ on \\setting_verbose_on\\."
-  case "${setting_verbose_on}" in
-    no )
-      : "Case branch: \\no\\."
-
-      if [ "$2" = "${string_nsfod}" ]
-      then
-        : "t:0:${LINENO}"
-      printf '%s\n' "$2"
-      else
-        : "f:$?:${LINENO}"
-      fi
-
-
-    ;;
+  : "\\case\\ on \\output_verbose_on\\."
+  case "${output_verbose_on}" in
     yes )
       : "Case branch: \\yes\\."
-      printf '%s: %b%s%b -> %s\n' "${script_nm}" "\x27" "$1" "\x27" "$2"
-    ;;
+      printf '%s: %b%s%b -> %s\n' "${0#./}" "\x27" "$1" "\x27" "$2"
+      ;;
+    no )
+      : "Case branch: \\no\\."
+      printf '%s\n' "$2"
+      ;;
     * ) echo "Unreachable code."; exit "${LINENO}";; #>
   esac
 
-    exit "${LINENO}" #>
+    #exit "${LINENO}" #>
 }
 :
   #exit "${LINENO}" #>
@@ -173,29 +220,24 @@ __print_output__()
 # Note, for testing purposes, a list of some of the common temporary
 # directories in use in Linux.
 
+
 for dD
   #/dev/shm /var/tmp /usr/tmp /usr/local/tmp "${XDG_RUNTIME_DIR:=}/tmp" /tmp ~/tmp ~ #>
 do
   :
   : "Per major loop variables."
-  posparm_canpth_exists=unknown
   posparm_original_string=${dD}
   :
   :
   : "The given path must exist in the filesystem."
-  if [ -e "${dD}" ]
+  if test -e "${dD}"
   then
     : "t:0:${LINENO}" #>
     : "Path exists."
   else
     : "f:$?:${LINENO}" #>
-    :
-    : "Path does not exist on this system."
     global_return_code=1
-    posparm_canpth_exists=no
-    posparm_tty_output=stderr
-    :
-    __print_output__
+    __print_output__ "${dD}" "${nsfod}" >&2
     continue 1
   fi
 
@@ -203,74 +245,55 @@ do
     set -x #>
 
 
+  # Use \pathchk\.
+
+
   :
   : "Minor loop A: Use \\file\\ to resolve any symlinks."
   while true
   do
-    # Note, these data manipulations must be within minor loop A.
+    # String matching; the possibilities are endless, ie, not good.
 
-    :
     # Case if input is \/\, single forward slash, FS root.
-    #
-    # Case if input is \.\, single period, CWD.
-    #
-    # Case if input begins with \./\, anchoring file in CWD.
-    #
-    # Case if input is \..\, double period, aka, \dirname\.
-    #
-    # Case if input begins with \../, anchoring file in \dirname\.
-
-
-    : "Remove trailing forward slashes if doing so won\\t empty the var."
-    if [ "${#dD}" -gt 1 ]
+    if test "${dD}" = '/' \
+      || test "${dD}" = '//' \
+      || test "${dD}" = '///'
     then
       : "t:0:${LINENO}" #>
-
-      # Note, if the directory is \/\, FS root, then PE\s an error.
-      dD=${dD%/}
+      canpth=/
+      __print_output__ "$1" "${canpth}"
+      : exit "\${global_return_code}"
+      exit "${global_return_code}"
     else
       : "f:$?:${LINENO}" #>
     fi
+
+    #   Case if input is \.\, single period, CWD.
+    #   Case if input begins with \./\, anchoring file in CWD.
+    if test "${dD}" = '.' \
+      || test "${dD}" = './' \
+      || test "${dD}" = './/'
+    then
+      : "t:0:${LINENO}" #>
+      canpth=$( pwd )
+      __print_output__ "$1" "${canpth}"
+      : exit "\${global_return_code}"
+      exit "${global_return_code}"
+    else
+      : "f:$?:${LINENO}" #>
+    fi
+
+    for zZ in '/' '//' '.' './' '..' '../'
+    do
+      __test_for_string__ "${zZ}"
+    done
 
       exit "${LINENO}" #>
       set -x #>
 
-    :
-    #: "Remove leading double dots."
-    #dD=${dD#..}
-
-    # Remove leading double dots if doing so won\t empty the variable.
-    if [ "${#dD}" -gt 3 ]
-    then
-      : "t:0:${LINENO}" #>
-      dD=${dD#..}
-    else
-      : "f:$?:${LINENO}" #>
-    fi
-
-      exit "${LINENO}" #>
-      set -x #>
-
-    :
-    : "Add in a missing leading forward slash, if output\\s a dir."
-    if [ -d "${dD}" ]
-    then
-      : "t:0:${LINENO}" #>
-      : "\\dD\\ is a directory."
-    else
-      : "f:$?:${LINENO}" #>
-      : "\\dD\\ is not a directory."
-
-      if [ -d "/${dD}" ]
-      then
-        : "t:0:${LINENO}" #>
-        : "Adding a leading forward slash makes \\dD\\ a directory."
-        dD=/${dD}
-      else
-        : "f:$?:${LINENO}" #>
-        : "Adding a leading fwd. slash doesn\\t make \\dD\\ a directory."
-      fi
-    fi
+    #   Case if input is \..\, double period, aka, \dirname\.
+    #   Case if input begins with \../, anchoring file in \dirname\.
+    #   Case if ....
 
     :
     : "Get output of \\file\\."
@@ -278,6 +301,15 @@ do
 
       exit "${LINENO}" #>
       set -x #>
+
+
+    : "Remove trailing forward slashes if doing so won\\t empty the var."
+    # Note, defining directories with a trailing f\orward slash will
+    #   effect whether \[[\, \test\, \[\ and \stat\ dereference
+    #   symlinks. However, \realpath -e\ will still resolve such
+    #   strings correctly.
+
+
 
     :
     : "See whether \\file\\ says \\symbolic link\\."
@@ -345,7 +377,7 @@ do
   do
     :
     : "If \\eE\\ is a directory..."
-    if [ -d "${eE}" ]
+    if test -d "${eE}"
     then
       : "t:0:${LINENO}" #>
 
@@ -355,13 +387,13 @@ do
 
       :
       : "If the \\dirname\\ of \\eE\\ is also a directory..."
-      if [ -d "${eE}" ]
+      if test -d "${eE}"
       then
         : "t:0:${LINENO}" #>
 
         :
         : "Then, if the new \\eE\\ is the filesystem root, \\/\\..."
-        if [ "${eE}" = "/" ]
+        if test "${eE}" = "/"
         then
           : "t:0:${LINENO}" #>
 
@@ -411,28 +443,28 @@ done
 
 
 :
-  :"Print warnings if the directory is not readable\/writable\/searchable."
+  : "Print warnings if the directory is not readable\/writable\/searchable."
 
 :
-  :"Verify it\\s a directory by using \\find\\."
+  : "Verify it\\s a directory by using \\find\\."
 output_2_find=$( find "${canpth}" -prune -type d )
 
     exit "${LINENO}" #>
     set -x #>
 
-if [ -n "${output_2_find}" ]
+if test -n "${output_2_find}"
 then
   : "t:0:${LINENO}" #>
 
   :
   : "See whether \\canpth\\ and \\output_2_find\\ are equivalent strings."
-  if [ "${canpth}" = "${output_2_find}" ]
+  if test "${canpth}" = "${output_2_find}"
   then
     : "t:0:${LINENO}" #>
 
     :
     : "See whether \\canpth\\ is a symlink."
-    if [ ! -L "${canpth}" ]
+    if test ! -L "${canpth}"
     then
       : "t:0:${LINENO}" #>
       :
@@ -445,7 +477,7 @@ then
 
       :
       : "See whether \\canpth\\ is searchable."
-      if [ -x "${canpth}" ]
+      if test -x "${canpth}"
       then
         : "t:0:${LINENO}" #>
         :
@@ -464,7 +496,7 @@ then
 
       :
       : "See whether \\canpth\\ is readable."
-      if [ -r "${canpth}" ]
+      if test -r "${canpth}"
       then
         : "t:0:${LINENO}" #>
         :
@@ -483,7 +515,7 @@ then
 
       :
       : "See whether \\canpth\\ is writable."
-      if [ -w "${canpth}" ]
+      if test -w "${canpth}"
       then
         : "t:0:${LINENO}" #>
         :
@@ -524,4 +556,3 @@ fi
     set -x #>
 
 exit 00
-
