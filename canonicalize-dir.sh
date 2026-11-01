@@ -2,30 +2,31 @@
 # candr.sh / canonicalize-dir.sh
 #  hellcheck disable=SC2319,SC2292
 #
-#   Script is unfinished - 31 Oct 2026 WY
+#   Script is unfinished - 01 Nov 2026 WY
 #
 #
 #   Manual canonicalization of directories. Output can be in brief or
 # verbose formats; brief is the default; script accepts multiple
 # operands.
 #
-#   Both \realpath\ and \readlink\ weren\t specified in POSIX until
+#   Both \realpath\ and \readlink\ weren\t specified in Posix until
 # 2024, so it\s likely that there are numerous systems which do not
 # offer any utilities which canonicalize file paths.
 #
 #   Goals: that this script...
-#     - is written for any POSIX-2008 compliant shell.
+#     - is written for any Posix-2008 compliant shell.
 #     - can be executed successfully in resticted mode.
 #
 #   (c) Wiley Young 2026
 #
 # Tested on these distros and shells:
+#   - Fedora 44: bash-5.3.9-3
 #
 # Notes:
 #   - redirection operators cannot be placed within parameter
 #       expansions and still function as redirection operators.
 #   - #!/bin/env -i sh fails.
-#   - LINENO does exist in POSIX-2008.
+#   - LINENO does exist in Posix-2008.
 
 
 
@@ -40,13 +41,11 @@
   \: "\$0: <$0>, <${0#./}> "
   \: "\$1: ${1:-}" #>
   \: "\$2: ${2:-}" #>
-  \:
-  \:
 
 
-: "Security"
+:;: "Security"
 #
-# POSIX-2024 suggestion for \Start off a \\secure shell script\\ in
+# Posix-2024 suggestion for \Start off a \\secure shell script\\ in
 # which the script avoids being spoofed by its parent,\ as found in
 # its spec. for \command\.
 IFS=' 	
@@ -58,10 +57,10 @@ unset -f command
 # Restricted Mode.
 
 
-: "Restricted Mode"
+:;: "Restricted Mode"
 #
-#   Note, restricted mode is not specified by POSIX 2024; reasoning
-# described in spec. on utility \sh\.
+#   Note, restricted mode is not specified by Posix 2024; the current
+# reasoning is described in the spec. on utility \sh\.
 # 
 # Bash 5.3.9
 #   - Restricted mode is inherited by subshells from interactive 
@@ -109,8 +108,10 @@ then
     is_restricted=no
   else
     : "f:$?" "\\cd\\ fails."
-    printf '%s: warning: mixed test results from \%s\; exiting\n' \
-      "$0" "cd"
+    printf '%s: warning: mixed test results on \%s\; exiting\n' \
+      "$0" "Restricted Mode tests"
+    # Option: test for shell having been executed with \r*\ prefix,
+    # ie, \rbash\, \rsh\, etc.
     exit 1
   fi
 else
@@ -124,23 +125,121 @@ else
     *)
       : "\\\$-\\ shows restricted mode is off."
       # Notes, 
-      #   - \set +o\ doesn\t list restricted mode, possibly because it
-      #     isn\t specified by POSIX.
-      #   - \shopt\ is only available in Bash?
+      #   - \set +o\ doesn\t list restricted mode, possibly because
+      #     it, restricted mode, isn\t specified by Posix.
+      #   - \shopt\ is available only in Bash and .....?
       is_restricted=no
       ;;
   esac
 fi
 
 
+:;: "Bootstrap variables."
+#
+POSIXLY_CORRECT=on
+POSIX2=on
+if test -n "${PPID}"
+then
+  : "t:0"
+  # Get the PID
+  CMD_ENV=posix
+  PS_PERSONALITY=posix
+  output_awk_01_pid=$( ps -e -o ppid,pid,args \
+    | awk -v ppid=$PPID '$1 == ppid { print $2 }'
+  )
+  # If getting the PID was successful, and if /proc exists...
+  if test -n "${output_awk_01_pid}"
+  then
+    : "t:0"
+    if test -d /proc
+    then
+      : "t:0"
+      # Poke around for the name of the command which invoked the
+      # script.
+      #
+      # Test 1
+      if test -f "/proc/${output_awk_01_pid}/status}"
+      then
+        : "t:0"
+        aA_awk_stat=$( awk '$1 == "Name:" { print $2 }' \
+          "/proc/${output_awk_01_pid}/status"
+        )
+      else
+        : "f:$?" "File /proc/\$PID/status DNE."
+      fi
+      # Test 2
+      if test -f "/proc/${output_awk_01_pid}/comm"
+      then
+        : "t:0"
+        cC_cat_comm=$( cat "/proc/${output_awk_01_pid}/comm" )
+      else
+        : "f:$?" "File /proc/\$PID/comm DNE."
+      fi
+      # Test 3
+      if test -f "/proc/${output_awk_01_pid}/exe"
+      then
+        : "t:0"
+        if command -v readlink
+        then
+          : "t:0"
+          rR_read_exe=$( readlink "/proc/${output_awk_01_pid}/exe" )
+        else
+          : "f:$?" "Command \\readlink\\ is not available."
+        fi
+      else
+        : "f:$?" "File /proc/\$PID/exe DNE."
+      fi
+      # Test 4
+      if test -f "/proc/${output_awk_01_pid}/cmdline"
+      then
+        : "t:0"
+        tC_tr_cmdln=$( tr '\0' ' ' < "/proc/${output_awk_01_pid}/cmdline" )
+      else
+        : "f:$?"
+        "File /proc/\$PID/ DNE."
+      fi
+    else
+      : "f:$?" "Directory /proc does not exist."
+    fi
+  else
+    : "f:$?" "The PID was not found."
+  fi
+else
+  : "f:$?" "PPID is not defined."
+fi
+zero=${0#./}
+if test -n "${0##*/}"
+then
+  : "t:0"
+  zero=${0##*/}
+else
+  : "f:$?"
+fi
+
+  : "output_awk_01_pid: ${output_awk_01_pid}" #>
+  : "aA_awk_stat: ${aA_awk_stat}" #>
+  : "cC_cat_comm: ${cC_cat_comm}" #>
+  : "rR_read_exe: ${rR_read_exe}" #>
+  : "tC_tr_cmdln: ${tC_tr_cmdln}" #>
+  : "zero: ${zero}" #>
+  exit "${LINENO}" #>
+  set -x #>
+
+
 : "Commands"
 #
 # Utilities & Special Builtins
 #   Test string: \codeblocks\
-case $- in
-  *x*)  reset="set -x"; set +x;;
-  *)    reset="";;
-esac
+#
+# Unset xtrace and prepare to restore state at the end of this block.
+#case $- in
+  #*x*)  reset="set -x"; set +x;;
+  #*)    reset="";;
+#esac
+# Remove the hash table, so that PATH lookups are forced and
+# therefore current.
+hash -r
+# Tests for each command
 for uU in \
   "awk" "cd" "command" "dirname" "echo" \
   "env" "file" "find" "getconf" "grep" \
@@ -148,19 +247,20 @@ for uU in \
   "sh" "test" "true" "unalias" ":" \
   "break" "continue" "exit" "set" "shift" \
   "unset" \
-    "hash" "readonly" # count is 28
-  #"codeblocks" #> Codeblocks is not specified by POSIX-2008; the
-  # rest in this list are.
+    "hash" "readonly" "ps" # count is 29
+  #"codeblocks" #> Codeblocks is not specified by Posix-2008; the
+  # rest of the commands in this list are.
 do
     #> Just to see in which directory each utility is located.
     #which "${uU}" #>
-    # Note
-    #   - At 26 commands, all non-special-builtins are located in 
-    #     /usr/bin
+    #> Note
+    #>   - At 26 commands, all non-special-builtins are located in 
+    #>     /usr/bin
   # Determine whether command \uU\ is in PATH.
   if command -v "${uU}" >/dev/null
   then
     : "t:0"
+      type -P "${uU}"
   else
     : "f:${ec0:=$?}"
     printf '%s: Command <%s> is not installed or available.\n' \
@@ -170,7 +270,10 @@ do
   # Unset user functions
   unset -f "${uU}"
 done
-$reset # Word-Splitting intended.
+#$reset # Word-Splitting intended.
+
+  exit "${LINENO}" #>
+  set -x #>
 
 
 : "Input required."
@@ -192,14 +295,15 @@ fi
 #     2>/dev/null )"
 for aA
 do
-  bB=$( printf '%s' "${aA}" | strings -n 1 )
-  if test "${aA}" = "${bB}"
+  bB=$( printf '%s' "${aA}" | tr -d '\0' ) # Remove NULs
+  cC=$( printf '%s' "${bB}" | strings -n 1 ) # Remove nonprintable
+  if test "${aA}" = "${cC}"
   then
     : "t:0"
   else
     : "f:$?"
-    printf '%s: error: input contains non-printable strings.\n' \
-      "$0"
+    printf '%s: error: %\n' \
+      "$0" "input contains non-printable strings."
     exit 1
   fi
   if pathchk -Pp "${aA}" >/dev/null
@@ -208,14 +312,14 @@ do
   else
     : "f:$?"
     printf '%s: warning: %\n' \
-      "input contains one or more non-printable strings."
+      "$0" "input contains one or more non-printable strings."
   fi
 
 done
 
 
 : "Environment Variables"
-# See man pages under POSIX 2008
+# See man pages under Posix 2008
 # Common
 LC_ALL=C
 # \cd\
@@ -264,7 +368,7 @@ fi
 
 # PWD aught to be defined, for \cd\ and \pwd\
 # Notes,
-#   - In POSIX-2008 effects of assignments to PWD are unspecified.
+#   - In Posix-2008 effects of assignments to PWD are unspecified.
 #   - If restricted mode is enabled and PWD is undefined, a call to
 #     \cd\ will not assign a value to PWD, in Bash 5.3.9.
 if set | grep PWD >/dev/null
@@ -418,9 +522,6 @@ do
 
     #exit "${LINENO}" #>
     #set -x #>
-
-
-  # Use \pathchk\.
 
 
   :
@@ -729,3 +830,4 @@ fi
     #set -x #>
 
 exit 00
+
