@@ -10,8 +10,7 @@
 # operands.
 #
 #   Both \realpath\ and \readlink\ weren\t specified in Posix until
-# 2024, so it\s likely that there are numerous systems which do not
-# offer any utilities which canonicalize file paths.
+# 2024.
 #
 #   Goals: that this script...
 #     - is written for any Posix-2008 compliant shell.
@@ -59,7 +58,7 @@ unset -f command
 
 :;: "Restricted Mode"
 #
-#   Note, restricted mode is not specified by Posix 2024; the current
+#   Note, \rsh\ mode is not specified by Posix 2024; the current
 # reasoning is described in the spec. on utility \sh\.
 # 
 # Bash 5.3.9
@@ -136,17 +135,20 @@ fi
 
 :;: "Bootstrap variables."
 #
-POSIXLY_CORRECT=on
-POSIX2=on
 if test -n "${PPID}"
 then
   : "t:0"
   # Get the PID
   CMD_ENV=posix
+  POSIX2=on
+  POSIXLY_CORRECT=on
   PS_PERSONALITY=posix
   output_awk_01_pid=$( ps -e -o ppid,pid,args \
     | awk -v ppid=$PPID '$1 == ppid { print $2 }'
   )
+
+  # Bug, how do you know \output_awk_01_pid\ is an integer?
+
   # If getting the PID was successful, and if /proc exists...
   if test -n "${output_awk_01_pid}"
   then
@@ -232,13 +234,19 @@ fi
 #   Test string: \codeblocks\
 #
 # Unset xtrace and prepare to restore state at the end of this block.
-#case $- in
-  #*x*)  reset="set -x"; set +x;;
-  #*)    reset="";;
-#esac
+case $- in
+  *x*)  reset="set -x"; set +x;;
+  *)    reset="";;
+esac
+
+# Bugs, 
+#   - Does \command -v\ force path lookups as \type -P\ does?
+#   - Posix spec recommends \PATH=${PATH}\.
+
 # Remove the hash table, so that PATH lookups are forced and
 # therefore current.
 hash -r
+
 # Tests for each command
 for uU in \
   "awk" "cd" "command" "dirname" "echo" \
@@ -260,17 +268,24 @@ do
   if command -v "${uU}" >/dev/null
   then
     : "t:0"
+
+      # Bug, is the \-P\ option portable?
+
       type -P "${uU}"
   else
     : "f:${ec0:=$?}"
     printf '%s: Command <%s> is not installed or available.\n' \
       "$0" "${uU}"
+
+    # Bug, set a flag to signal exit after loop.
+    
     exit "${ec0}"
   fi
   # Unset user functions
   unset -f "${uU}"
 done
-#$reset # Word-Splitting intended.
+$reset
+# ^^^ Word-Splitting intended.
 
   exit "${LINENO}" #>
   set -x #>
@@ -278,8 +293,7 @@ done
 
 : "Input required."
 #
-# Testing command:
-#set --
+#   Testing command: set --
 if test "$#" -eq 0
 then
   : "t:0" #>
@@ -295,7 +309,7 @@ fi
 #     2>/dev/null )"
 for aA
 do
-  bB=$( printf '%s' "${aA}" | tr -d '\0' ) # Remove NULs
+  bB=$( printf '%s' "${aA}" | tr -d '\0'   ) # Remove NULs
   cC=$( printf '%s' "${bB}" | strings -n 1 ) # Remove nonprintable
   if test "${aA}" = "${cC}"
   then
@@ -303,7 +317,7 @@ do
   else
     : "f:$?"
     printf '%s: error: %\n' \
-      "$0" "input contains non-printable strings."
+      "$0" "input contains one or more non-printable strings."
     exit 1
   fi
   if pathchk -Pp "${aA}" >/dev/null
@@ -312,7 +326,7 @@ do
   else
     : "f:$?"
     printf '%s: warning: %\n' \
-      "$0" "input contains one or more non-printable strings."
+      "$0" "input fails \pathchk\ tests."
   fi
 
 done
@@ -325,14 +339,15 @@ LC_ALL=C
 # \cd\
 CDPATH=
 OLDPWD=
-  
 
-# Use \getconf\.
+
+# Use \getconf\
 getconf PATH_MAX # for \pwd\
-getconf NAME_MAX
+#getconf NAME_MAX
 
 
-# 
+# Bug, separate the variables which are and aren\t affected by \rsh\.
+
 # Unset certain env. vars. if possible and if they\re defined.
 if test "${is_restricted}" = "no"
 then
@@ -343,7 +358,7 @@ then
     then
       : "t:0"
       unset "${cC}"
-      printf '%s: notice: %s\n' "$0" "BASH_ENV was unset" #>
+      printf '%s: notice: %s\n' "$0" "${cC} was unset" #>
     else
       : "f:$?"
     fi
@@ -363,6 +378,9 @@ else
   HOME=$(
     awk -F: -v "vV=${username}" '$1 == vV { print $6 }' /etc/passwd
   )
+
+  # Bug, s\b printf
+
   echo HOME was assigned.
 fi
 
@@ -446,7 +464,6 @@ esac
 #
 #       _print_output_
 #
-#         GL-printformat
 #           verbose
 #             echo GL-scriptnm: GL-majloop-input: [GL-minloop-NSFOD GL-minloop-STDo/e]
 #
@@ -460,8 +477,8 @@ esac
 : "Define function: __print_output__."
 #
 # Usage:    __print_output__ [Script input] [canpth|nsfod] [redirection]
-# Usage:    __print_output__ "${dD}" "${canpth}"      # normal output to STOUT
-# Usage:    __print_output__ "${dD}" "${nsfod}" >&2   # redirect output to STDOUT
+# Usage:    __print_output__ "${dD}" "${canpth}"      # normal output to STDOUT
+# Usage:    __print_output__ "${dD}" "${nsfod}" >&2   # redirect output to STDERR
 #
 __print_output__()
 {
@@ -497,12 +514,14 @@ __print_output__()
   :
   :
 : "Major loop"
-# Note, for testing purposes, a list of some of the common temporary
-# directories in use in Linux.
+#   Testing strings: a list of common temporary directories in Linux.
 for dD
   #/dev/shm /var/tmp /usr/tmp /usr/local/tmp "${XDG_RUNTIME_DIR:=}/tmp" /tmp ~/tmp ~ #>
 do
   :
+
+  # Bug, rename var \majloop_orig_str\
+
   : "Per major loop variables."
   posparm_original_string=${dD}
   :
@@ -523,6 +542,7 @@ do
     #exit "${LINENO}" #>
     #set -x #>
 
+  # Buggy - rewrite script from this point on.
 
   :
   : "Minor loop A: Use \\file\\ to resolve any symlinks."
