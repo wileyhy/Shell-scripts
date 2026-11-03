@@ -543,6 +543,32 @@ do
     #set -x #>
 
   # Buggy - rewrite script from this point on.
+  #  check for leading forward slash
+  #    if missing, then prepend output of \pwd\
+  #  handle a double forward slash at the far left of the string
+  #  using \awk -F/\, separate the pathname out into separate elements
+  #  load the elements into the positional array
+  #  start with a \symlink_detected\ canary variable, set to \no\
+  #  put the entire thing in a true loop
+  #    loop through the array; the idea is to use concatenation to build up a new pathname; loop on \$# and \$1; use \shift\
+  #      for each element, add one leading forward slash to the current element
+  #      if there was an existing \canpath\ string from a previous loop, then prepend that on
+  #      use both \file\ and \test\ to determine the filetype of the basename of the \canpath\ string
+  #      if both utilities agree, then
+  #        if element is a symlink, then switch \symlink_detected\ to \yes\
+  #          get the value of the symlink from \file\
+  #          test for whether the of value from \file\ has a leading forward slash
+  #            if yes, then use the symlink\s value as the total pathname thus far and continue
+  #            if no, then append the symlink\s value to the existing value of \canpath\
+  #              ...and continue?
+  #        if element is a directory, then continue
+  #        if element is neither a symlink nor a directory, then 
+  #          if there are no more elements in the loop, then \break 1\
+  #          if there are elements remaining, then error
+  #            ...and figure out what that means. is it a dangling symlink?
+  #      if the two utilities disagree, then error
+  #    if \symlink_detected\ is \yes\, then remain in the true loop; otherwise \break 2\
+  #  how do you detect data loops?
 
   :
   : "Minor loop A: Use \\file\\ to resolve any symlinks."
