@@ -1,20 +1,16 @@
 #!/bin/env sh
 # candr.sh / canonicalize-dir.sh
-#  hellcheck disable=SC2319,SC2292
+# shellcheck disable=SC2028
 #
-#   Script is unfinished - 01 Nov 2026 WY
+#   Script is unfinished - 04 Nov 2026 WY
 #
 #
 #   Manual canonicalization of directories. Output can be in brief or
 # verbose formats; brief is the default; script accepts multiple
 # operands.
 #
-#   Both \realpath\ and \readlink\ weren\t specified in Posix until
-# 2024.
-#
 #   Goals: that this script...
-#     - is written for any Posix-2008 compliant shell.
-#     - can be executed successfully in resticted mode.
+#     - Is written for any Posix-2008 compliant shell.
 #
 #   (c) Wiley Young 2026
 #
@@ -22,256 +18,110 @@
 #   - Fedora 44: bash-5.3.9-3
 #
 # Notes:
-#   - redirection operators cannot be placed within parameter
-#       expansions and still function as redirection operators.
-#   - #!/bin/env -i sh fails.
+#   - Redirections are applied before any expansions occur.
+#   - \#!/bin/env -i sh\ fails.
 #   - LINENO does exist in Posix-2008.
+#   - Reportedly, Solaris 10 uses a Bourne sh which is not Posix
+#     compliant.
+#       https://unix.stackexchange.com/questions/322035/\
+#         are-there-still-systems-around-with-a-bin-sh-binary
+#   - Reportedly, in BusyBox \awk\ is optional.
+#   - If PATH is set RO in the interactive calling shell, in the
+#     script PATH can still be altered.
+#   - When called from a restricted interactive shell, the script
+#     does not inherit the restricted setting.
+#   - Both \realpath\ and \readlink\ weren\t specified in Posix until
+#     2024.
+#   - The \-P\ option to \type\ is not portable.
 
 
 
   #> Debug
-  \set -x #>
+  #\set -x #>
   \set -e #>
   \set -f #> Disable pathame expansion.
-  \set -u #>
   \: #>
-  \: "pound: $#" #>
-  \: "ampersand:" "${@:-}" #>
+  \: "Dash: $-"
+  \: "Pound: $#" #>
+  \: "Ampersand:" "${@:-}" #>
   \: "\$0: <$0>, <${0#./}> "
   \: "\$1: ${1:-}" #>
   \: "\$2: ${2:-}" #>
+  \: "\$LINENO: ${LINENO:-}" #>
+  \: "\$SHELL: ${SHELL:-}" #>
 
 
-:;: "Security"
+\:;\: "Settings"
+\set -u
+\set -C
+
+
+\:;\: "Security"
 #
 # Posix-2024 suggestion for \Start off a \\secure shell script\\ in
 # which the script avoids being spoofed by its parent,\ as found in
 # its spec. for \command\.
+#
 IFS=' 	
 '
 # Value of IFS should include one tabstop.
 \unalias -a
 unset -f command
-#PATH="$(command -p getconf PATH):$PATH" # See next section on
-# Restricted Mode.
+PATH="$( command -p getconf PATH ):${PATH}"
 
-
-:;: "Restricted Mode"
-#
-#   Note, \rsh\ mode is not specified by Posix 2024; the current
-# reasoning is described in the spec. on utility \sh\.
-# 
-# Bash 5.3.9
-#   - Restricted mode is inherited by subshells from interactive 
-#     shells.
-#   - Restricted mode is not inherited by scripts which are executed
-#     from interactive shells when...
-#       - their dirname is located in PATH and without a leading
-#         \./\.
-#   - Description in \man bash\:
-#       o     Changing directories with cd.
-#       o     Setting or unsetting the values of SHELL, PATH,
-#               HISTFILE, ENV, or BASH_ENV.
-#       o     Specifying command names containing /.
-#       o     Specifying a filename containing a / as an argument
-#               to the .  builtin command.
-#       o     Using the -p option to the .  builtin command to
-#               specify a search path.
-#       o     Specifying a filename containing a slash as an
-#               argument to the history builtin command.
-#       o     Specifying a filename containing a slash as an
-#               argument to the -p option to the hash builtin
-#               command.
-#       o     Importing function definitions from the shell
-#               environment at startup.
-#       o     Parsing the values of BASHOPTS and SHELLOPTS from the
-#               shell environment at startup.
-#       o     Redirecting output using the >, >|, <>, >&, &>, and >>
-#               redirection operators.
-#       o     Using the exec builtin command to replace the shell
-#               with another command.
-#       o     Adding or deleting builtin commands with the -f and -d
-#               options to the enable builtin command.
-#       o     Using the enable builtin command to enable disabled
-#               shell builtins.
-#       o     Specifying the -p option to the command builtin
-#               command.
-#       o     Turning off restricted mode with set +r or shopt -u
-#               restricted_shell.
-if PATH="$(command -p getconf PATH):$PATH"
-then
-  : "t:0" "PATH variable can be altered."
-  if ( cd / )
-  then
-    : "t:0" "\\cd\\ succeeds."
-    is_restricted=no
-  else
-    : "f:$?" "\\cd\\ fails."
-    printf '%s: warning: mixed test results on \%s\; exiting\n' \
-      "$0" "Restricted Mode tests"
-    # Option: test for shell having been executed with \r*\ prefix,
-    # ie, \rbash\, \rsh\, etc.
-    exit 1
-  fi
-else
-  : "f:$?" "PATH variable cannot be altered."
-  # Variable could be set as read-only.
-  case $- in
-    *r*)
-      : "\\\$-\\ shows restricted mode is on."
-      is_restricted=yes
-      ;;
-    *)
-      : "\\\$-\\ shows restricted mode is off."
-      # Notes, 
-      #   - \set +o\ doesn\t list restricted mode, possibly because
-      #     it, restricted mode, isn\t specified by Posix.
-      #   - \shopt\ is available only in Bash and .....?
-      is_restricted=no
-      ;;
-  esac
-fi
+  #exit "${LINENO}" #>
+  #set -x #>
 
 
 :;: "Bootstrap variables."
-#
-if test -n "${PPID}"
-then
-  : "t:0"
-  # Get the PID
-  CMD_ENV=posix
-  POSIX2=on
-  POSIXLY_CORRECT=on
-  PS_PERSONALITY=posix
-  output_awk_01_pid=$( ps -e -o ppid,pid,args \
-    | awk -v ppid=$PPID '$1 == ppid { print $2 }'
-  )
+usage_msg="${0#./}:
 
-  # Bug, how do you know \output_awk_01_pid\ is an integer?
-
-  # If getting the PID was successful, and if /proc exists...
-  if test -n "${output_awk_01_pid}"
-  then
-    : "t:0"
-    if test -d /proc
-    then
-      : "t:0"
-      # Poke around for the name of the command which invoked the
-      # script.
-      #
-      # Test 1
-      if test -f "/proc/${output_awk_01_pid}/status}"
-      then
-        : "t:0"
-        aA_awk_stat=$( awk '$1 == "Name:" { print $2 }' \
-          "/proc/${output_awk_01_pid}/status"
-        )
-      else
-        : "f:$?" "File /proc/\$PID/status DNE."
-      fi
-      # Test 2
-      if test -f "/proc/${output_awk_01_pid}/comm"
-      then
-        : "t:0"
-        cC_cat_comm=$( cat "/proc/${output_awk_01_pid}/comm" )
-      else
-        : "f:$?" "File /proc/\$PID/comm DNE."
-      fi
-      # Test 3
-      if test -f "/proc/${output_awk_01_pid}/exe"
-      then
-        : "t:0"
-        if command -v readlink
-        then
-          : "t:0"
-          rR_read_exe=$( readlink "/proc/${output_awk_01_pid}/exe" )
-        else
-          : "f:$?" "Command \\readlink\\ is not available."
-        fi
-      else
-        : "f:$?" "File /proc/\$PID/exe DNE."
-      fi
-      # Test 4
-      if test -f "/proc/${output_awk_01_pid}/cmdline"
-      then
-        : "t:0"
-        tC_tr_cmdln=$( tr '\0' ' ' < "/proc/${output_awk_01_pid}/cmdline" )
-      else
-        : "f:$?"
-        "File /proc/\$PID/ DNE."
-      fi
-    else
-      : "f:$?" "Directory /proc does not exist."
-    fi
-  else
-    : "f:$?" "The PID was not found."
-  fi
-else
-  : "f:$?" "PPID is not defined."
-fi
-zero=${0#./}
-if test -n "${0##*/}"
-then
-  : "t:0"
-  zero=${0##*/}
-else
-  : "f:$?"
-fi
-
-  : "output_awk_01_pid: ${output_awk_01_pid}" #>
-  : "aA_awk_stat: ${aA_awk_stat}" #>
-  : "cC_cat_comm: ${cC_cat_comm}" #>
-  : "rR_read_exe: ${rR_read_exe}" #>
-  : "tC_tr_cmdln: ${tC_tr_cmdln}" #>
-  : "zero: ${zero}" #>
-  exit "${LINENO}" #>
-  set -x #>
+    Usage: the first argument may be an option flag.
+        candr.sh [-b|-v] [FILE] ...
+"
 
 
-: "Commands"
+:;: "Commands"
 #
 # Utilities & Special Builtins
 #   Test string: \codeblocks\
 #
-# Unset xtrace and prepare to restore state at the end of this block.
+# Unset xtrace and prepare to restore state at the end of this
+# section.
+: "Define function, __reset__"
 case $- in
-  *x*)  reset="set -x"; set +x;;
-  *)    reset="";;
+  *x*)  __reset__(){ set -x;}; set +x;;
+  *)    __reset__(){ :;};;
 esac
 
-# Bugs, 
-#   - Does \command -v\ force path lookups as \type -P\ does?
-#   - Posix spec recommends \PATH=${PATH}\.
-
 # Remove the hash table, so that PATH lookups are forced and
-# therefore current.
-hash -r
+# therefore current. Posix recommends \PATH=${PATH}\ in spec. on 
+# \hash\.
+PATH=${PATH}
 
 # Tests for each command
 for uU in \
   "awk" "cd" "command" "dirname" "echo" \
   "env" "file" "find" "getconf" "grep" \
-  "id" "pathchk" "printf" "pwd" "sed" \
-  "sh" "test" "true" "unalias" ":" \
-  "break" "continue" "exit" "set" "shift" \
-  "unset" \
-    "hash" "readonly" "ps" # count is 29
+  "id" "ls" "pathchk" "printf" "ps" \
+  "pwd" "sed" "sh" "strings" "test" \
+  "true" "type" "unalias" \
+    ":" "break" \
+  "continue" "exit" "readonly" "set" "shift" \
+  "unset" # count is 31
+  #
   #"codeblocks" #> Codeblocks is not specified by Posix-2008; the
   # rest of the commands in this list are.
 do
     #> Just to see in which directory each utility is located.
-    #which "${uU}" #>
+    #which "${uU}"; continue #>
     #> Note
-    #>   - At 26 commands, all non-special-builtins are located in 
-    #>     /usr/bin
+    #>   - At 31 commands, all non-special-builtins are located in 
+    #>     /usr/bin on Fedora 44.
   # Determine whether command \uU\ is in PATH.
-  if command -v "${uU}" >/dev/null
+  if command -pv "${uU}" >/dev/null
   then
-    : "t:0"
-
-      # Bug, is the \-P\ option portable?
-
-      type -P "${uU}"
+    : "t:0:${LINENO}"
   else
     : "f:${ec0:=$?}"
     printf '%s: Command <%s> is not installed or available.\n' \
@@ -284,22 +134,23 @@ do
   # Unset user functions
   unset -f "${uU}"
 done
-$reset
-# ^^^ Word-Splitting intended.
+__reset__
+unset -f __reset__
 
-  exit "${LINENO}" #>
-  set -x #>
+  #exit "${LINENO}" #>
+  #set -x #>
 
 
 : "Input required."
 #
 #   Testing command: set --
-if test "$#" -eq 0
+if test "$#" -gt 0
 then
-  : "t:0" #>
+  : "t:0:${LINENO}" #>
+else
+  echo "f:$?:${LINENO}" #>
   printf '%s\n' "${usage_msg:?}" 1>&2
   exit 1
-else : "f:$?" #>
 fi
 
 
@@ -307,28 +158,43 @@ fi
 #
 #   Test input: "$( dd if=/dev/urandom of=/dev/stdout bs=32b count=1
 #     2>/dev/null )"
-for aA
+for aA in "$@" '.' '..'
 do
   bB=$( printf '%s' "${aA}" | tr -d '\0'   ) # Remove NULs
   cC=$( printf '%s' "${bB}" | strings -n 1 ) # Remove nonprintable
   if test "${aA}" = "${cC}"
   then
-    : "t:0"
+    : "t:0:${LINENO}"
   else
-    : "f:$?"
+    echo "f:$?:${LINENO}"
     printf '%s: error: %\n' \
       "$0" "input contains one or more non-printable strings."
     exit 1
   fi
-  if pathchk -Pp "${aA}" >/dev/null
+  if pathchk "${aA}"
   then
-    : "t:0"
+    : "t:0:${LINENO}"
   else
-    : "f:$?"
+    echo "f:$?:${LINENO}"
     printf '%s: warning: %\n' \
       "$0" "input fails \pathchk\ tests."
   fi
-
+  if pathchk -p "${aA}"
+  then
+    : "t:0:${LINENO}"
+  else
+    echo "f:$?:${LINENO}"
+    printf '%s: warning: %\n' \
+      "$0" "input fails \pathchk -p\ tests."
+  fi
+  if pathchk -P "${aA}"
+  then
+    : "t:0:${LINENO}"
+  else
+    echo "f:$?:${LINENO}"
+    printf '%s: warning: %\n' \
+      "$0" "input fails \pathchk -P\ tests."
+  fi
 done
 
 
@@ -342,38 +208,51 @@ OLDPWD=
 
 
 # Use \getconf\
-getconf PATH_MAX # for \pwd\
-#getconf NAME_MAX
+#   _POSIX_NAME_MAX   # for \pathchk\
+#   _POSIX_PATH_MAX   # for \pathchk\
+#   CDPATH            # for \cd\
+#   HOME              # for \cd\
+#   LC_ALL            # Common
+#   NAME_MAX          # for \pathchk\
+#   PATH_MAX          # for \cd\, \pathchk\ and \pwd\
+#   OLDPWD            # for \cd\
+#   PWD               # for \cd\ and \pwd\
+for eV in \
+  _POSIX_NAME_MAX \
+  _POSIX_PATH_MAX \
+  CDPATH \
+  HOME \
+  LC_ALL \
+  NAME_MAX \
+  PATH_MAX \
+  OLDPWD \
+  PWD
+do
+  getconf -a | grep -E "^${eV}"
+done
 
-
-# Bug, separate the variables which are and aren\t affected by \rsh\.
 
 # Unset certain env. vars. if possible and if they\re defined.
-if test "${is_restricted}" = "no"
-then
-  for cC in BASH_ENV ENV LD_PRELOAD
-  do
-    : "t:0"
-    if set | grep "${cC}" >/dev/null
-    then
-      : "t:0"
-      unset "${cC}"
-      printf '%s: notice: %s\n' "$0" "${cC} was unset" #>
-    else
-      : "f:$?"
-    fi
-  done
-else
-  : "f:$?"
-fi
+for cC in BASH_ENV ENV LD_PRELOAD
+do
+  : "t:0:${LINENO}"
+  if set | grep "${cC}"
+  then
+    : "t:0:${LINENO}"
+    unset "${cC}"
+    printf '%s: notice: %s\n' "$0" "${cC} was unset" #>
+  else
+    echo "f:$?:${LINENO}"
+  fi
+done
 
 
 # Make sure HOME is defined, for \cd\.
-if set | grep HOME >/dev/null
+if set | grep HOME
 then
-  : "t:0"
+  : "t:0:${LINENO}"
 else
-  : "f:$?"
+  echo "f:$?:${LINENO}"
   username=$( id -un )
   HOME=$(
     awk -F: -v "vV=${username}" '$1 == vV { print $6 }' /etc/passwd
@@ -389,11 +268,11 @@ fi
 #   - In Posix-2008 effects of assignments to PWD are unspecified.
 #   - If restricted mode is enabled and PWD is undefined, a call to
 #     \cd\ will not assign a value to PWD, in Bash 5.3.9.
-if set | grep PWD >/dev/null
+if set | grep PWD
 then
-  : "t:0"
+  : "t:0:${LINENO}"
 else
-  : "f:$?"
+  echo "f:$?:${LINENO}"
   printf '%s: warning: %s.\n' "$0" "PWD is undefined"
 fi
 
@@ -403,11 +282,6 @@ canpth=
 global_return_code=0
 output_verbose_on=
 nsfod="(No such file or directory)"
-usage_msg="${0#./}:
-
-    Usage: the first argument may be an option flag.
-        candr.sh [-b|-v] [FILE] ...
-"
 :
   #set -x #>
   #echo stdout #>
@@ -480,7 +354,8 @@ esac
 # Usage:    __print_output__ "${dD}" "${canpth}"      # normal output to STDOUT
 # Usage:    __print_output__ "${dD}" "${nsfod}" >&2   # redirect output to STDERR
 #
-__print_output__()
+# shellcheck disable=SC2329
+__print_output__ ()
 {
     #set -x #>
     : #>
@@ -509,7 +384,7 @@ __print_output__()
     #exit "${LINENO}" #>
 }
 :
-  #exit "${LINENO}" #>
+  exit "${LINENO}" #>
   #set -x #>
   :
   :
@@ -530,16 +405,16 @@ do
   # Test input: /dev/qwertyuiop
   if test -e "${dD}"
   then
-    : "t:0" #>
+    : "t:0:${LINENO}" #>
     : "Path exists."
   else
-    : "f:$?" #>
+    echo "f:$?:${LINENO}" #>
     global_return_code=1
     __print_output__ "${dD}" "${nsfod}" >&2
     continue 1
   fi
 
-    #exit "${LINENO}" #>
+    exit "${LINENO}" #>
     #set -x #>
 
   # Buggy - rewrite script from this point on.
@@ -583,12 +458,13 @@ do
       || test "${dD}" = '//' \
       || test "${dD}" = '///'
     then
-      : "t:0" #>
+      : "t:0:${LINENO}" #>
       canpth=/
       __print_output__ "$1" "${canpth}"
       : exit "\${global_return_code}"
       exit "${global_return_code}"
-    else : "f:$?" #>
+    else
+      echo "f:$?:${LINENO}" #>
     fi
 
     #   Case if input is \.\, single period, CWD.
@@ -597,12 +473,13 @@ do
       || test "${dD}" = './' \
       || test "${dD}" = './/'
     then
-      : "t:0" #>
+      : "t:0:${LINENO}" #>
       canpth=$( pwd )
       __print_output__ "$1" "${canpth}"
       : exit "\${global_return_code}"
       exit "${global_return_code}"
-    else : "f:$?" #>
+    else
+      echo "f:$?:${LINENO}" #>
     fi
 
     for zZ in '/' '//' '.' './' '..' '../'
@@ -638,7 +515,7 @@ do
     if printf '%s' "${output_0_file}" \
       | grep -qEe ': symbolic link to [/\.a-z]'
     then
-      : "t:0" #>
+      : "t:0:${LINENO}" #>
 
       :
       : "If so, then use \\sed\\ to get the resolved path."
@@ -651,24 +528,15 @@ do
       : "...and redefine \\dD\\ for the next iteration."
       dD=${output_1_sed}
     else
-      : "f:$?" #>
-
-      :
-      : "...otherwise, test if \\directory\\ is present in the string."
+      echo "f:$?:${LINENO}" "...otherwise, test if \\directory\\ is present in the string."
       if printf '%s' "${output_0_file}" \
         | sed 's,.*: ,,' \
         | grep -q "directory"
       then
-        : "t:0" #>
-
-        :
-        : "If it is, then \\break\\ this loop."
+        : "t:0:${LINENO}" "If it is, then \\break\\ this loop."
         break 1
       else
-        : "f:$?" #>
-
-        :
-        : "If it\\s neither a symlink nor a directory, that\\s an error."
+        echo "f:$?:${LINENO}" "If it\\s neither a symlink nor a directory, that\\s an error."
         echo Error 1>&2
         exit "${LINENO}"
       fi
@@ -701,7 +569,7 @@ do
     : "If \\eE\\ is a directory..."
     if test -d "${eE}"
     then
-      : "t:0" #>
+      : "t:0:${LINENO}" #>
 
       :
       : "Then get the \\dirname\\ of \\eE\\."
@@ -711,50 +579,38 @@ do
       : "If the \\dirname\\ of \\eE\\ is also a directory..."
       if test -d "${eE}"
       then
-        : "t:0" #>
+        : "t:0:${LINENO}" #>
 
         :
         : "Then, if the new \\eE\\ is the filesystem root, \\/\\..."
         if test "${eE}" = "/"
         then
-          : "t:0" #>
+          : "t:0:${LINENO}" #>
 
           :
           : "Then double-check it using \\grep\\."
           if printf '%s\n' "${eE}" \
             | grep -qEe '^/$'
           then
-            : "t:0" #>
+            : "t:0:${LINENO}" #>
             :
             : "\\grep\\ succeeded, so \\break\\ this loop."
             __print_output__
             break 1
           else
-            : "f:$?" #>
-
-            :
-            : "\\test\\ passed but \\grep\\ failed. Error. Exiting."
+            echo "f:$?:${LINENO}" "\\test\\ passed but \\grep\\ failed. Error. Exiting."
             exit "${LINENO}"
           fi
         else
-          : "f:$?" #>
-
-          :
-          : "The new \\eE\\ is not the FS root directory; next iteration."
+          echo "f:$?:${LINENO}" "The new \\eE\\ is not the FS root directory; next iteration."
           continue 1
         fi
       else
-        : "f:$?" #>
-
-        :
-        : "The \\dirname\\ of \\eE\\ is not a directory."
+        echo "f:$?:${LINENO}" "The \\dirname\\ of \\eE\\ is not a directory."
         exit "${LINENO}"
       fi
     else
-      : "f:$?" #>
-
-      :
-      : "Error: \\eE\\ is not a directory. Exiting."
+      echo "f:$?:${LINENO}" "Error: \\eE\\ is not a directory. Exiting."
       exit "${LINENO}"
     fi
   done
@@ -776,19 +632,19 @@ output_2_find=$( find "${canpth}" -prune -type d )
 
 if test -n "${output_2_find}"
 then
-  : "t:0" #>
+  : "t:0:${LINENO}" #>
 
   :
   : "See whether \\canpth\\ and \\output_2_find\\ are equivalent strings."
   if test "${canpth}" = "${output_2_find}"
   then
-    : "t:0" #>
+    : "t:0:${LINENO}" #>
 
     :
     : "See whether \\canpth\\ is a symlink."
     if test ! -L "${canpth}"
     then
-      : "t:0" #>
+      : "t:0:${LINENO}" #>
       :
       : "\\canpth\\ is not a symlink"
 
@@ -801,14 +657,12 @@ then
       : "See whether \\canpth\\ is searchable."
       if test -x "${canpth}"
       then
-        : "t:0" #>
+        : "t:0:${LINENO}" #>
         :
         : "\\canpth\\ is searchable."
 
       else
-        : "f:$?" #>
-        :
-        : "\\canpth\\ is not searchable."
+        echo "f:$?:${LINENO}" "\\canpth\\ is not searchable."
 
         printf 'Warning: directory is not searchable.\n' 1>&2
       fi
@@ -820,14 +674,12 @@ then
       : "See whether \\canpth\\ is readable."
       if test -r "${canpth}"
       then
-        : "t:0" #>
+        : "t:0:${LINENO}" #>
         :
         : "\\canpth\\ is readable."
 
       else
-        : "f:$?" #>
-        :
-        : "\\canpth\\ is not readable."
+        echo "f:$?:${LINENO}" "\\canpth\\ is not readable."
 
         printf 'Warning: directory is not readable.\n' 1>&2
       fi
@@ -839,13 +691,11 @@ then
       : "See whether \\canpth\\ is writable."
       if test -w "${canpth}"
       then
-        : "t:0" #>
+        : "t:0:${LINENO}" #>
         :
         : "\\canpth\\ is writable."
       else
-        : "f:$?" #>
-        :
-        : "\\canpth\\ is not writable."
+        echo "f:$?:${LINENO}" "\\canpth\\ is not writable."
 
         printf 'Warning: directory is not writable.\n' 1>&2
       fi
@@ -853,23 +703,17 @@ then
         #set -x #>
 
     else
-      : "f:$?" #>
-      :
-      : "\\canpth\\ is a symlink."
+      echo "f:$?:${LINENO}" "\\canpth\\ is a symlink."
       echo Error 1>&2
       exit "${LINENO}"
     fi
   else
-    : "f:$?" #>
-    :
-    : "\\canpth\\ and \\output_2_find\\ are not equivalent strings."
+    echo "f:$?:${LINENO}" "\\canpth\\ and \\output_2_find\\ are not equivalent strings."
     echo Error 1>&2
     exit "${LINENO}"
   fi
 else
-  : "f:$?" #>
-  :
-  : "\\find -type d\\ did not locate the directory."
+  echo "f:$?:${LINENO}" "\\find -type d\\ did not locate the directory."
   echo Error 1>&2
   exit "${LINENO}"
 fi
@@ -878,4 +722,3 @@ fi
     #set -x #>
 
 exit 00
-
