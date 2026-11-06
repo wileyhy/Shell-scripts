@@ -15,7 +15,8 @@
 #   (c) Wiley Young 2026
 #
 # Tested on these distros and shells:
-#   - Fedora 44: bash-5.3.9-3
+#   - Fedora 44: bash-5.3.9
+#   - Fedora 45: bash-5.3.15
 #
 # Notes:
 #   - Redirections are applied before any expansions occur.
@@ -26,14 +27,13 @@
 #       https://unix.stackexchange.com/questions/322035/\
 #         are-there-still-systems-around-with-a-bin-sh-binary
 #   - Reportedly, in BusyBox \a\wk\ is optional.
-#   - If PATH is s\et RO in the interactive calling shell, in the
-#     script PATH can still be altered.
 #   - When called from a restricted interactive shell, the script
 #     does not inherit the restricted setting.
 #   - Both \realpath\ and \readlink\ weren\t specified in Posix until
 #     2024.
 #   - The \-P\ option to \type\ is not portable.
-#   - The \pathchk\ utility offers three separate sets of tests.
+#   - The \pathchk\ utility offers three separate sets of tests; there
+#     is no overlap between said sets.
 #   - The \-q\ option to \g\rep\ does exist in Posix 2008.
 #   - In Posix-2008, the handling of \//\ is intentionally
 #     implementation defined, so catch it, flag it as an error, and
@@ -42,10 +42,17 @@
 #     effect whether \[[\, \test\, \[\ and \stat\ dereference
 #     symlinks. However, \realpath -e\ will still resolve such
 #     strings correctly.
+#   - The \-r\ option to \hash\ does exist in Posix 2008.
+#   - If PATH is s\et RO in the interactive calling shell, in the
+#     script PATH can still be altered.
+#   - For \readonly\ without arguments, the results are unspecified. In
+#     Bash, attempting in a script to assign a value to a RO variable is
+#     a fatal error, but that doesn\t appear to have been specified by
+#     Posix in 2008.
 
 
 
-  #> Debug
+  #> Debug.
   #\set -x #>
   \set -e #>
   \set -f #> Disable pathame expansion.
@@ -60,107 +67,185 @@
   \: "\$SHELL: ${SHELL:-}" #>
 
 
-\:;\: "Settings"
+\:;\: "Settings."
 \set -u
 \set -C
 
 
-\:;\: "Security"
+\:;\: "Security."
 #
 # Posix-2024 suggestion for \Start off a \\secure shell script\\ in
 # which the script avoids being spoofed by its parent,\ as found in
 # its spec. for \command\.
 #
+# Value of IFS should include one tabstop.
 IFS=' 	
 '
-# Value of IFS should include one tabstop.
 \unalias -a
 unset -f command
-PATH="$( command -p getconf PATH ):${PATH}"
+#
+# PATH could be set as RO.
+#   Testing:
+#readonly PATH #>
+#  readonly -p; exit "${LINENO}" #>
+#
+if PATH="$( command -p getconf PATH ):${PATH}"
+then
+  : "t:0:${LINENO}"
+else
+  : "f:$?:${LINENO}"
+  printf '%s: notice: assignment to variable failed: %s\n' "$0" "PATH"
+  printf '%s: notice: value of variable %s: <%s>\n' "$0" "PATH" "${PATH}"
+fi
 
   #exit "${LINENO}" #>
   #set -x #>
 
 
-:;: "Bootstrap Functions"
-#
-# Unset xtrace and prepare to restore state at the end of this
-# section.
-: "Define function, __offset__"
-__offset__ ()
-{
-  : "Define function, __reset__"
-  case $- in
-    *x*) __reset__ () { set -x;}; set +x ;;
-    *) __reset__ () { :;}; ;;
-  esac
-}
-
-
 :;: "Bootstrap Variables."
-usage_msg="${0#./}:
+global_return_code=0
+special_var_zero=${0#./}
+special_var_zero=${0##*/}
+usage_msg="${special_var_zero}:
 
     Usage: the first argument may be an option flag.
         candr.sh [-b|-v] [FILE] ...
 "
+unset ec0 ec1
 
 
-:;: "Printing format."
+:;: "Bootstrap Functions."
 #
+# Unset xtrace and prepare to restore state at the end of this
+# section.
+#
+# Usage:
+#     __xtrace_off__ [No arguments]
+#     __reset_xtrace__  [No arguments]
+#
+: "Define functions: __xtrace_off__ & __reset_xtrace__."
+__xtrace_off__ ()
+{
+  : "__xtrace_off__: Define function:  __reset_xtrace__."
+  case $- in
+    *x*) __reset_xtrace__ () { set -x; }; set +x ;;
+    *) __reset_xtrace__ () { :; } ;;
+  esac
+}
+
+: "Define function:  __check_for_variable_assignment__"
+#
+# Usage:
+#     __check_for_variable_assignment__ [Variable]
+#     __check_for_variable_assignment__ HOME
+#
+__check_for_variable_assignment__ ()
+{
+  if test -n "$1"
+  then
+    : "t:0:${LINENO}"
+  else
+    : "f:$?:${LINENO}"
+    printf '%s: Input required; exiting.' "${FUNCNAME[0]}"
+  fi
+  set | grep -E "^${1}=.+"
+}
+
+: "Define function:  __input_required__."
+#
+# Usage:    __input_required__ "$@"
+#
+__input_required__ ()
+{
+  if test 0 -lt "$#"
+  then
+    : "t:0:${LINENO}" #>
+  else
+    : "f:$?:${LINENO}" #>
+    printf '%s: Input required.\n' "${special_var_zero}"
+    printf '%s\n' "${usage_msg:?}" 1>&2
+    exit 1
+  fi
+}
+
+
+:;: "Parse input."
+#
+__input_required__ "$@"
+
 : "\\case\\ on posparm 1."
 case "$1" in
   -v | --verbose )
     : "\\case\\ branch: \\--verbose\\."
-    output_verbose_on=yes
+    Output_verbose_on=yes
     shift
     ;;
   -b | --brief )
     : "\\case\\ branch: \\--brief\\."
-    output_verbose_on=no
+    Output_verbose_on=no
     shift
     ;;
   * )
     : "\\case\\ branch: no options: use default: \\--brief\\."
-    output_verbose_on=no
+    Output_verbose_on=no
     # No \shift\ command.
     ;;
 esac
-export output_verbose_on
+export Output_verbose_on
 
-  # Bug, var names, \output_\ meaning, from a utility, vs. \output\
-  # meaning, of the script.
+__input_required__ "$@"
 
-  #declare -p output_verbose_on
-  #exit "${LINENO}"
-
-
-:;: "Input required."
-#
-#   Testing command: s\et --
-if test 0 -lt "$#"
-then
-  : "t:0:${LINENO}" #>
-else
-  printf '%s\n' "f:$?:${LINENO}" #>
-  printf 'Input required.\n\n' #>
-  printf '%s\n' "${usage_msg:?}" 1>&2
-  exit 1
-fi
+  #declare -p Output_verbose_on
+  #set -x
+  #: exit "${LINENO}"
 
 
-:;: "Commands"
+:;: "Commands."
 #
 # Utilities & Special Builtins
 #   Test string: \codeblocks\
 #
 # Remove the hash table, so that PATH lookups are forced and
-# therefore current. Posix recommends \PATH=${PATH}\ in spec. on 
-# \hash\.
+# therefore current. Posix recommends \PATH=${PATH}\ in spec. on
+# \hash\. In Bash on Fedoras 44 & 45, this recommendation works as
+# expected even if PATH is set as RO.
+#
+# Testing:
+#readonly PATH
+#set +e
+#enable -n hash
+#if ! PATH=${PATH}
+#
 # shellcheck disable=SC2269
-PATH=${PATH}
+if PATH=${PATH}
+then
+  : "t:0:${LINENO}"
+else
+  : "f:$?:${LINENO}"
+  if command -v hash
+  then
+    : "t:0:${LINENO}"
+    unset -f hash
+    if hash -r
+    then
+      : "t:0:${LINENO}"
+    else
+      : "f:$?:${LINENO}"
+      printf '%s: warning: command failed: <%s>\n' "hash -r"
+    fi
+  else
+    : "f:$?:${LINENO}"
+  fi
+fi
+
+# If xtrace is on, turn it off.
+__xtrace_off__
 
 # Tests for each command
-__offset__
+#
+# Testing:
+#enable -n break
+#
 for uU in \
   "awk" "cd" "command" "dirname" "env" \
   "file" "find" "getconf" "grep" "id" \
@@ -168,15 +253,15 @@ for uU in \
   "sed" "sh" "strings" "test" "true" \
   "type" "unalias" \
     ":" "break" "continue" "exit" "readonly" "set" "shift" \
-  "unset" # count is 31
+  "unset" "hash" "which" # count is 33
   #
   #"codeblocks" #> Codeblocks is not specified by Posix-2008; the
-  # rest of the commands in this list are.
+  # rest of the commands in this list are, except for \which\.
 do
     #> Just to see in which directory each utility is located.
     #which "${uU}"; continue #>
     #> Note
-    #>   - At 31 commands, all non-special-builtins are located in 
+    #>   - At 31 commands, all non-special-builtins are located in
     #>     /usr/bin on Fedora 44.
   # Determine whether command \uU\ is in PATH.
   if command -pv "${uU}" >/dev/null
@@ -184,100 +269,177 @@ do
     : "t:0:${LINENO}"
   else
     : "f:${ec0:=$?}"
-    printf '%s: Command <%s> is not installed or available.\n' \
-      "$0" "${uU}"
-
-    # Bug, s\et a flag to signal exit after loop.
-    
-    exit "${ec0}"
+    printf '%s: Command is not in PATH:  <%s>\n' \
+      "${special_var_zero}" "${uU}"
+    global_return_code=${ec0}
   fi
   # Unset user functions
   unset -f "${uU}"
 done
-__reset__
 
-  #exit "${LINENO}" #>
+# If xtrace was on, restore it.
+__reset_xtrace__
+
+# If any of the commands were missing, then exit.
+:;: "Test for value of \\global_return_code\\."
+if test 0 -eq "${global_return_code}"
+then
+  : "t:0:${LINENO}"
+else
+  : "f:$?:${LINENO}"
+    printf '%s: Value of PATH:  <%s>\n' \
+      "${special_var_zero}" "${PATH}"
+    printf '%s: Exiting.\n' "${special_var_zero}"
+    exit "${global_return_code}"
+fi
+
   #set -x #>
+  #: exit "${LINENO}" #>
+  #set +x #>
 
 
-:;: "\\tr\\", "\\strings\\ and \\pathchk\\"
+:;: "Input validation: \\tr\\, \\strings\\ and \\pathchk\\."
 #
-#   Test input: "$( dd if=/dev/urandom bs=32b count=1
-#     2>/dev/null )"
 for aA in "$@" '.' '..'
 do
+  :;: "Top of loop.";:
+
+  # Input validation: Error and exit.
+  #
+  # Testing:
+  #reset; clear; ./candr.sh -v \
+  #"$( dd if=/dev/urandom bs=32b count=1 2>/dev/null )"
+  #
+  __xtrace_off__
   bB=$( printf '%s' "${aA}" | tr -d '\0'   ) # Remove NULs
   cC=$( printf '%s' "${bB}" | strings -n 1 ) # Remove nonprintable
+
   if test "X${aA}" = "X${cC}"
   then
     : "t:0:${LINENO}"
   else
-    printf '%s\n' "f:$?:${LINENO}"
-    printf '%s: error: %\n' \
-      "$0" "input contains one or more non-printable strings."
-    exit 1
+    : "f:${ec1:=$?}:${LINENO}"
+    global_return_code=${ec1}
+    printf '%s: Error: %s\n' "${special_var_zero}" \
+      "Input contains one or more non-printable strings."
+    break 1
+  fi
+  __reset_xtrace__
+
+  # Zero length input is disallowed: Error and exit.
+  #
+  # Testing:
+  #reset; clear; ./candr.sh -v ""
+  #
+  if test -n "${aA}"
+  then
+    : "t:0:${LINENO}"
+  else
+    : "f:${ec1:=$?}:${LINENO}"
+    global_return_code=${ec1}
+    printf '%s: Error: %s\n' "${special_var_zero}" \
+      "Zero length input."
+    break 1
   fi
 
-  # \pathchk\ x3
+    set -x
+
+  # Filenames beginning with a hyphen are disallowed: Error and exit.
   #
-  # Checks \each component of each pathname of the underlying file system.\
-  # using PATH_MAX and NAME_MAX, for any non-searchable directory, and for
-  # any character that is invalid in its containing directory.
+  # Testing:
+  #reset; clear; ./candr.sh -v -foo
+  #
+  stdout_04_cut=$( printf '%s' "${aA}" | cut -c 1 )
+  if test "-" != "${stdout_04_cut}"
+  then
+    : "t:0:${LINENO}"
+  else
+    : "f:${ec1:=$?}:${LINENO}"
+    global_return_code=${ec1}
+    printf '%s: %s\n' "${special_var_zero}" \
+      "Filenames beginning with a hyphen are disallowed."
+    break 1
+  fi
+
+  # Tests on filename length: Error and exit.
+  #
+  # \pathchk [no arguments]\ checks \each component of each pathname
+  # of the underlying file system\ using PATH_MAX and NAME_MAX, for any
+  # non-searchable directory, and for any character that is invalid in
+  # its containing directory.
+  #
+  # On Fedora 45, the default values according to \getconf\:
+  #   NAME_MAX                            255
+  #   PATH_MAX                            4096
+  #
+  # Testing:
+  #reset; clear; ./candr.sh -v foooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
+  #
   if pathchk "${aA}"
   then
     : "t:0:${LINENO}"
   else
-    printf '%s\n' "f:$?:${LINENO}"
-    printf '%s: warning: %\n' \
-      "$0" "input fails \pathchk\ tests."
+    : "f:${ec1:=$?}:${LINENO}"
+    global_return_code=${ec1}
+    printf '%s: %s\n' \
+      "${special_var_zero}" 'Error received from \pathchk\ (no options).'
+    
+    # Print out the values of the relevant variables.
+    printf '%s: %s\n' \
+      "${special_var_zero}" 'Values of relevant system parameters:'
+    getconf -a | grep -Ee ^"PATH_MAX" -e ^"NAME_MAX"
+    break 1
   fi
 
-  # Checks \each component of each pathname of the underlying file system.\
-  # using _POSIX_PATH_MAX and _POSIX_NAME_MAX, and for any character not in
-  # the portable character set.
-  if pathchk -p "${aA}"
-  then
-    : "t:0:${LINENO}"
-  else
-    printf '%s\n' "f:$?:${LINENO}"
-    printf '%s: warning: %\n' \
-      "$0" "input fails \pathchk -p\ tests."
-  fi
-
-  # Checks for any component which begins with a hyphen, and any component
-  # which is empty.
+  # Filenames beginning with a hyphen are disallowed: Error and exit.
+  #
+  # Testing:
+  #reset; clear; ./candr.sh -v /-foo
+  #
   if pathchk -P "${aA}"
   then
     : "t:0:${LINENO}"
   else
-    printf '%s\n' "f:$?:${LINENO}"
-    printf '%s: warning: %\n' \
-      "$0" "input fails \pathchk -P\ tests."
+    : "f:${ec1:=$?}:${LINENO}"
+    global_return_code=${ec1}
+    printf '%s: %s\n' \
+      "${special_var_zero}" 'Error received from \pathchk -P\.'
+    break 1
   fi
+
 done
 
+if test 0 -eq "${global_return_code}"
+then
+  : "t:0:${LINENO}"
+else
+  : "f:$?:${LINENO}"
+  printf '%s: Exiting.\n' "${special_var_zero}"
+  exit "${global_return_code}"
+fi
+:;: "End of loop."
 
-:;: "\\getconf\\" # -- if xtrace is on.
-#   _POSIX_NAME_MAX   # for \pathchk\
-#   _POSIX_PATH_MAX   # for \pathchk\
+  set -x #>
+  : exit "${LINENO}" #>
+
+
+:;: "Section on \\getconf\\." # -- if xtrace is on.
 #   BASH_ENV          # for \bash\
 #   CDPATH            # for \cd\
 #   ENV               # for \sh\
 #   HOME              # for \cd\
 #   LC_ALL            # Common
 #   LD_PRELOAD        # for paranoia ;-P
-#   NAME_MAX          # for \pathchk\
-#   PATH_MAX          # for \cd\, \pathchk\ and \pwd\
+#   NAME_MAX          # for \pathchk [no args]\
+#   PATH_MAX          # for \cd\, \pathchk [no args]\ and \pwd\
 #   OLDPWD            # for \cd\
 #   PWD               # for \cd\ and \pwd\
 if printf '%s' "$-" | grep -q "x"
 then
   : "t:0:${LINENO}"
-  __offset__
-  output_getconf_00_a=$( getconf -a )
+  __xtrace_off__
+  stdout_00_getconf_a=$( getconf -a )
   for eV in \
-    _POSIX_NAME_MAX \
-    _POSIX_PATH_MAX \
     CDPATH \
     HOME \
     LC_ALL \
@@ -286,16 +448,17 @@ then
     OLDPWD \
     PWD
   do
-    printf '%s\n' "${output_getconf_00_a}" | grep -E "^${eV}" ||:
+    printf '%s\n' "${stdout_00_getconf_a}" | grep -E "^${eV}" ||:
   done
-  __reset__
-else
-  printf '%s\n' "f:$?:${LINENO}: \\getconf\\"
+  __reset_xtrace__
+else : "f:$?:${LINENO}: Section on \\getconf\\: xtrace is off." #>
 fi
 
+  set -x #>
+  exit "${LINENO}" #>
 
 
-:;: "Environment Variables"
+:;: "Environment Variables."
 # See man pages under Posix 2008
 # Common
 LC_ALL=C
@@ -313,34 +476,47 @@ OLDPWD=
 #     unset LD_PRELOAD; echo $?
 #     set | grep -E "^${cC}=.+"; echo $?
 #
-for cC in  BASH_ENV  ENV  LD_PRELOAD
+for cC in BASH_ENV  ENV  LD_PRELOAD
 do
   : "t:0:${LINENO}"
-  if set | grep -E "^${cC}=.+"
+
+  if __check_for_variable_assignment__ "${cC}"
   then
-    : "t:0:${LINENO}"
-    unset "${cC}" \
-      && printf '%s: notice: %s\n' "$0" "\\unset ${cC}\\ succeeded" #>
+    : "t:0:${LINENO}: ${cC} is defined."
+
+    if unset "${cC}"
+    then
+      : "t:0:${LINENO}: \\unset ${cC}\\ returned zero"
+    else
+      printf '%s: notice: %s\n' "${special_var_zero}" \
+        "\\unset ${cC}\\ failed." #>
+    fi
   else
-    printf '%s\n' "f:$?:${LINENO}: ${cC}"
+    printf '%s\n' "f:$?:${LINENO}: ${cC} is not defined."
   fi
 done
 
 # Make sure HOME is defined, for \cd\.
 cC=HOME
-if set | grep -E "^${cC}=.+"
+if __check_for_variable_assignment__ "${cC}"
 then
-  : "t:0:${LINENO}"
+  : "t:0:${LINENO}" "HOME is defined."
 else
-  printf '%s\n' "f:$?:${LINENO}"
+  printf '%s\n' "f:$?:${LINENO}: HOME is not defined."
   username=$( id -un )
 
-  # Bug, use if-fi
-
-  HOME=$(
-    awk -F: -v "vV=${username}" '$1 == vV { print $6 }' /etc/passwd
-  ) \
-    && printf '%s\n' "HOME was assigned."
+  : "Assign HOME."
+  if HOME=$(
+        awk -F: -v "vV=${username}" '$1 == vV { print $6 }' /etc/passwd
+      )
+  then
+    : "t:0:${LINENO}: assignment to HOME succeeded."
+  else
+    : "f:$?:${LINENO}"
+    printf '%s: %s\n' "${special_var_zero}" \
+      "assignment to HOME failed; exiting."
+    exit 1
+  fi
 fi
 
 # PWD aught to be defined, for \cd\ and \pwd\
@@ -349,26 +525,26 @@ fi
 #   - If restricted mode is enabled and PWD is undefined, a call to
 #     \cd\ will not assign a value to PWD, in Bash 5.3.9.
 cC=PWD
-if set | grep -E "^${cC}=.+"
+if __check_for_variable_assignment__ "${cC}"
 then
   : "t:0:${LINENO}"
 else
   printf '%s\n' "f:$?:${LINENO}"
   cd . ||:
 
-  if set | grep -E "^${cC}=.+"
+  if __check_for_variable_assignment__ "${cC}"
   then
     : "t:0:${LINENO}"
   else
     printf '%s\n' "f:$?:${LINENO}"
-    printf '%s: warning: %s.\n' "$0" "PWD is undefined"
+    printf '%s: warning: %s.\n' \
+      "${special_var_zero}" "PWD is undefined."
   fi
 fi
 
 
 : "Script Variables"
 canpth=
-global_return_code=0
 nsfod="(No such file or directory)"
 :
   #set -x #>
@@ -376,7 +552,7 @@ nsfod="(No such file or directory)"
   #printf '%s\n' stderr 1>&2 #>
 :
 :
-# Pseudocode re function __print_output__
+# Pseudocode re function __print_Output__
 #
 # GL-scriptnm = defined
 # GL-printformat=[-b|-v]          (per execution)
@@ -389,7 +565,7 @@ nsfod="(No such file or directory)"
 #     exists  .'. GL-minloop-STDo/e = STDOUT
 #             .'. GL-rtncode = no change
 #
-#       _print_output_
+#       _print_Output_
 #
 #           verbose
 #             echo GL-scriptnm: GL-majloop-input: \
@@ -403,7 +579,7 @@ nsfod="(No such file or directory)"
 #     dne     .'. GL-minloop-STDo/e = STDERR
 #             .'. GL-rtncode = 1
 #
-#       _print_output_
+#       _print_Output_
 #
 #           verbose
 #             echo GL-scriptnm: GL-majloop-input: \
@@ -417,42 +593,43 @@ nsfod="(No such file or directory)"
 # exit GL-rtncode
 
 
-: "Define function: __print_output__."
+: "Define function: __print_Output__."
 #
-# Usage:    __print_output__ [Script input] [canpth|nsfod] [redirection]
-# Usage:    __print_output__ "${dD}" "${canpth}"
+# Usage:    __print_Output__ [Script input] [canpth|nsfod] [redirection]
+# Usage:    __print_Output__ "${dD}" "${canpth}"
 #                                         # ^normal output to STDOUT
-# Usage:    __print_output__ "${dD}" "${nsfod}" >&2
+# Usage:    __print_Output__ "${dD}" "${nsfod}" >&2
 #                                         # ^redirect output to STDERR
 #
 # shellcheck disable=SC2329
-__print_output__ ()
+__print_Output__ ()
 {
     #set -x #>
     : #>
     : "local variables:"
-    : "pound: $#" #>
+    : "pound: <$#>" #>
     : "ampersand:" "$@" #>
     : "\$1: $1"
     : "\$2: $2"
     : "\$global_return_code: ${global_return_code}" #>
-    : "\$output_verbose_on: ${output_verbose_on}" #>
+    : "\$Output_verbose_on: ${Output_verbose_on}" #>
     #exit "${LINENO}" #>
 
   :;: "If error, then switch verbose on."
   if test 0 -ne "${global_return_code}"
   then
     : "t:0:${LINENO}"
-    output_verbose_on=yes
+    Output_verbose_on=yes
   else
     printf '%s\n' "f:$?:${LINENO}" #>
   fi
 
-  :;: "\\case\\ on \\output_verbose_on\\."
-  case "${output_verbose_on}" in
+  :;: "\\case\\ on \\Output_verbose_on\\."
+  case "${Output_verbose_on}" in
     yes | y )
       : "Case branch: \\yes\\."
-      printf '%s: %b%s%b -> %s\n' "$0" "\x27" "$1" "\x27" "$2"
+      printf '%s: %b%s%b -> %s\n' \
+        "${special_var_zero}" "\x27" "$1" "\x27" "$2"
       ;;
     no | n )
       : "Case branch: \\no\\."
@@ -498,7 +675,7 @@ __print_output__ ()
   #              value of \canpath\
   #                ...and continue?
   #          - if element is a directory, then continue
-  #          - if element is neither a symlink nor a directory, then 
+  #          - if element is neither a symlink nor a directory, then
   #            - if there are no more elements in the loop, then \break 1\
   #            - if there are elements remaining, then error
   #              ...and figure out what that means. is it a dangling
@@ -511,7 +688,7 @@ __print_output__ ()
   #  - how do you detect data loops? tmp file of pathnames at top of each
   #  true loop - duplicates mean data loop and error?
 
-  #declare -p output_verbose_on
+  #declare -p Output_verbose_on
   #exit "${LINENO}"
 
 
@@ -526,7 +703,7 @@ do
   else
     printf '%s\n' "f:$?:${LINENO}" #>
     global_return_code=1
-    __print_output__ "${dD}" "${nsfod}" >&2
+    __print_Output__ "${dD}" "${nsfod}" >&2
     continue 1
   fi
 done
@@ -547,10 +724,8 @@ for dD
 do
   :
 
-  # Bug, rename var \majloop_orig_str\
-
   : "Per major loop variables."
-  posparm_original_string=${dD}
+  majloop_orig_str=${dD}
   :
     exit "${LINENO}" #>
     #set -x #>
@@ -558,7 +733,7 @@ do
   while true
   do
     # In case the string is \^//$\.
-    
+
 
     # String matching; the possibilities are endless, ie, not good.
 
@@ -569,7 +744,7 @@ do
     then
       : "t:0:${LINENO}" #>
       canpth=/
-      __print_output__ "$1" "${canpth}"
+      __print_Output__ "$1" "${canpth}"
       : exit "\${global_return_code}"
       exit "${global_return_code}"
     else
@@ -584,7 +759,7 @@ do
     then
       : "t:0:${LINENO}" #>
       canpth=$( pwd )
-      __print_output__ "$1" "${canpth}"
+      __print_Output__ "$1" "${canpth}"
       : exit "\${global_return_code}"
       exit "${global_return_code}"
     else
@@ -605,7 +780,7 @@ do
 
     :
     : "Get output of \\file\\."
-    output_0_file=$( file "${dD}" )
+    stdout_01_file=$( file "${dD}" )
 
       exit "${LINENO}" #>
       #set -x #>
@@ -617,25 +792,25 @@ do
 
     :
     : "See whether \\file\\ says \\symbolic link\\."
-    if printf '%s' "${output_0_file}" \
+    if printf '%s' "${stdout_01_file}" \
       | grep -q -E ': symbolic link to [/\.a-z]'
     then
       : "t:0:${LINENO}" #>
 
       :
       : "If so, then use \\sed\\ to get the resolved path."
-      output_1_sed=$(
-        printf '%s' "${output_0_file}" \
+      stdout_02_sed=$(
+        printf '%s' "${stdout_01_file}" \
           | sed 's,.*: symbolic link to ,,'
         )
 
       :
       : "...and redefine \\dD\\ for the next iteration."
-      dD=${output_1_sed}
+      dD=${stdout_02_sed}
     else
-      printf '%s\n' "f:$?:${LINENO}" "...otherwise, test if \\directory\\ is" \
-        "present in the string."
-      if printf '%s' "${output_0_file}" \
+      printf '%s\n' "f:$?:${LINENO}" \
+        "...otherwise, test if \\directory\\ is present in the string."
+      if printf '%s' "${stdout_01_file}" \
         | sed 's,.*: ,,' \
         | grep -q "directory"
       then
@@ -701,25 +876,26 @@ do
             : "t:0:${LINENO}" #>
             :
             : "\\grep\\ succeeded, so \\break\\ this loop."
-            __print_output__
+            __print_Output__
             break 1
           else
-            printf '%s\n' "f:$?:${LINENO}" "\\test\\ passed but \\grep\\ failed." \
-              "Error. Exiting."
+            printf '%s\n' "f:$?:${LINENO}" \
+              "\\test\\ passed but \\grep\\ failed. Error. Exiting."
             exit "${LINENO}"
           fi
         else
-          printf '%s\n' "f:$?:${LINENO}" "The new \\eE\\ is not the FS root" \
-            "directory; next iteration."
+          printf '%s\n' "f:$?:${LINENO}" \
+            "The new \\eE\\ is not the FS root directory; next iteration."
           continue 1
         fi
       else
-        printf '%s\n' "f:$?:${LINENO}" "The \\dirname\\ of \\eE\\ is not a" \
-          "directory."
+        printf '%s\n' "f:$?:${LINENO}" \
+          "The \\dirname\\ of \\eE\\ is not a directory."
         exit "${LINENO}"
       fi
     else
-      printf '%s\n' "f:$?:${LINENO}" "Error: \\eE\\ is not a directory. Exiting."
+      printf '%s\n' "f:$?:${LINENO}" \
+        "Error: \\eE\\ is not a directory. Exiting."
       exit "${LINENO}"
     fi
   done
@@ -735,18 +911,18 @@ done
 
 :
   : "Verify it\\s a directory by using \\find\\."
-output_2_find=$( find "${canpth}" -prune -type d )
+stdout_03_find=$( find "${canpth}" -prune -type d )
 
     exit "${LINENO}" #>
     #set -x #>
 
-if test -n "${output_2_find}"
+if test -n "${stdout_03_find}"
 then
   : "t:0:${LINENO}" #>
 
   :
-  : "See whether \\canpth\\ and \\output_2_find\\ are equivalent strings."
-  if test "X${canpth}" = "X${output_2_find}"
+  : "See whether \\canpth\\ and \\stdout_03_find\\ are equivalent strings."
+  if test "X${canpth}" = "X${stdout_03_find}"
   then
     : "t:0:${LINENO}" #>
 
@@ -817,11 +993,12 @@ then
       exit "${LINENO}"
     fi
   else
-    printf '%s\n' "f:$?:${LINENO}" "\\canpth\\ and \\output_2_find\\ are not" \
-      "equivalent strings." 1>&2
+    printf '%s\n' "f:$?:${LINENO}" \
+      "\\canpth\\ and \\stdout_03_find\\ are not equivalent strings." 1>&2
     exit "${LINENO}"
   fi
 else
-  printf '%s\n' "f:$?:${LINENO}" "\\find -type d\\ did not locate the directory." 1>&2
+  printf '%s\n' "f:$?:${LINENO}" \
+    "\\find -type d\\ did not locate the directory." 1>&2
   exit "${LINENO}"
 fi
