@@ -105,20 +105,6 @@ usage_msg="${0#./}:
 "
 
 
-:;: "Input required."
-#
-#   Testing command: s\et --
-if test 0 -lt "$#"
-then
-  : "t:0:${LINENO}" #>
-else
-  printf '%s\n' "f:$?:${LINENO}" #>
-  printf 'Input required.\n\n' #>
-  printf '%s\n' "${usage_msg:?}" 1>&2
-  exit 1
-fi
-
-
 :;: "Printing format."
 #
 : "\\case\\ on posparm 1."
@@ -146,6 +132,20 @@ export output_verbose_on
 
   #declare -p output_verbose_on
   #exit "${LINENO}"
+
+
+:;: "Input required."
+#
+#   Testing command: s\et --
+if test 0 -lt "$#"
+then
+  : "t:0:${LINENO}" #>
+else
+  printf '%s\n' "f:$?:${LINENO}" #>
+  printf 'Input required.\n\n' #>
+  printf '%s\n' "${usage_msg:?}" 1>&2
+  exit 1
+fi
 
 
 :;: "Commands"
