@@ -2,7 +2,7 @@
 # candr.sh / canonicalize-dir.sh
 # shellcheck disable=SC2028,SC2268
 #
-#   Script is unfinished - 07 Nov 2026 WY
+#   Script is unfinished - 08 Nov 2026 WY
 #
 #
 #   Manual canonicalization of directories. Output can be in brief or
@@ -56,7 +56,7 @@
 
 
   #> Debug.
-  \set -x #>
+  #\set -x #>
 
     #> Testing backslash quoting of commands
     #shopt -s expand_aliases; alias set='echo foo'; set -e #>
@@ -147,11 +147,11 @@ then
   : "t:0:${LINENO}"
 else
   : "f:$?:${LINENO}"
-  printf '%s: notice: assignment to variable failed: %s\n' "$0" "PATH"
-  printf '%s: notice: value of variable %s: <%s>\n' "$0" "PATH" "${PATH}"
+  printf '%s: Notice: Assignment to variable failed: %s\n' "$0" "PATH"
+  printf '%s: Notice: Value of variable %s: <%s>\n' "$0" "PATH" "${PATH}"
 fi
 
-  exit "${LINENO}" #>
+  #exit "${LINENO}" #>
   #set -x #>
 
 
@@ -161,10 +161,10 @@ special_var_zero=${0#./}
 special_var_zero=${0##*/}
 usage_msg="${special_var_zero}:
 
-    Usage: the first argument may be an option flag.
+    Usage: The first argument may be an option flag.
         candr.sh [-b|-v] [FILE] ...
 "
-unset ec0 ec1
+unset ec0 ec1 ec2 ec3 ec4 ec5 ec6 ec7
 
 
 :;: "Bootstrap Functions."
@@ -181,8 +181,13 @@ __xtrace_off__ ()
 {
   : "__xtrace_off__: Define function:  __reset_xtrace__."
   case $- in
-    *x*) __reset_xtrace__ () { set -x; }; set +x ;;
-    *) __reset_xtrace__ () { :; } ;;
+    *x*)
+      __reset_xtrace__ () { echo "# __reset_xtrace__"; set -x; }
+      set +x
+      ;;
+    *)
+      __reset_xtrace__ () { :; }
+      ;;
   esac
 }
 
@@ -194,6 +199,8 @@ __xtrace_off__ ()
 #
 __check_for_variable_assignment__ ()
 {
+    #: "FUNCNAME:" "${FUNCNAME[@]}" #>
+
   if test -n "$1"
   then
     : "t:0:${LINENO}"
@@ -201,8 +208,29 @@ __check_for_variable_assignment__ ()
     : "f:$?:${LINENO}"
     printf '%s: Input required; exiting.' "${FUNCNAME[0]}"
   fi
-  set | grep -E "^${1}=.+"
+
+  # Bug, consolodate the various \unset -f\ commands.
+
+  unset -f set grep 
+
+  # Note, this particular function is used in \if...fi\ tests, so the
+  # fact that it ends with a pipeline which could return false is
+  # intended. However, as a standalone function, errexit, if the
+  # variable at \$1\ has no assigned value, causes the script to
+  # halt. To have halted would have been an error. Yet, it\s Posix
+  # 2008, so the least confusing workaround has been applied.
+  if set | grep -E "^${1}=.+"
+  then
+    : "t:0:${LINENO}"
+  else
+    : "f:$?:${LINENO}"
+  fi
 }
+
+  # Testing:
+  #__check_for_variable_assignment__ PATH
+  #__check_for_variable_assignment__ TTY
+  #exit "${LINENO}"
 
 : "Define function:  __input_required__."
 #
@@ -221,36 +249,55 @@ __input_required__ ()
   fi
 }
 
+  # Testing
+  #set --
+  #set -- a b c
+  #set -- a b c; shift 4 # Error: "shift count out of range"
+  #set -- a b c; shift 3
+  #__input_required__ "$@"
+  #exit "${LINENO}"
+
 
 :;: "Parse input."
 #
+  # Testing:
+  #set -- -ve
+  #set -- -br
+  #set -- --verbos
+  #set -- --brie
+  #set -- -B
+  #set -- -V
+
 __input_required__ "$@"
 
 : "\\case\\ on posparm 1."
 case "$1" in
-  -v | --verbose )
+  --verbose | -[Vv]* | --[Vv]*)
     : "\\case\\ branch: \\--verbose\\."
-    Output_verbose_on=yes
+    output_verbose_on=yes
     shift
     ;;
-  -b | --brief )
+  --brief | -[Bb]* | --[Bb]* )
     : "\\case\\ branch: \\--brief\\."
-    Output_verbose_on=no
+    output_verbose_on=no
     shift
     ;;
   * )
     : "\\case\\ branch: no options: use default: \\--brief\\."
-    Output_verbose_on=no
+    output_verbose_on=no
     # No \shift\ command.
     ;;
 esac
-export Output_verbose_on
+export output_verbose_on
+
+  #exit "${LINENO}" #>
 
 __input_required__ "$@"
 
-  #declare -p Output_verbose_on
-  #set -x
-  #: exit "${LINENO}"
+  #: "output_verbose_on: ${output_verbose_on}" #>
+  #set -x #>
+  #: exit "${LINENO}" #>
+  #set +x #>
 
 
 :;: "Commands."
@@ -262,13 +309,13 @@ __input_required__ "$@"
 # therefore current. Posix recommends \PATH=${PATH}\ in spec. on
 # \hash\. In Bash on Fedoras 44 & 45, this recommendation works as
 # expected even if PATH is set as RO.
-#
-# Testing:
-#readonly PATH
-#set +e
-#enable -n hash
-#if ! PATH=${PATH}
-#
+
+  # Testing:
+  #readonly PATH
+  #set +e
+  #enable -n hash
+  #if ! PATH=${PATH}
+
 # shellcheck disable=SC2269
 if PATH=${PATH}
 then
@@ -294,28 +341,28 @@ fi
 # If xtrace is on, turn it off.
 __xtrace_off__
 
+  # Testing:
+  #enable -n break
+
 # Tests for each command
-#
-# Testing:
-#enable -n break
-#
 for uU in \
   "awk" "cd" "command" "dirname" "env" \
   "file" "find" "getconf" "grep" "id" \
   "ls" "pathchk" "printf" "ps" "pwd" \
   "sed" "sh" "strings" "test" "true" \
-  "type" "unalias" \
-    ":" "break" "continue" "exit" "readonly" "set" "shift" \
-  "unset" "hash" "which" # count is 33
-  #
-  #"codeblocks" #> Codeblocks is not specified by Posix-2008; the
+    "type" "unalias" "which" \
+  ":" "break" "continue" "exit" "hash" \
+    "readonly" "set" "shift" "unset" # count is 32
+  #"codeblocks" #>
+  # Note, \codeblocks\ is not specified by Posix-2008; the
   # rest of the commands in this list are, except for \which\.
 do
     #> Just to see in which directory each utility is located.
     #which "${uU}"; continue #>
     #> Note
-    #>   - At 31 commands, all non-special-builtins are located in
+    #>   - At 32 commands, all non-special-builtins are located in
     #>     /usr/bin on Fedora 44.
+
   # Determine whether command \uU\ is in PATH.
   if command -pv "${uU}" >/dev/null
   then
@@ -332,6 +379,9 @@ done
 
 # If xtrace was on, restore it.
 __reset_xtrace__
+
+  # Bug, this block could be a function, doubling up with a similar
+  # block farther down.
 
 # If any of the commands were missing, then exit.
 :;: "Test for value of \\global_return_code\\."
@@ -395,7 +445,7 @@ do
     break 1
   fi
 
-    set -x
+    #set -x #>
 
   # Filenames beginning with a hyphen are disallowed: Error and exit.
   #
@@ -472,11 +522,11 @@ else
 fi
 :;: "End of loop."
 
-  set -x #>
-  : exit "${LINENO}" #>
+  #set -x #>
+  #: exit "${LINENO}" #>
 
 
-:;: "Section on \\getconf\\." # -- if xtrace is on.
+:;: "IF XTRACE IS ON -- Section on \\getconf\\."
 #   BASH_ENV          # for \bash\
 #   CDPATH            # for \cd\
 #   ENV               # for \sh\
@@ -486,29 +536,44 @@ fi
 #   NAME_MAX          # for \pathchk [no args]\
 #   PATH_MAX          # for \cd\, \pathchk [no args]\ and \pwd\
 #   OLDPWD            # for \cd\
+#   PATH              # for \sh\
 #   PWD               # for \cd\ and \pwd\
 if printf '%s' "$-" | grep -q "x"
 then
   : "t:0:${LINENO}"
+ 
+    : "Parameter values per \\getconf\\" #>
+
   __xtrace_off__
   stdout_00_getconf_a=$( getconf -a )
   for eV in \
+    BASH_ENV \
     CDPATH \
     HOME \
     LC_ALL \
+    LD_PRELOAD \
     NAME_MAX \
     PATH_MAX \
     OLDPWD \
+    PATH \
     PWD
   do
-    printf '%s\n' "${stdout_00_getconf_a}" | grep -E "^${eV}" ||:
+      #echo "eV: ${eV}" #>
+
+    # Note, this particular \if..fi\ is a workaround for errexit.
+    if printf '%s\n' "${stdout_00_getconf_a}" | grep -E "^${eV} "
+    then
+      : "t:0:${LINENO}"
+    else
+      : "f:$?:${LINENO}"
+    fi
   done
   __reset_xtrace__
 else : "f:$?:${LINENO}: Section on \\getconf\\: xtrace is off." #>
 fi
 
   set -x #>
-  exit "${LINENO}" #>
+  : exit "${LINENO}" #>
 
 
 :;: "Environment Variables."
@@ -533,41 +598,52 @@ for cC in BASH_ENV  ENV  LD_PRELOAD
 do
   : "t:0:${LINENO}"
 
+    #: "cC: ${cC}" #>
+
   if __check_for_variable_assignment__ "${cC}"
   then
     : "t:0:${LINENO}: ${cC} is defined."
 
-    if unset "${cC}"
+    # Bug, \-v\ of \unset\ is specified, right?
+
+    # Note, define \cmd_str\ as a particular invocation so that (a)
+    # the command can be executed and so that (b) the various related
+    # messages can cite the precise command string which was
+    # executed.
+    cmd_str="unset -v ${cC}"
+
+    # Note, Word Splitting is intended in this particular command.
+    if command -p ${cmd_str}
     then
-      : "t:0:${LINENO}: \\unset ${cC}\\ returned zero"
+      : "t:0:${LINENO}: \\${cmd_str}\\ returned zero"
     else
-      printf '%s: notice: %s\n' "${special_var_zero}" \
-        "\\unset ${cC}\\ failed." #>
+      printf '%s: Notice: %s\n' "${special_var_zero}" \
+        "Command \\${cmd_str}\\ failed." #>
     fi
   else
-    printf '%s\n' "f:$?:${LINENO}: ${cC} is not defined."
+    : "f:$?:${LINENO}: Parameter ${cC} is undefined."
   fi
 done
 
 # Make sure HOME is defined, for \cd\.
-cC=HOME
-if __check_for_variable_assignment__ "${cC}"
+if __check_for_variable_assignment__ "HOME"
 then
-  : "t:0:${LINENO}" "HOME is defined."
+  : "t:0:${LINENO}" "Parameter HOME is defined."
 else
-  printf '%s\n' "f:$?:${LINENO}: HOME is not defined."
-  username=$( id -un )
+  : "f:$?:${LINENO}: Parameter HOME is undefined."
 
-  : "Assign HOME."
+  :;: "Assign HOME."
+  username=$( id -un )
   if HOME=$(
-        awk -F: -v "vV=${username}" '$1 == vV { print $6 }' /etc/passwd
+        awk -F: -v "vV=${username}" '$1 == vV { print $6 }' \
+          /etc/passwd
       )
   then
-    : "t:0:${LINENO}: assignment to HOME succeeded."
+    : "t:0:${LINENO}: Assignment to HOME succeeded."
   else
     : "f:$?:${LINENO}"
     printf '%s: %s\n' "${special_var_zero}" \
-      "assignment to HOME failed; exiting."
+      "Assignment to HOME failed; exiting."
     exit 1
   fi
 fi
@@ -577,21 +653,30 @@ fi
 #   - In Posix-2008 effects of assignments to PWD are unspecified.
 #   - If restricted mode is enabled and PWD is undefined, a call to
 #     \cd\ will not assign a value to PWD, in Bash 5.3.9.
-cC=PWD
-if __check_for_variable_assignment__ "${cC}"
+if __check_for_variable_assignment__ "PWD"
 then
   : "t:0:${LINENO}"
 else
-  printf '%s\n' "f:$?:${LINENO}"
-  cd . ||:
+  : "f:$?:${LINENO}"
 
-  if __check_for_variable_assignment__ "${cC}"
+    # Bug, citation?
+
+  # A call to \cd\ is supposed to assign a value to PWD.
+  # Note, \if..fi\ structure is a workaround for errexit.
+  if cd .
   then
     : "t:0:${LINENO}"
   else
-    printf '%s\n' "f:$?:${LINENO}"
-    printf '%s: warning: %s.\n' \
-      "${special_var_zero}" "PWD is undefined."
+    : "f:$?:${LINENO}"
+  fi
+
+  if __check_for_variable_assignment__ "PWD"
+  then
+    : "t:0:${LINENO}"
+  else
+    : "f:$?:${LINENO}"
+    printf '%s: Warning: %s.\n' \
+      "${special_var_zero}" "Parameter PWD is undefined."
   fi
 fi
 
@@ -600,12 +685,13 @@ fi
 canpth=
 nsfod="(No such file or directory)"
 :
-  #set -x #>
+  set -x #>
   #printf '%s\n' stdout #>
   #printf '%s\n' stderr 1>&2 #>
-:
-:
-# Pseudocode re function __print_Output__
+  exit "${LINENO}" #>
+
+
+# Pseudocode re function __print_output__
 #
 # GL-scriptnm = defined
 # GL-printformat=[-b|-v]          (per execution)
@@ -618,7 +704,7 @@ nsfod="(No such file or directory)"
 #     exists  .'. GL-minloop-STDo/e = STDOUT
 #             .'. GL-rtncode = no change
 #
-#       _print_Output_
+#       _print_output_
 #
 #           verbose
 #             echo GL-scriptnm: GL-majloop-input: \
@@ -632,7 +718,7 @@ nsfod="(No such file or directory)"
 #     dne     .'. GL-minloop-STDo/e = STDERR
 #             .'. GL-rtncode = 1
 #
-#       _print_Output_
+#       _print_output_
 #
 #           verbose
 #             echo GL-scriptnm: GL-majloop-input: \
@@ -646,16 +732,16 @@ nsfod="(No such file or directory)"
 # exit GL-rtncode
 
 
-: "Define function: __print_Output__."
+: "Define function: __print_output__."
 #
-# Usage:    __print_Output__ [Script input] [canpth|nsfod] [redirection]
-# Usage:    __print_Output__ "${dD}" "${canpth}"
+# Usage:    __print_output__ [Script input] [canpth|nsfod] [redirection]
+# Usage:    __print_output__ "${dD}" "${canpth}"
 #                                         # ^normal output to STDOUT
-# Usage:    __print_Output__ "${dD}" "${nsfod}" >&2
+# Usage:    __print_output__ "${dD}" "${nsfod}" >&2
 #                                         # ^redirect output to STDERR
 #
 # shellcheck disable=SC2329
-__print_Output__ ()
+__print_output__ ()
 {
     #set -x #>
     : #>
@@ -665,20 +751,20 @@ __print_Output__ ()
     : "\$1: $1"
     : "\$2: $2"
     : "\$global_return_code: ${global_return_code}" #>
-    : "\$Output_verbose_on: ${Output_verbose_on}" #>
+    : "\$output_verbose_on: ${output_verbose_on}" #>
     #exit "${LINENO}" #>
 
   :;: "If error, then switch verbose on."
   if test 0 -ne "${global_return_code}"
   then
     : "t:0:${LINENO}"
-    Output_verbose_on=yes
+    output_verbose_on=yes
   else
     printf '%s\n' "f:$?:${LINENO}" #>
   fi
 
-  :;: "\\case\\ on \\Output_verbose_on\\."
-  case "${Output_verbose_on}" in
+  :;: "\\case\\ on \\output_verbose_on\\."
+  case "${output_verbose_on}" in
     yes | y )
       : "Case branch: \\yes\\."
       printf '%s: %b%s%b -> %s\n' \
@@ -741,7 +827,7 @@ __print_Output__ ()
   #  - how do you detect data loops? tmp file of pathnames at top of each
   #  true loop - duplicates mean data loop and error?
 
-  #declare -p Output_verbose_on
+  #declare -p output_verbose_on
   #exit "${LINENO}"
 
 
@@ -756,7 +842,7 @@ do
   else
     printf '%s\n' "f:$?:${LINENO}" #>
     global_return_code=1
-    __print_Output__ "${dD}" "${nsfod}" >&2
+    __print_output__ "${dD}" "${nsfod}" >&2
     continue 1
   fi
 done
@@ -797,7 +883,7 @@ do
     then
       : "t:0:${LINENO}" #>
       canpth=/
-      __print_Output__ "$1" "${canpth}"
+      __print_output__ "$1" "${canpth}"
       : exit "\${global_return_code}"
       exit "${global_return_code}"
     else
@@ -812,7 +898,7 @@ do
     then
       : "t:0:${LINENO}" #>
       canpth=$( pwd )
-      __print_Output__ "$1" "${canpth}"
+      __print_output__ "$1" "${canpth}"
       : exit "\${global_return_code}"
       exit "${global_return_code}"
     else
@@ -929,7 +1015,7 @@ do
             : "t:0:${LINENO}" #>
             :
             : "\\grep\\ succeeded, so \\break\\ this loop."
-            __print_Output__
+            __print_output__
             break 1
           else
             printf '%s\n' "f:$?:${LINENO}" \
