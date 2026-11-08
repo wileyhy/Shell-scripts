@@ -2,7 +2,7 @@
 # candr.sh / canonicalize-dir.sh
 # shellcheck disable=SC2028,SC2268
 #
-#   Script is unfinished - 05 Nov 2026 WY
+#   Script is unfinished - 07 Nov 2026 WY
 #
 #
 #   Manual canonicalization of directories. Output can be in brief or
@@ -49,14 +49,30 @@
 #     Bash, attempting in a script to assign a value to a RO variable is
 #     a fatal error, but that doesn\t appear to have been specified by
 #     Posix in 2008.
+#   - Names of special built-ins cannot be used as names of functions
+#     (ie, \unset\).
+#   - 
 
 
 
   #> Debug.
-  #\set -x #>
+  \set -x #>
+
+    #> Testing backslash quoting of commands
+    #shopt -s expand_aliases; alias set='echo foo'; set -e #>
+
+  #> Debug
   \set -e #>
+
+    #> Testing errexit
+    #false #>
+
   \set -f #> Disable pathame expansion.
-  \: #>
+
+    #> Testing disabling of pathname expansion
+    #ls -alhFid ~/.bash* #>
+
+  \: #> Debug
   \: "Dash: $-"
   \: "Pound: $#" #>
   \: "Ampersand:" "${@:-}" #>
@@ -65,12 +81,25 @@
   \: "\$2: ${2:-}" #>
   \: "\$LINENO: ${LINENO:-}" #>
   \: "\$SHELL: ${SHELL:-}" #>
+  #\exit "${LINENO}" #>
 
 
 \:;\: "Settings."
 \set -u
+
+  #> Testing nounset
+  #echo "${unbound_variable}" #>
+
 \set -C
 
+  #> Testing noclobber
+  #file=~/tmp/random-file.${RANDOM}.log #>
+  #touch "${file}" #>
+  #echo foo > "${file}" #>
+
+  #> Testing variable assignment (IFS), pt 1
+  #IFS=:
+  #readonly IFS
 
 \:;\: "Security."
 #
@@ -81,14 +110,38 @@
 # Value of IFS should include one tabstop.
 IFS=' 	
 '
+
+  #> Testing variable assignment (IFS), pt 2
+  #declare -p IFS #>
+
+  #> Testing \unalias\, pt 1
+  #shopt -s expand_aliases; alias unalias='echo foo' #>
+  #alias #>
+
 \unalias -a
+
+  #> Testing \unalias\, pt 2
+  #alias #>
+  #exit "${LINENO}" #>
+
+  #> Testing \unset\ as a function name
+  #unset () { echo Foo;}
+
+  #> Testing \command\ as a function name, pt 1
+  #command () { echo Bar;}
+
 unset -f command
-#
+
+  #> Testing \command\ as a function name, pt 2
+  #command -p echo Baz #>
+  #exit "${LINENO}" #>
+
+  #> Testing variable assignment (PATH)
+  #set -r #>
+  #readonly PATH #>
+  #readonly -p; exit "${LINENO}" #>
+
 # PATH could be set as RO.
-#   Testing:
-#readonly PATH #>
-#  readonly -p; exit "${LINENO}" #>
-#
 if PATH="$( command -p getconf PATH ):${PATH}"
 then
   : "t:0:${LINENO}"
@@ -98,7 +151,7 @@ else
   printf '%s: notice: value of variable %s: <%s>\n' "$0" "PATH" "${PATH}"
 fi
 
-  #exit "${LINENO}" #>
+  exit "${LINENO}" #>
   #set -x #>
 
 
