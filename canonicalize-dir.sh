@@ -2,7 +2,7 @@
 # candr.sh / canonicalize-dir.sh
 # shellcheck disable=SC2028,SC2268,SC2310
 #
-#   Script is unfinished - 09 Nov 2026 WY
+#   Script is unfinished - 10 Nov 2026 WY
 #
 #
 #   Manual canonicalization of directories. Output can be in brief or
@@ -23,34 +23,36 @@
 #   - \#!/bin/env -i sh\ fails.
 #   - LINENO does exist in Posix 2008.
 #   - Reportedly, Solaris 10 uses a Bourne sh which is not Posix
-#     compliant.
+#   compliant.
 #       https://unix.stackexchange.com/questions/322035/\
 #         are-there-still-systems-around-with-a-bin-sh-binary
 #   - Reportedly, in BusyBox \a\wk\ is optional.
+#     - \awk\s been removed from this script.
 #   - When called from a restricted interactive shell, the script
-#     does not inherit the restricted setting.
+#   does not inherit the restricted setting.
 #   - Both \realpath\ and \readlink\ weren\t specified in Posix until
-#     2024.
+#   2024.
 #   - The \-P\ option to \type\ is not portable.
-#   - The \pathchk\ utility offers three separate sets of tests; there
-#     is no overlap between said sets.
+#   - The \pathchk\ utility offers three separate sets of tests;
+#   there is no overlap between said sets in the specification, but
+#   in GNU utilities there is.
 #   - The \-q\ option to \g\rep\ does exist in Posix 2008.
 #   - In Posix-2008, the handling of \//\ is intentionally
-#     implementation defined, so catch it, flag it as an error, and
-#     write a warning to Stderr. See spec. on \dirname\.
+#   implementation defined, so catch it, flag it as an error, and
+#   write a warning to Stderr. See spec. on \dirname\.
 #   - Defining directories with a trailing f\orward slash will
-#     effect whether \[[\, \test\, \[\ and \stat\ dereference
-#     symlinks. However, \realpath -e\ will still resolve such
-#     strings correctly.
+#   effect whether \[[\, \test\, \[\ and \stat\ dereference
+#   symlinks. However, \realpath -e\ will still resolve such
+#   strings correctly.
 #   - The \-r\ option to \hash\ does exist in Posix 2008.
 #   - If PATH is s\et RO in the interactive calling shell, in the
-#     script PATH can still be altered.
+#   script PATH can still be altered.
 #   - For \readonly\ without arguments, the results are unspecified. In
-#     Bash, attempting in a script to assign a value to a RO variable is
-#     a fatal error, but that doesn\t appear to have been specified by
-#     Posix in 2008.
+#   Bash, attempting in a script to assign a value to a RO variable is
+#   a fatal error, but that doesn\t appear to have been specified by
+#   Posix in 2008.
 #   - Names of special built-ins cannot be used as names of functions
-#     (ie, \unset\).
+#   (ie, \unset\).
 #   - 
 
 
@@ -58,7 +60,7 @@
   #> Debug.
   #\set -x #>
 
-    #> Testing backslash quoting of commands
+    #> Testing backslash quoting of commands.
     #shopt -s expand_aliases; alias set='echo foo'; set -e #>
 
   #> Debug
@@ -86,6 +88,24 @@
 
 \:;\: "Settings."
 \set -a
+
+  # Testing allexport.
+  set -x
+  unset foo baz abc def ghi jkl
+  foo=bar
+  baz=quux echo "<${foo}>" "<${baz}>"
+  abc=123 : 
+  echo 456 > ~/tmp/file
+  read -r def < ~/tmp/file
+  rm ~/tmp/file
+  #set -- -x ghi "$@"
+  #getopts x: jkl
+  #eval sh -c 'printf read -r $1'
+  #read -r "${jkl}" 
+  #\$"${OPTIND}"
+  export -p | grep -e foo -e baz -e abc -e def -e ghi -e jkl
+  exit "${LINENO}"
+
 \set -u
 
   #> Testing nounset
