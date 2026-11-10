@@ -1,8 +1,8 @@
 #!/bin/env sh
 # candr.sh / canonicalize-dir.sh
-# shellcheck disable=SC2028,SC2268
+# shellcheck disable=SC2028,SC2268,SC2310
 #
-#   Script is unfinished - 08 Nov 2026 WY
+#   Script is unfinished - 09 Nov 2026 WY
 #
 #
 #   Manual canonicalization of directories. Output can be in brief or
@@ -85,6 +85,7 @@
 
 
 \:;\: "Settings."
+\set -a
 \set -u
 
   #> Testing nounset
@@ -130,7 +131,8 @@ IFS='
   #> Testing \command\ as a function name, pt 1
   #command () { echo Bar;}
 
-unset -f command
+unset -f command \
+  grep hash set 
 
   #> Testing \command\ as a function name, pt 2
   #command -p echo Baz #>
@@ -156,6 +158,7 @@ fi
 
 
 :;: "Bootstrap Variables."
+LC_ALL=C
 global_return_code=0
 special_var_zero=${0#./}
 special_var_zero=${0##*/}
@@ -199,19 +202,13 @@ __xtrace_off__ ()
 #
 __check_for_variable_assignment__ ()
 {
-    #: "FUNCNAME:" "${FUNCNAME[@]}" #>
-
   if test -n "$1"
   then
     : "t:0:${LINENO}"
   else
     : "f:$?:${LINENO}"
-    printf '%s: Input required; exiting.' "${FUNCNAME[0]}"
+    printf '__check_for_variable_assignment__: Input required; exiting.'
   fi
-
-  # Bug, consolodate the various \unset -f\ commands.
-
-  unset -f set grep 
 
   # Note, this particular function is used in \if...fi\ tests, so the
   # fact that it ends with a pipeline which could return false is
@@ -219,11 +216,12 @@ __check_for_variable_assignment__ ()
   # variable at \$1\ has no assigned value, causes the script to
   # halt. To have halted would have been an error. Yet, it\s Posix
   # 2008, so the least confusing workaround has been applied.
-  if set | grep -E "^${1}=.+"
+  if set | grep -q -E "^${1}=.+"
   then
     : "t:0:${LINENO}"
   else
     : "f:$?:${LINENO}"
+    return 1
   fi
 }
 
@@ -288,7 +286,6 @@ case "$1" in
     # No \shift\ command.
     ;;
 esac
-export output_verbose_on
 
   #exit "${LINENO}" #>
 
@@ -325,13 +322,13 @@ else
   if command -v hash
   then
     : "t:0:${LINENO}"
-    unset -f hash
     if hash -r
     then
       : "t:0:${LINENO}"
     else
       : "f:$?:${LINENO}"
-      printf '%s: warning: command failed: <%s>\n' "hash -r"
+      printf '%s: warning: command failed: <%s>\n' \
+        "${special_var_zero}" "hash -r"
     fi
   else
     : "f:$?:${LINENO}"
@@ -346,13 +343,15 @@ __xtrace_off__
 
 # Tests for each command
 for uU in \
-  "awk" "cd" "command" "dirname" "env" \
+  "cd" "command" "dirname" "env" \
   "file" "find" "getconf" "grep" "id" \
   "ls" "pathchk" "printf" "ps" "pwd" \
   "sed" "sh" "strings" "test" "true" \
     "type" "unalias" "which" \
   ":" "break" "continue" "exit" "hash" \
-    "readonly" "set" "shift" "unset" # count is 32
+    "readonly" "set" "shift" "unset" \
+  "eval" "echo" "logname"
+    # count is -3-2-
   #"codeblocks" #>
   # Note, \codeblocks\ is not specified by Posix-2008; the
   # rest of the commands in this list are, except for \which\.
@@ -538,6 +537,7 @@ fi
 #   OLDPWD            # for \cd\
 #   PATH              # for \sh\
 #   PWD               # for \cd\ and \pwd\
+#   SYMLOOP_MAX       # for \chdir()\
 if printf '%s' "$-" | grep -q "x"
 then
   : "t:0:${LINENO}"
@@ -577,27 +577,25 @@ fi
 
 
 :;: "Environment Variables."
-# See man pages under Posix 2008
-# Common
-LC_ALL=C
-# \cmd\
-CDPATH=
-OLDPWD=
-
+# See man pages under Posix 2008.
+# 
 # Unset certain env. vars. if possible and if they\re defined.
-#
-#   Testing:
-#     POSIXLY_CORRECT=yes
-#     LD_PRELOAD=foo
-#     cC=LD_PRELOAD
-#     set | grep -E "^${cC}=.+"; echo $?
-#     unset LD_PRELOAD; echo $?
-#     set | grep -E "^${cC}=.+"; echo $?
-#
-for cC in BASH_ENV  ENV  LD_PRELOAD
-do
-  : "t:0:${LINENO}"
 
+    # Testing:
+    #POSIXLY_CORRECT=yes
+    #LD_PRELOAD=foo
+    #cC=LD_PRELOAD
+    #set | grep -E "^${cC}=.+"; echo $?
+    #unset LD_PRELOAD; echo $?
+    #set | grep -E "^${cC}=.+"; echo $?
+
+for cC in \
+  BASH_ENV \
+  CDPATH \
+  ENV \
+  LD_PRELOAD \
+  OLDPWD
+do
     #: "cC: ${cC}" #>
 
   if __check_for_variable_assignment__ "${cC}"
@@ -613,6 +611,7 @@ do
     cmd_str="unset -v ${cC}"
 
     # Note, Word Splitting is intended in this particular command.
+    # shellcheck disable=SC2086
     if command -p ${cmd_str}
     then
       : "t:0:${LINENO}: \\${cmd_str}\\ returned zero"
@@ -621,23 +620,59 @@ do
         "Command \\${cmd_str}\\ failed." #>
     fi
   else
-    : "f:$?:${LINENO}: Parameter ${cC} is undefined."
+    : "f:$?:${LINENO}: Parameter ${cC} is undefined.";:
   fi
 done
 
 # Make sure HOME is defined, for \cd\.
+#
+# Notes,
+#   - Assigning PWD depends on HOME having a valid value.
+#   - From Posix 2008:
+#     - Shell Command Language 2.6.1: \\If HOME is unset, the results
+#     are unspecified.\\
+#   - The \id\ utility has no knowledge of \sudo\ or means of
+#   differentiating regular vs. elevated permissions.
+stdout_id_un=$( id -un )
+assign_home=no
+
+  # Bug, the logic of this codeblock is a little fuzzy.
+  #   - Why use the \printf | grep\? 
+  #   - The \eval\ seems like the most dependable solution, but the
+  #   stdout of \logname\ vs. the value of LOGNAME happens why?
+  #
+
 if __check_for_variable_assignment__ "HOME"
 then
   : "t:0:${LINENO}" "Parameter HOME is defined."
+  if printf '%s\n' "${HOME}" | grep -q "${stdout_id_un}"
+  then
+    : "t:0:${LINENO}"
+  else
+    : "f:$?:${LINENO}"
+    assign_home=yes
+  fi
 else
   : "f:$?:${LINENO}: Parameter HOME is undefined."
+  assign_home=yes
+fi
 
+# Note,
+#   - Spec. on \logname\: \\The logname utility explicitly ignores
+#   the LOGNAME environment variable because environment changes
+#   could produce erroneous results.\\
+
+  # Bug, These commands produce different results:
+  #       sudo sh -c 'eval echo ~"$( logname )"' sh
+  #       sudo sh -c 'eval echo ~"${LOGNAME}"' sh
+
+if test "yes" = "${assign_home}"
+then
+  : "t:0:${LINENO}"
   :;: "Assign HOME."
-  username=$( id -un )
   if HOME=$(
-        awk -F: -v "vV=${username}" '$1 == vV { print $6 }' \
-          /etc/passwd
-      )
+    eval echo ~"$(logname)"
+  )
   then
     : "t:0:${LINENO}: Assignment to HOME succeeded."
   else
@@ -646,28 +681,92 @@ else
       "Assignment to HOME failed; exiting."
     exit 1
   fi
+else
+  : "f:$?:${LINENO}"
 fi
 
-# PWD aught to be defined, for \cd\ and \pwd\
+# PWD aught to be defined, for \cd\ and \pwd\.
+#
 # Notes,
 #   - In Posix-2008 effects of assignments to PWD are unspecified.
-#   - If restricted mode is enabled and PWD is undefined, a call to
-#     \cd\ will not assign a value to PWD, in Bash 5.3.9.
+#   - In Bash 5.3.9+,
+#     - If restricted mode is enabled and PWD is undefined, a call to
+#     \cd\ will not assign a value to PWD.
+#     - Values of HOME and PWD are inherited from the calling
+#     interactive shell.
+#
 if __check_for_variable_assignment__ "PWD"
 then
   : "t:0:${LINENO}"
 else
   : "f:$?:${LINENO}"
 
-    # Bug, citation?
-
   # A call to \cd\ is supposed to assign a value to PWD.
-  # Note, \if..fi\ structure is a workaround for errexit.
-  if cd .
+  # 
+  # Notes, from Posix 2008:
+  #   - Shell Command Language 2.6.1: \\If HOME is unset, the results
+  #   are unspecified.\\
+  #   - Spec. of \cd\, description of algorithm:
+  #     - (Step 1) \\If no directory operand is given and the HOME
+  #     environment variable is empty or undefined, the default
+  #     behavior is implementation-defined and no further steps
+  #     shall be taken.\\
+  #       -- HOME aught to be defined.
+  #       -- A directory operand aught to be used.
+  #     - (Step 2) \\If no directory operand is given and the HOME
+  #     environment variable is set to a non-empty value, the cd
+  #     utility shall behave as if the directory named in the HOME
+  #     environment variable was specified as the directory
+  #     operand.\\
+  #     - (Step 3) \\If the directory operand begins with a <slash>
+  #     character, set curpath to the operand and proceed to step 7.\\
+  #     - (Step 4) \\If the first component of the directory operand
+  #     is dot or dot-dot, proceed to step 6.\\
+  #     - (Step 6) \\If the -P option is in effect, set curpath to
+  #     the directory operand. Otherwise....\\
+  #       -- Use the -P option.
+  #     - (Step 7) \\If the -P option is in effect, proceed to step
+  #     10.\\
+  #     - (Step 10) \\The cd utility shall then perform actions
+  #     equivalent to the chdir() function called with curpath as
+  #     the path argument. If these actions fail for any reason, the
+  #     cd utility shall display an appropriate error message and the
+  #     remainder of this step shall not be executed. ... If the -P
+  #     option is in effect, the PWD environment variable shall be
+  #     set to the string that would be output by pwd -P. If there is
+  #     insufficient permission on the new directory, or on any
+  #     parent of that directory, to determine the current working
+  #     directory, the value of the PWD environment variable is
+  #     unspecified.\\
+  #       -- Any error message aught to be assigned to a variable.
+  #       -- The output of \pwd -P\ is relevant.
+  #     - \-P\: \\Handle the operand dot-dot physically; symbolic
+  #     link components shall be resolved before dot-dot components
+  #     are processed.\\
+  #     - SYNOPSIS:
+  #       - \\cd [-L|-P] [directory]\\
+  #         - \directory\: \\An absolute or relative pathname of the
+  #         directory that shall become the new working directory.
+  #         The interpretation of a relative pathname by cd depends
+  #         on the -L option and the CDPATH and PWD environment
+  #         variables. If directory is an empty string, the results
+  #         are unspecified.\\
+  #
+  #   - Posix 2008 \pwd\:
+  #     - \\The pwd utility shall write to standard output an absolute pathname of the current working directory, which does not contain the filenames dot or dot-dot.\\
+  #     - \-P\: \\The pathname written to standard output shall not contain any components that refer to files of type symbolic link.\\
+  #     - \PWD\: \\An absolute pathname of the current working directory. If an application sets or unsets the value of PWD, the behavior of pwd is unspecified.\\
+  #   - This \if..fi\ structure is a workaround for errexit.
+  #
+  if stderr_cd_P=$( cd "${HOME}"; cd -P . 2>&1 >/dev/null ) # Subshell
   then
     : "t:0:${LINENO}"
   else
     : "f:$?:${LINENO}"
+    printf '%s: Error: %s.\n' \
+      "${special_var_zero}" "${stderr_cd_P}"
+    printf '%s: Exiting.\n' "${special_var_zero}"
+    exit 1
   fi
 
   if __check_for_variable_assignment__ "PWD"
@@ -680,14 +779,15 @@ else
   fi
 fi
 
-
-: "Script Variables"
+:;: "Script Variables"
 canpth=
 nsfod="(No such file or directory)"
-:
+
   set -x #>
   #printf '%s\n' stdout #>
   #printf '%s\n' stderr 1>&2 #>
+  :;: set #>
+  set | grep -Ee '^HOME=' -e '^PWD=' #>
   exit "${LINENO}" #>
 
 
