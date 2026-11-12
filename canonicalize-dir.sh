@@ -53,12 +53,12 @@
 #   Posix in 2008.
 #   - Names of special built-ins cannot be used as names of functions
 #   (ie, \unset\).
-#   - 
+#   -
 
 
 
   #> Debug.
-  #\set -x #>
+  \set -x #>
   \set -e #>
   \set -f #> Disable pathame expansion.
   \: #>
@@ -84,7 +84,7 @@ IFS='
 '
 \unalias -a
 unset -f command \
-  grep hash set 
+  grep hash set
 
 # PATH could be set as RO.
 if PATH="$( command -p getconf PATH ):${PATH}"
@@ -102,10 +102,10 @@ fi
   #set -x #>
 
 
-\:;\: "Settings."
-\set -a
-\set -u
-\set -C
+:;: "Settings."
+set -a
+set -u
+set -C
 
 
 :;: "Bootstrap Variables."
@@ -136,13 +136,23 @@ __xtrace_off__ ()
   : "__xtrace_off__: Define function:  __reset_xtrace__."
   case $- in
     *x*)
-      __reset_xtrace__ () { printf '# __reset_xtrace__\n'; set -x; }
+      __reset_xtrace__ ()
+      {
+        printf '# __reset_xtrace__\n'
+        set -x
+        : "Leaving __reset_xtrace__";:
+      }
       set +x
       ;;
     *)
-      __reset_xtrace__ () { :; }
+      __reset_xtrace__ ()
+      {
+        :
+        : "Leaving __reset_xtrace__";:
+      }
       ;;
   esac
+  : "Leaving __xtrace_off__";:
 }
 
 : "Define function:  __input_required__."
@@ -161,6 +171,7 @@ __input_required__ ()
     printf '%s\n' "${usage_msg:?}" 1>&2
     exit 1
   fi
+  : "Leaving __input_required__";:
 }
 
 : "Define function:  __check_for_variable_assignment__"
@@ -185,6 +196,7 @@ __check_for_variable_assignment__ ()
     : "f:$?:${LINENO}"
     return 1
   fi
+  : "Leaving __check_for_variable_assignment__";:
 }
 
   # Script Testing:
@@ -202,6 +214,7 @@ __print_message__ ()
 {
   printf '%s: %s: %s: <%s>\n' \
     "${special_var_zero}" "$2" "$3" "${4:-}" 2>&1
+  : "Leaving __print_message__";:
 }
 
 : "Define functions: __print_*__."
@@ -210,9 +223,21 @@ __print_message__ ()
 #         __print_error__   [Description] [Data]
 #         __print_warning__ "Command failed" "hash -r"
 #
-__print_error__   () { __print_message__ "Error"    "$1" "${2:-}"; }
-__print_notice__  () { __print_message__ "Notice"   "$1" "${2:-}"; }
-__print_warning__ () { __print_message__ "Warning"  "$1" "${2:-}"; }
+__print_error__   ()
+{
+  __print_message__ "Error"    "$1" "${2:-}"
+  : "Leaving __print_error__";:
+}
+__print_notice__  ()
+{
+  __print_message__ "Notice"   "$1" "${2:-}"
+  : "Leaving __print_notice__";:
+}
+__print_warning__ ()
+{
+  __print_message__ "Warning"  "$1" "${2:-}"
+  : "Leaving __print_warning__";:
+}
 
 
 
@@ -369,7 +394,7 @@ fi
 
 :;: "Input validation: \\tr\\, \\strings\\ and \\pathchk\\."
 #
-for bB in "$@" '.' '..'
+for bB in "$@"
 do
   :;: "Top of loop.";:
 
@@ -453,7 +478,7 @@ do
     global_return_code=${ec4}
     __print_error__ \
       "Error received from \\pathchk [no args]\\." "${bB}"
-    
+
     # Print out the values of the relevant variables.
     __print_notice__ "Values of relevant system parameters"
     getconf -a | grep -E -e ^"PATH_MAX" -e ^"NAME_MAX"
@@ -509,7 +534,7 @@ fi
 if printf '%s' "$-" | grep -q -e "x"
 then
   : "t:0:${LINENO}"
- 
+
     : "Parameter values per \\getconf\\" #>
 
   __xtrace_off__
@@ -546,7 +571,7 @@ fi
 
 :;: "Environment Variables."
 # See man pages under Posix 2008.
-# 
+#
 # Unset certain env. vars. if possible and if they\re defined.
 
     # Script Testing:
@@ -604,7 +629,7 @@ stdout_02_id_un=$( id -un )
 assign_home=no
 
   # Bug, the logic of this codeblock is a little fuzzy.
-  #   - Why use the \printf | grep\? 
+  #   - Why use the \printf | grep\?
   #   - The \eval\ seems like the most dependable solution, but the
   #   stdout of \logname\ vs. the value of LOGNAME happens why?
   #
@@ -669,7 +694,7 @@ else
   : "f:$?:${LINENO}"
 
   # A call to \cd\ is supposed to assign a value to PWD.
-  # 
+  #
   # Notes, from Posix 2008:
   #   - Shell Command Language 2.6.1: \\If HOME is unset, the results
   #   are unspecified.\\
@@ -1222,4 +1247,3 @@ else
     "\\find -type d\\ did not locate the directory." 1>&2
   exit "${LINENO}"
 fi
-
