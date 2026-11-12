@@ -59,22 +59,9 @@
 
   #> Debug.
   #\set -x #>
-
-    #> Testing backslash quoting of commands.
-    #shopt -s expand_aliases; alias set='echo foo'; set -e #>
-
-  #> Debug
   \set -e #>
-
-    #> Testing errexit
-    #false #>
-
   \set -f #> Disable pathame expansion.
-
-    #> Testing disabling of pathname expansion
-    #ls -alhFid ~/.bash* #>
-
-  \: #> Debug
+  \: #>
   \: "Dash: $-"
   \: "Pound: $#" #>
   \: "Ampersand:" "${@:-}" #>
@@ -86,42 +73,6 @@
   #\exit "${LINENO}" #>
 
 
-\:;\: "Settings."
-\set -a
-
-  # Testing allexport.
-  set -x
-  unset foo baz abc def ghi jkl
-  foo=bar
-  baz=quux echo "<${foo}>" "<${baz}>"
-  abc=123 : 
-  echo 456 > ~/tmp/file
-  read -r def < ~/tmp/file
-  rm ~/tmp/file
-  #set -- -x ghi "$@"
-  #getopts x: jkl
-  #eval sh -c 'printf read -r $1'
-  #read -r "${jkl}" 
-  #\$"${OPTIND}"
-  export -p | grep -e foo -e baz -e abc -e def -e ghi -e jkl
-  exit "${LINENO}"
-
-\set -u
-
-  #> Testing nounset
-  #echo "${unbound_variable}" #>
-
-\set -C
-
-  #> Testing noclobber
-  #file=~/tmp/random-file.${RANDOM}.log #>
-  #touch "${file}" #>
-  #echo foo > "${file}" #>
-
-  #> Testing variable assignment (IFS), pt 1
-  #IFS=:
-  #readonly IFS
-
 \:;\: "Security."
 #
 # Posix-2024 suggestion for \Start off a \\secure shell script\\ in
@@ -131,37 +82,9 @@
 # Value of IFS should include one tabstop.
 IFS=' 	
 '
-
-  #> Testing variable assignment (IFS), pt 2
-  #declare -p IFS #>
-
-  #> Testing \unalias\, pt 1
-  #shopt -s expand_aliases; alias unalias='echo foo' #>
-  #alias #>
-
 \unalias -a
-
-  #> Testing \unalias\, pt 2
-  #alias #>
-  #exit "${LINENO}" #>
-
-  #> Testing \unset\ as a function name
-  #unset () { echo Foo;}
-
-  #> Testing \command\ as a function name, pt 1
-  #command () { echo Bar;}
-
 unset -f command \
   grep hash set 
-
-  #> Testing \command\ as a function name, pt 2
-  #command -p echo Baz #>
-  #exit "${LINENO}" #>
-
-  #> Testing variable assignment (PATH)
-  #set -r #>
-  #readonly PATH #>
-  #readonly -p; exit "${LINENO}" #>
 
 # PATH could be set as RO.
 if PATH="$( command -p getconf PATH ):${PATH}"
@@ -175,6 +98,12 @@ fi
 
   #exit "${LINENO}" #>
   #set -x #>
+
+
+\:;\: "Settings."
+\set -a
+\set -u
+\set -C
 
 
 :;: "Bootstrap Variables."
@@ -245,7 +174,7 @@ __check_for_variable_assignment__ ()
   fi
 }
 
-  # Testing:
+  # Script Testing:
   #__check_for_variable_assignment__ PATH
   #__check_for_variable_assignment__ TTY
   #exit "${LINENO}"
@@ -267,7 +196,7 @@ __input_required__ ()
   fi
 }
 
-  # Testing
+  # Script Testing
   #set --
   #set -- a b c
   #set -- a b c; shift 4 # Error: "shift count out of range"
@@ -278,7 +207,7 @@ __input_required__ ()
 
 :;: "Parse input."
 #
-  # Testing:
+  # Script Testing:
   #set -- -ve
   #set -- -br
   #set -- --verbos
@@ -320,14 +249,14 @@ __input_required__ "$@"
 :;: "Commands."
 #
 # Utilities & Special Builtins
-#   Test string: \codeblocks\
+#   Script Test string: \codeblocks\
 #
 # Remove the hash table, so that PATH lookups are forced and
 # therefore current. Posix recommends \PATH=${PATH}\ in spec. on
 # \hash\. In Bash on Fedoras 44 & 45, this recommendation works as
 # expected even if PATH is set as RO.
 
-  # Testing:
+  # Script Testing:
   #readonly PATH
   #set +e
   #enable -n hash
@@ -358,7 +287,7 @@ fi
 # If xtrace is on, turn it off.
 __xtrace_off__
 
-  # Testing:
+  # Script Testing:
   #enable -n break
 
 # Tests for each command
@@ -428,7 +357,7 @@ do
 
   # Input validation: Error and exit.
   #
-  # Testing:
+  # Script Testing:
   #reset; clear; ./candr.sh -v \
   #"$( dd if=/dev/urandom bs=32b count=1 2>/dev/null )"
   #
@@ -450,7 +379,7 @@ do
 
   # Zero length input is disallowed: Error and exit.
   #
-  # Testing:
+  # Script Testing:
   #reset; clear; ./candr.sh -v ""
   #
   if test -n "${aA}"
@@ -468,7 +397,7 @@ do
 
   # Filenames beginning with a hyphen are disallowed: Error and exit.
   #
-  # Testing:
+  # Script Testing:
   #reset; clear; ./candr.sh -v -foo
   #
   stdout_04_cut=$( printf '%s' "${aA}" | cut -c 1 )
@@ -494,7 +423,7 @@ do
   #   NAME_MAX                            255
   #   PATH_MAX                            4096
   #
-  # Testing:
+  # Script Testing:
   #reset; clear; ./candr.sh -v foooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
   #
   if pathchk "${aA}"
@@ -515,7 +444,7 @@ do
 
   # Filenames beginning with a hyphen are disallowed: Error and exit.
   #
-  # Testing:
+  # Script Testing:
   #reset; clear; ./candr.sh -v /-foo
   #
   if pathchk -P "${aA}"
@@ -601,7 +530,7 @@ fi
 # 
 # Unset certain env. vars. if possible and if they\re defined.
 
-    # Testing:
+    # Script Testing:
     #POSIXLY_CORRECT=yes
     #LD_PRELOAD=foo
     #cC=LD_PRELOAD
@@ -947,12 +876,12 @@ __print_output__ ()
   #  - how do you detect data loops? tmp file of pathnames at top of each
   #  true loop - duplicates mean data loop and error?
 
-  #declare -p output_verbose_on
+  #: "output_verbose_on: ${output_verbose_on}"
   #exit "${LINENO}"
 
 
 :;: "The given path must exist in the filesystem."
-# Test input: /dev/qwertyuiop
+# Script Test input: /dev/qwertyuiop
 for dD
 do
   if test -e "${dD}"
@@ -976,7 +905,7 @@ exit 00
   : "Minor loop A: Use \\file\\ to resolve any symlinks."
 
 : "Major loop"
-#   Testing strings: a list of common temporary directories in Linux.
+#   Script Testing strings: a list of common temporary directories in Linux.
 for dD
   #/dev/shm /var/tmp /usr/tmp /usr/local/tmp "${XDG_RUNTIME_DIR:=}/tmp" \
   #/tmp ~/tmp ~ #>
