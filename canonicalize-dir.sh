@@ -26,7 +26,7 @@
 #   compliant.
 #       https://unix.stackexchange.com/questions/322035/\
 #         are-there-still-systems-around-with-a-bin-sh-binary
-#   - Reportedly, in BusyBox \a\wk\ is optional.
+#   - Reportedly, in Busybox \a\wk\ is optional.
 #     - \awk\s been removed from this script.
 #   - When called from a restricted interactive shell, the script
 #   does not inherit the restricted setting.
@@ -92,8 +92,10 @@ then
   : "t:0:${LINENO}"
 else
   : "f:$?:${LINENO}"
-  printf '%s: Notice: Assignment to variable failed: %s\n' "$0" "PATH"
-  printf '%s: Notice: Value of variable %s: <%s>\n' "$0" "PATH" "${PATH}"
+  printf '%s: Notice: Assignment to variable failed: %s\n' \
+    "$0" "PATH"
+  printf '%s: Notice: Value of variable %s: <%s>\n' \
+    "$0" "PATH" "${PATH}"
 fi
 
   #exit "${LINENO}" #>
@@ -116,7 +118,7 @@ usage_msg="${special_var_zero}:
     Usage: The first argument may be an option flag.
         candr.sh [-b|-v] [FILE] ...
 "
-unset ec0 ec1 ec2 ec3 ec4 ec5 ec6 ec7
+unset ec0 ec1 ec2 ec3 ec4 ec5
 
 
 :;: "Bootstrap Functions."
@@ -134,7 +136,7 @@ __xtrace_off__ ()
   : "__xtrace_off__: Define function:  __reset_xtrace__."
   case $- in
     *x*)
-      __reset_xtrace__ () { echo "# __reset_xtrace__"; set -x; }
+      __reset_xtrace__ () { printf '# __reset_xtrace__\n'; set -x; }
       set +x
       ;;
     *)
@@ -143,29 +145,40 @@ __xtrace_off__ ()
   esac
 }
 
+: "Define function:  __input_required__."
+#
+# Usage:    __input_required__ "$@"
+#
+__input_required__ ()
+{
+  if test 0 -lt "$#"
+  then
+    : "t:0:${LINENO}" #>
+  else
+    : "f:$?:${LINENO}" #>
+    __print_error__ "Input required"
+    __print_notice__ "Exiting."
+    printf '%s\n' "${usage_msg:?}" 1>&2
+    exit 1
+  fi
+}
+
 : "Define function:  __check_for_variable_assignment__"
 #
 # Usage:
 #     __check_for_variable_assignment__ [Variable]
 #     __check_for_variable_assignment__ HOME
 #
+# Note, this particular function is used in \if...fi\ tests, so the
+# fact that it ends with a pipeline which could return false is
+# intended. However, as a standalone function, errexit, if the
+# variable at \$1\ has no assigned value, causes the script to
+# halt. To have halted would have been an error. Yet, it\s Posix
+# 2008, so the least confusing workaround has been applied.
+#
 __check_for_variable_assignment__ ()
 {
-  if test -n "$1"
-  then
-    : "t:0:${LINENO}"
-  else
-    : "f:$?:${LINENO}"
-    printf '__check_for_variable_assignment__: Input required; exiting.'
-  fi
-
-  # Note, this particular function is used in \if...fi\ tests, so the
-  # fact that it ends with a pipeline which could return false is
-  # intended. However, as a standalone function, errexit, if the
-  # variable at \$1\ has no assigned value, causes the script to
-  # halt. To have halted would have been an error. Yet, it\s Posix
-  # 2008, so the least confusing workaround has been applied.
-  if set | grep -q -E "^${1}=.+"
+  if set | grep -q -E -e "^${1}=.+"
   then
     : "t:0:${LINENO}"
   else
@@ -179,22 +192,29 @@ __check_for_variable_assignment__ ()
   #__check_for_variable_assignment__ TTY
   #exit "${LINENO}"
 
-: "Define function:  __input_required__."
+: "Define function:  __print_message__."
 #
-# Usage:    __input_required__ "$@"
+# Usage:
+#         __print_message__ [Message type] [Description] [Data]
+#         __print_message__ "Warning" "$1" "${2:-}"
 #
-__input_required__ ()
+__print_message__ ()
 {
-  if test 0 -lt "$#"
-  then
-    : "t:0:${LINENO}" #>
-  else
-    : "f:$?:${LINENO}" #>
-    printf '%s: Input required.\n' "${special_var_zero}"
-    printf '%s\n' "${usage_msg:?}" 1>&2
-    exit 1
-  fi
+  printf '%s: %s: %s: <%s>\n' \
+    "${special_var_zero}" "$2" "$3" "${4:-}" 2>&1
 }
+
+: "Define functions: __print_*__."
+#
+# Usage:
+#         __print_error__   [Description] [Data]
+#         __print_warning__ "Command failed" "hash -r"
+#
+__print_error__   () { __print_message__ "Error"    "$1" "${2:-}"; }
+__print_notice__  () { __print_message__ "Notice"   "$1" "${2:-}"; }
+__print_warning__ () { __print_message__ "Warning"  "$1" "${2:-}"; }
+
+
 
   # Script Testing
   #set --
@@ -276,11 +296,11 @@ else
       : "t:0:${LINENO}"
     else
       : "f:$?:${LINENO}"
-      printf '%s: warning: command failed: <%s>\n' \
-        "${special_var_zero}" "hash -r"
+      __print_warning__ "Command failed" "hash -r"
     fi
   else
     : "f:$?:${LINENO}"
+    __print_notice__ "Command is not in PATH" "hash"
   fi
 fi
 
@@ -291,7 +311,7 @@ __xtrace_off__
   #enable -n break
 
 # Tests for each command
-for uU in \
+for aA in \
   "cd" "command" "dirname" "env" \
   "file" "find" "getconf" "grep" "id" \
   "ls" "pathchk" "printf" "ps" "pwd" \
@@ -306,23 +326,22 @@ for uU in \
   # rest of the commands in this list are, except for \which\.
 do
     #> Just to see in which directory each utility is located.
-    #which "${uU}"; continue #>
+    #which "${aA}"; continue #>
     #> Note
     #>   - At 32 commands, all non-special-builtins are located in
     #>     /usr/bin on Fedora 44.
 
-  # Determine whether command \uU\ is in PATH.
-  if command -pv "${uU}" >/dev/null
+  # Determine whether command \aA\ is in PATH.
+  if command -pv -- "${aA}" >/dev/null
   then
     : "t:0:${LINENO}"
   else
     : "f:${ec0:=$?}"
-    printf '%s: Command is not in PATH:  <%s>\n' \
-      "${special_var_zero}" "${uU}"
+    __print_notice__ "Command is not in PATH" "${aA}"
     global_return_code=${ec0}
   fi
   # Unset user functions
-  unset -f "${uU}"
+  unset -f "${aA}"
 done
 
 # If xtrace was on, restore it.
@@ -338,9 +357,8 @@ then
   : "t:0:${LINENO}"
 else
   : "f:$?:${LINENO}"
-    printf '%s: Value of PATH:  <%s>\n' \
-      "${special_var_zero}" "${PATH}"
-    printf '%s: Exiting.\n' "${special_var_zero}"
+    __print_notice__ "Value of PATH" "${PATH}"
+    __print_notice__ "Exiting."
     exit "${global_return_code}"
 fi
 
@@ -351,7 +369,7 @@ fi
 
 :;: "Input validation: \\tr\\, \\strings\\ and \\pathchk\\."
 #
-for aA in "$@" '.' '..'
+for bB in "$@" '.' '..'
 do
   :;: "Top of loop.";:
 
@@ -362,16 +380,16 @@ do
   #"$( dd if=/dev/urandom bs=32b count=1 2>/dev/null )"
   #
   __xtrace_off__
-  bB=$( printf '%s' "${aA}" | tr -d '\0'   ) # Remove NULs
-  cC=$( printf '%s' "${bB}" | strings -n 1 ) # Remove nonprintable
+  cC=$( printf '%s' "${bB}" | tr -d '\0'   ) # Remove NULs
+  dD=$( printf '%s' "${cC}" | strings -n 1 ) # Remove nonprintable
 
-  if test "X${aA}" = "X${cC}"
+  if test "X${bB}" = "X${dD}"
   then
     : "t:0:${LINENO}"
   else
     : "f:${ec1:=$?}:${LINENO}"
     global_return_code=${ec1}
-    printf '%s: Error: %s\n' "${special_var_zero}" \
+    __print_error__ \
       "Input contains one or more non-printable strings."
     break 1
   fi
@@ -382,14 +400,13 @@ do
   # Script Testing:
   #reset; clear; ./candr.sh -v ""
   #
-  if test -n "${aA}"
+  if test -n "${bB}"
   then
     : "t:0:${LINENO}"
   else
-    : "f:${ec1:=$?}:${LINENO}"
-    global_return_code=${ec1}
-    printf '%s: Error: %s\n' "${special_var_zero}" \
-      "Zero length input."
+    : "f:${ec2:=$?}:${LINENO}"
+    global_return_code=${ec2}
+    __print_error__ "Zero length input." ""
     break 1
   fi
 
@@ -397,18 +414,20 @@ do
 
   # Filenames beginning with a hyphen are disallowed: Error and exit.
   #
+  # Note, see Posix 2008, General Concepts 4.7.
+  #
   # Script Testing:
   #reset; clear; ./candr.sh -v -foo
   #
-  stdout_04_cut=$( printf '%s' "${aA}" | cut -c 1 )
-  if test "-" != "${stdout_04_cut}"
+  stdout_00_cut=$( printf '%s' "${bB}" | cut -c 1 )
+  if test "-" != "${stdout_00_cut}"
   then
     : "t:0:${LINENO}"
   else
-    : "f:${ec1:=$?}:${LINENO}"
-    global_return_code=${ec1}
-    printf '%s: %s\n' "${special_var_zero}" \
-      "Filenames beginning with a hyphen are disallowed."
+    : "f:${ec3:=$?}:${LINENO}"
+    global_return_code=${ec3}
+    __print_error__ \
+      "Filenames beginning with a hyphen are disallowed." "${bB}"
     break 1
   fi
 
@@ -426,38 +445,38 @@ do
   # Script Testing:
   #reset; clear; ./candr.sh -v foooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
   #
-  if pathchk "${aA}"
+  if pathchk -- "${bB}"
   then
     : "t:0:${LINENO}"
   else
-    : "f:${ec1:=$?}:${LINENO}"
-    global_return_code=${ec1}
-    printf '%s: %s\n' \
-      "${special_var_zero}" 'Error received from \pathchk\ (no options).'
+    : "f:${ec4:=$?}:${LINENO}"
+    global_return_code=${ec4}
+    __print_error__ \
+      "Error received from \\pathchk [no args]\\." "${bB}"
     
     # Print out the values of the relevant variables.
-    printf '%s: %s\n' \
-      "${special_var_zero}" 'Values of relevant system parameters:'
-    getconf -a | grep -Ee ^"PATH_MAX" -e ^"NAME_MAX"
+    __print_notice__ "Values of relevant system parameters"
+    getconf -a | grep -E -e ^"PATH_MAX" -e ^"NAME_MAX"
     break 1
   fi
 
   # Filenames beginning with a hyphen are disallowed: Error and exit.
   #
+  # Note, see Posix 2008, General Concepts 4.7.
+  #
   # Script Testing:
   #reset; clear; ./candr.sh -v /-foo
   #
-  if pathchk -P "${aA}"
+  if pathchk -P -- "${bB}"
   then
     : "t:0:${LINENO}"
   else
-    : "f:${ec1:=$?}:${LINENO}"
-    global_return_code=${ec1}
-    printf '%s: %s\n' \
-      "${special_var_zero}" 'Error received from \pathchk -P\.'
+    : "f:${ec5:=$?}:${LINENO}"
+    global_return_code=${ec5}
+    __print_error__ \
+      "Error received from \\pathchk -P\\." "${bB}"
     break 1
   fi
-
 done
 
 if test 0 -eq "${global_return_code}"
@@ -465,7 +484,7 @@ then
   : "t:0:${LINENO}"
 else
   : "f:$?:${LINENO}"
-  printf '%s: Exiting.\n' "${special_var_zero}"
+  __print_notice__ "Exiting"
   exit "${global_return_code}"
 fi
 :;: "End of loop."
@@ -487,15 +506,15 @@ fi
 #   PATH              # for \sh\
 #   PWD               # for \cd\ and \pwd\
 #   SYMLOOP_MAX       # for \chdir()\
-if printf '%s' "$-" | grep -q "x"
+if printf '%s' "$-" | grep -q -e "x"
 then
   : "t:0:${LINENO}"
  
     : "Parameter values per \\getconf\\" #>
 
   __xtrace_off__
-  stdout_00_getconf_a=$( getconf -a )
-  for eV in \
+  stdout_01_getconf_a=$( getconf -a )
+  for eE in \
     BASH_ENV \
     CDPATH \
     HOME \
@@ -507,10 +526,10 @@ then
     PATH \
     PWD
   do
-      #echo "eV: ${eV}" #>
+      #echo "eE: ${eE}" #>
 
     # Note, this particular \if..fi\ is a workaround for errexit.
-    if printf '%s\n' "${stdout_00_getconf_a}" | grep -E "^${eV} "
+    if printf '%s\n' "${stdout_01_getconf_a}" | grep -E -e "^${eE} "
     then
       : "t:0:${LINENO}"
     else
@@ -533,23 +552,23 @@ fi
     # Script Testing:
     #POSIXLY_CORRECT=yes
     #LD_PRELOAD=foo
-    #cC=LD_PRELOAD
-    #set | grep -E "^${cC}=.+"; echo $?
+    #fF=LD_PRELOAD
+    #set | grep -E "^${fF}=.+"; echo $?
     #unset LD_PRELOAD; echo $?
-    #set | grep -E "^${cC}=.+"; echo $?
+    #set | grep -E "^${fF}=.+"; echo $?
 
-for cC in \
+for fF in \
   BASH_ENV \
   CDPATH \
   ENV \
   LD_PRELOAD \
   OLDPWD
 do
-    #: "cC: ${cC}" #>
+    #: "fF: ${fF}" #>
 
-  if __check_for_variable_assignment__ "${cC}"
+  if __check_for_variable_assignment__ "${fF}"
   then
-    : "t:0:${LINENO}: ${cC} is defined."
+    : "t:0:${LINENO}: ${fF} is defined."
 
     # Bug, \-v\ of \unset\ is specified, right?
 
@@ -557,19 +576,18 @@ do
     # the command can be executed and so that (b) the various related
     # messages can cite the precise command string which was
     # executed.
-    cmd_str="unset -v ${cC}"
+    cmd_str="unset -v -- ${fF}"
 
     # Note, Word Splitting is intended in this particular command.
     # shellcheck disable=SC2086
-    if command -p ${cmd_str}
+    if command -p -- ${cmd_str}
     then
       : "t:0:${LINENO}: \\${cmd_str}\\ returned zero"
     else
-      printf '%s: Notice: %s\n' "${special_var_zero}" \
-        "Command \\${cmd_str}\\ failed." #>
+      __print_notice__ "Command failed." "\\${cmd_str}\\"
     fi
   else
-    : "f:$?:${LINENO}: Parameter ${cC} is undefined.";:
+    : "f:$?:${LINENO}: Parameter ${fF} is undefined.";:
   fi
 done
 
@@ -582,7 +600,7 @@ done
 #     are unspecified.\\
 #   - The \id\ utility has no knowledge of \sudo\ or means of
 #   differentiating regular vs. elevated permissions.
-stdout_id_un=$( id -un )
+stdout_02_id_un=$( id -un )
 assign_home=no
 
   # Bug, the logic of this codeblock is a little fuzzy.
@@ -594,7 +612,7 @@ assign_home=no
 if __check_for_variable_assignment__ "HOME"
 then
   : "t:0:${LINENO}" "Parameter HOME is defined."
-  if printf '%s\n' "${HOME}" | grep -q "${stdout_id_un}"
+  if printf '%s\n' "${HOME}" | grep -q -e "${stdout_02_id_un}"
   then
     : "t:0:${LINENO}"
   else
@@ -626,8 +644,8 @@ then
     : "t:0:${LINENO}: Assignment to HOME succeeded."
   else
     : "f:$?:${LINENO}"
-    printf '%s: %s\n' "${special_var_zero}" \
-      "Assignment to HOME failed; exiting."
+    __print_error__ "Assignment to variable failed" "HOME"
+    __print_notice__ "Exiting"
     exit 1
   fi
 else
@@ -702,19 +720,27 @@ else
   #         are unspecified.\\
   #
   #   - Posix 2008 \pwd\:
-  #     - \\The pwd utility shall write to standard output an absolute pathname of the current working directory, which does not contain the filenames dot or dot-dot.\\
-  #     - \-P\: \\The pathname written to standard output shall not contain any components that refer to files of type symbolic link.\\
-  #     - \PWD\: \\An absolute pathname of the current working directory. If an application sets or unsets the value of PWD, the behavior of pwd is unspecified.\\
+  #     - \\The pwd utility shall write to standard output an
+  #     absolute pathname of the current working directory, which
+  #     does not contain the filenames dot or dot-dot.\\
+  #     - \-P\: \\The pathname written to standard output shall not
+  #     contain any components that refer to files of type symbolic
+  #     link.\\
+  #     - \PWD\: \\An absolute pathname of the current working
+  #     directory. If an application sets or unsets the value of PWD,
+  #     the behavior of pwd is unspecified.\\
   #   - This \if..fi\ structure is a workaround for errexit.
   #
-  if stderr_cd_P=$( cd "${HOME}"; cd -P . 2>&1 >/dev/null ) # Subshell
+  if stderr_cd_P=$(
+    cd -- "${HOME}"
+    cd -P -- . 2>&1 >/dev/null
+  ) # Subshell
   then
     : "t:0:${LINENO}"
   else
     : "f:$?:${LINENO}"
-    printf '%s: Error: %s.\n' \
-      "${special_var_zero}" "${stderr_cd_P}"
-    printf '%s: Exiting.\n' "${special_var_zero}"
+    __print_error__ "Subshell failed" "cd; cd -P ."
+    __print_notice__ "Exiting"
     exit 1
   fi
 
@@ -723,8 +749,7 @@ else
     : "t:0:${LINENO}"
   else
     : "f:$?:${LINENO}"
-    printf '%s: Warning: %s.\n' \
-      "${special_var_zero}" "Parameter PWD is undefined."
+    __print_warning__ "Parameter is undefined." "PWD"
   fi
 fi
 
@@ -736,7 +761,7 @@ nsfod="(No such file or directory)"
   #printf '%s\n' stdout #>
   #printf '%s\n' stderr 1>&2 #>
   :;: set #>
-  set | grep -Ee '^HOME=' -e '^PWD=' #>
+  set | grep -E -e '^HOME=' -e '^PWD=' #>
   exit "${LINENO}" #>
 
 
@@ -784,9 +809,9 @@ nsfod="(No such file or directory)"
 : "Define function: __print_output__."
 #
 # Usage:    __print_output__ [Script input] [canpth|nsfod] [redirection]
-# Usage:    __print_output__ "${dD}" "${canpth}"
+# Usage:    __print_output__ "${gG}" "${canpth}"
 #                                         # ^normal output to STDOUT
-# Usage:    __print_output__ "${dD}" "${nsfod}" >&2
+# Usage:    __print_output__ "${gG}" "${nsfod}" >&2
 #                                         # ^redirect output to STDERR
 #
 # shellcheck disable=SC2329
@@ -809,7 +834,7 @@ __print_output__ ()
     : "t:0:${LINENO}"
     output_verbose_on=yes
   else
-    printf '%s\n' "f:$?:${LINENO}" #>
+    : "f:$?:${LINENO}" #>
   fi
 
   :;: "\\case\\ on \\output_verbose_on\\."
@@ -840,7 +865,8 @@ __print_output__ ()
   #    - check for leading forward slash
   #      - if missing, then prepend output of \pwd\
   #    - handle a double forward slash at the far left of the string
-  #    - using \a\wk -F/\, separate the pathname out into separate elements
+  #    - using \a\wk -F/\, separate the pathname out into separate
+  #    elements
   #    - load the elements into the positional array
   #    - start with a \symlink_detected\ canary variable, s\et to \no\
   #      - loop through the array; the idea is to use concatenation to
@@ -849,32 +875,32 @@ __print_output__ ()
   #        current element
   #        - if there was an existing \canpath\ string from a previous
   #        loop, then prepend that on
-  #        - use both \file\ and \test\ to determine the filetype of the
-  #        basename of the \canpath\ string
+  #        - use both \file\ and \test\ to determine the filetype of
+  #        the basename of the \canpath\ string
   #        - if both utilities agree, then
-  #          - if element is a symlink, then switch \symlink_detected\ to
-  #          \yes\
+  #          - if element is a symlink, then switch \symlink_detected\
+  #          to \yes\
   #            - get the value of the symlink from \file\
-  #            - test for whether the of value from \file\ has a leading
-  #            forward slash
+  #            - test for whether the of value from \file\ has a
+  #            leading forward slash
   #              - if yes, then use the symlink\s value as the total
   #              pathname thus far and continue
-  #              - if no, then append the symlink\s value to the existing
-  #              value of \canpath\
-  #                ...and continue?
+  #              - if no, then append the symlink\s value to the
+  #              existing value of \canpath\ ...and continue?
   #          - if element is a directory, then continue
   #          - if element is neither a symlink nor a directory, then
-  #            - if there are no more elements in the loop, then \break 1\
+  #            - if there are no more elements in the loop, then
+  #            \break 1\
   #            - if there are elements remaining, then error
   #              ...and figure out what that means. is it a dangling
   #              symlink?
   #        - if the two utilities disagree, then error
   #      end element loop
-  #      - if \symlink_detected\ is \yes\, then remain in the true loop;
-  #      otherwise \break 2\
+  #      - if \symlink_detected\ is \yes\, then remain in the true
+  #      loop; otherwise \break 2\
   #  - end true loop
-  #  - how do you detect data loops? tmp file of pathnames at top of each
-  #  true loop - duplicates mean data loop and error?
+  #  - how do you detect data loops? tmp file of pathnames at top of
+  #  each true loop - duplicates mean data loop and error?
 
   #: "output_verbose_on: ${output_verbose_on}"
   #exit "${LINENO}"
@@ -882,16 +908,16 @@ __print_output__ ()
 
 :;: "The given path must exist in the filesystem."
 # Script Test input: /dev/qwertyuiop
-for dD
+for gG
 do
-  if test -e "${dD}"
+  if test -e "${gG}"
   then
     : "t:0:${LINENO}" #>
     : "Path exists."
   else
-    printf '%s\n' "f:$?:${LINENO}" #>
+    : "f:$?:${LINENO}" #>
     global_return_code=1
-    __print_output__ "${dD}" "${nsfod}" >&2
+    __print_output__ "${gG}" "${nsfod}" >&2
     continue 1
   fi
 done
@@ -905,15 +931,18 @@ exit 00
   : "Minor loop A: Use \\file\\ to resolve any symlinks."
 
 : "Major loop"
-#   Script Testing strings: a list of common temporary directories in Linux.
-for dD
-  #/dev/shm /var/tmp /usr/tmp /usr/local/tmp "${XDG_RUNTIME_DIR:=}/tmp" \
-  #/tmp ~/tmp ~ #>
+#   Script Testing strings: a list of common temporary directories
+# in Linux.
+#
+#/dev/shm /var/tmp /usr/tmp /usr/local/tmp "${XDG_RUNTIME_DIR:=}/tmp" \
+#/tmp ~/tmp ~ #>
+#
+for gG
 do
   :
 
   : "Per major loop variables."
-  majloop_orig_str=${dD}
+  majloop_orig_str=${gG}
   :
     exit "${LINENO}" #>
     #set -x #>
@@ -926,9 +955,9 @@ do
     # String matching; the possibilities are endless, ie, not good.
 
     # Case if input is \/\, single forward slash, FS root.
-    if test "X${dD}" = 'X/' \
-      || test "X${dD}" = 'X//' \
-      || test "X${dD}" = 'X///'
+    if test "X${gG}" = 'X/' \
+      || test "X${gG}" = 'X//' \
+      || test "X${gG}" = 'X///'
     then
       : "t:0:${LINENO}" #>
       canpth=/
@@ -936,27 +965,27 @@ do
       : exit "\${global_return_code}"
       exit "${global_return_code}"
     else
-      printf '%s\n' "f:$?:${LINENO}" #>
+      : "f:$?:${LINENO}" #>
     fi
 
     #   Case if input is \.\, single period, CWD.
     #   Case if input begins with \./\, anchoring file in CWD.
-    if test "X${dD}" = 'X.' \
-      || test "X${dD}" = 'X./' \
-      || test "X${dD}" = 'X.//'
+    if test "X${gG}" = 'X.' \
+      || test "X${gG}" = 'X./' \
+      || test "X${gG}" = 'X.//'
     then
       : "t:0:${LINENO}" #>
-      canpth=$( pwd )
+      canpth=$( pwd -P )
       __print_output__ "$1" "${canpth}"
       : exit "\${global_return_code}"
       exit "${global_return_code}"
     else
-      printf '%s\n' "f:$?:${LINENO}" #>
+      : "f:$?:${LINENO}" #>
     fi
 
-    for zZ in '/' '//' '.' './' '..' '../'
+    for hH in '/' '//' '.' './' '..' '../'
     do
-      __test_for_string__ "${zZ}"
+      __test_for_string__ "${hH}"
     done
 
       exit "${LINENO}" #>
@@ -968,44 +997,45 @@ do
 
     :
     : "Get output of \\file\\."
-    stdout_01_file=$( file "${dD}" )
+    stdout_03_file=$( file -- "${gG}" )
 
       exit "${LINENO}" #>
       #set -x #>
 
-
-    : "Remove trailing forward slashes if doing so won\\t empty the var."
+    # wrong
+    #: "Remove trailing forward slashes if doing so won\\t empty the
+    #var."
 
 
 
     :
     : "See whether \\file\\ says \\symbolic link\\."
-    if printf '%s' "${stdout_01_file}" \
-      | grep -q -E ': symbolic link to [/\.a-z]'
+    if printf '%s' "${stdout_03_file}" \
+      | grep -q -E -e ': symbolic link to [/\.a-z]'
     then
       : "t:0:${LINENO}" #>
 
       :
       : "If so, then use \\sed\\ to get the resolved path."
-      stdout_02_sed=$(
-        printf '%s' "${stdout_01_file}" \
-          | sed 's,.*: symbolic link to ,,'
+      stdout_04_sed=$(
+        printf '%s' "${stdout_03_file}" \
+          | sed -e 's,.*: symbolic link to ,,'
         )
 
       :
-      : "...and redefine \\dD\\ for the next iteration."
-      dD=${stdout_02_sed}
+      : "...and redefine \\gG\\ for the next iteration."
+      gG=${stdout_04_sed}
     else
-      printf '%s\n' "f:$?:${LINENO}" \
-        "...otherwise, test if \\directory\\ is present in the string."
-      if printf '%s' "${stdout_01_file}" \
-        | sed 's,.*: ,,' \
-        | grep -q "directory"
+      : "f:$?:${LINENO}" \
+        "...otherwise, test if \\directory\\ is present in string."
+      if printf '%s' "${stdout_03_file}" \
+        | sed -e 's,.*: ,,' \
+        | grep -q -e "directory"
       then
         : "t:0:${LINENO}" "If it is, then \\break\\ this loop."
         break 1
       else
-        printf '%s\n' "f:$?:${LINENO}" "If it\\s neither a symlink nor a" \
+        : "f:$?:${LINENO}" "If it\\s neither a symlink nor a" \
           "directory, that\\s an error." 1>&2
         exit "${LINENO}"
       fi
@@ -1016,50 +1046,52 @@ do
     #set -x #>
 
   :
-  : "Record what aught to be the correct, canonicalized absolute path."
-  canpth=${dD}
+  : "Record what aught to be the correct, canonicalized absolute" \
+      "path."
+  canpth=${gG}
 
-  # Note, it\s something of an assumption at this time that \file\ will
-  #   remove any symlinks from the interior of the absolute pathname --
-  #   hence minor loop B.
+  # Note, it\s something of an assumption at this time that \file\
+  # will remove any symlinks from the interior of the absolute
+  # pathname -- hence minor loop B.
 
   :
-  : "Define a variable \\eE\\ that can be re-defined within a loop."
-  eE=${canpth}
+  : "Define a variable \\iI\\ that can be re-defined within a loop."
+  iI=${canpth}
 
     exit "${LINENO}" #>
     #set -x #>
 
   :
-  : "Minor loop B: Make sure every dir. in the abs. path is not a sym."
+  : "Minor loop B: Make sure every dir. in the abs. path is not a" \
+    "symlink."
   while true
   do
     :
-    : "If \\eE\\ is a directory..."
-    if test -d "${eE}"
+    : "If \\iI\\ is a directory..."
+    if test -d "${iI}"
     then
       : "t:0:${LINENO}" #>
 
       :
-      : "Then get the \\dirname\\ of \\eE\\."
-      eE=$( dirname "${eE}" )
+      : "Then get the \\dirname\\ of \\iI\\."
+      iI=$( dirname -- "${iI}" )
 
       :
-      : "If the \\dirname\\ of \\eE\\ is also a directory..."
-      if test -d "${eE}"
+      : "If the \\dirname\\ of \\iI\\ is also a directory..."
+      if test -d "${iI}"
       then
         : "t:0:${LINENO}" #>
 
         :
-        : "Then, if the new \\eE\\ is the filesystem root, \\/\\..."
-        if test "X${eE}" = "X/"
+        : "Then, if the new \\iI\\ is the filesystem root, \\/\\..."
+        if test "X${iI}" = "X/"
         then
           : "t:0:${LINENO}" #>
 
           :
           : "Then double-check it using \\grep\\."
-          if printf '%s\n' "${eE}" \
-            | grep -q -E '^/$'
+          if printf '%s\n' "${iI}" \
+            | grep -q -E -e '^/$'
           then
             : "t:0:${LINENO}" #>
             :
@@ -1067,23 +1099,24 @@ do
             __print_output__
             break 1
           else
-            printf '%s\n' "f:$?:${LINENO}" \
-              "\\test\\ passed but \\grep\\ failed. Error. Exiting."
+            __print_error__ "\\test\\ passed but \\grep\\ failed."
+            __print_notice__ "Exiting"
             exit "${LINENO}"
           fi
         else
-          printf '%s\n' "f:$?:${LINENO}" \
-            "The new \\eE\\ is not the FS root directory; next iteration."
+          : "f:$?:${LINENO}" \
+            "The new \\iI\\ is not the FS root directory; next" \
+            "iteration."
           continue 1
         fi
       else
-        printf '%s\n' "f:$?:${LINENO}" \
-          "The \\dirname\\ of \\eE\\ is not a directory."
+        : "f:$?:${LINENO}" \
+          "The \\dirname\\ of \\iI\\ is not a directory."
         exit "${LINENO}"
       fi
     else
-      printf '%s\n' "f:$?:${LINENO}" \
-        "Error: \\eE\\ is not a directory. Exiting."
+      __print_error__ "Value is not a directory" "${iI}"
+      __print_notice__ "Exiting"
       exit "${LINENO}"
     fi
   done
@@ -1099,18 +1132,19 @@ done
 
 :
   : "Verify it\\s a directory by using \\find\\."
-stdout_03_find=$( find "${canpth}" -prune -type d )
+stdout_05_find=$( find -- "${canpth}" -prune -type d )
 
     exit "${LINENO}" #>
     #set -x #>
 
-if test -n "${stdout_03_find}"
+if test -n "${stdout_05_find}"
 then
   : "t:0:${LINENO}" #>
 
   :
-  : "See whether \\canpth\\ and \\stdout_03_find\\ are equivalent strings."
-  if test "X${canpth}" = "X${stdout_03_find}"
+  : "See whether \\canpth\\ and \\stdout_05_find\\ are equivalent" \
+      "strings."
+  if test "X${canpth}" = "X${stdout_05_find}"
   then
     : "t:0:${LINENO}" #>
 
@@ -1136,9 +1170,8 @@ then
         : "\\canpth\\ is searchable."
 
       else
-        printf '%s\n' "f:$?:${LINENO}" "\\canpth\\ is not searchable."
-
-        printf 'Warning: directory is not searchable.\n' 1>&2
+        : "f:$?:${LINENO}" "\\canpth\\ is not searchable."
+        __print_warning__ "Directory is not searchable" "${canpth}"
       fi
 
         exit "${LINENO}" #>
@@ -1153,9 +1186,8 @@ then
         : "\\canpth\\ is readable."
 
       else
-        printf '%s\n' "f:$?:${LINENO}" "\\canpth\\ is not readable."
-
-        printf 'Warning: directory is not readable.\n' 1>&2
+        : "f:$?:${LINENO}" "\\canpth\\ is not readable."
+        __print_warning__ "Directory is not readable." "${canpth}"
       fi
 
         exit "${LINENO}" #>
@@ -1169,24 +1201,25 @@ then
         :
         : "\\canpth\\ is writable."
       else
-        printf '%s\n' "f:$?:${LINENO}" "\\canpth\\ is not writable."
-
-        printf 'Warning: directory is not writable.\n' 1>&2
+        : "f:$?:${LINENO}"
+        __print_warning__ "Directory is not writable." "${canpth}"
       fi
         exit "${LINENO}" #>
         #set -x #>
 
     else
-      printf '%s\n' "f:$?:${LINENO}" "\\canpth\\ is a symlink." 1>&2
+      : "f:$?:${LINENO}" "\\canpth\\ is a symlink."
       exit "${LINENO}"
     fi
   else
-    printf '%s\n' "f:$?:${LINENO}" \
-      "\\canpth\\ and \\stdout_03_find\\ are not equivalent strings." 1>&2
+    : "f:$?:${LINENO}" \
+        "\\canpth\\ and \\stdout_05_find\\ are not equivalent" \
+        "strings." 1>&2
     exit "${LINENO}"
   fi
 else
-  printf '%s\n' "f:$?:${LINENO}" \
+  : "f:$?:${LINENO}" \
     "\\find -type d\\ did not locate the directory." 1>&2
   exit "${LINENO}"
 fi
+
