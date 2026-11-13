@@ -170,7 +170,6 @@ __input_required__ ()
   then
     : "f:$?:${LINENO}" #>
     __print_error__ "Input required"
-    __print_notice__ "Exiting"
     printf '%s\n' "${usage_msg:?}" 1>&2
     exit 1
   else : "t:0:${LINENO}" #>
@@ -340,7 +339,7 @@ case "$1" in
   --help    | -h* | --h* | -? )
     : "\\case\\ branch: \\--help\\" #>
     printf '%s\n' "${usage_msg:?}" 1>&2
-    __print_notice__ "Exiting"
+    #__print_notice__ "Exiting"
     exit 1
     ;;
   * )
@@ -742,7 +741,7 @@ do
       then
         : "t:0:${LINENO}" #>
         __print_error__ "${fF} is defined"
-        __print_notice__ "Exiting"
+        #__print_notice__ "Exiting"
         exit 1
       else : "f:$?:${LINENO}" "${fF} is undefined or of zero length";: #>
       fi
@@ -755,7 +754,7 @@ done
   #>
   #set -x #>
   : exit "${LINENO}" #>
-  unset HOME #>
+  #unset HOME #>
   #HOME=/ #>
   #HOME=~/nonexistent.d #>
   #HOME=~/nonexistent.sym #>
@@ -790,195 +789,243 @@ then
   : "t:0:${LINENO}"
 else
   : "f:0:${LINENO}"
-	assign_variable=no
+  assign_variable=no
 
-	: "Define function:  __make_sure_variable_is_defined_properly__"
-	#>
-	#> If any of the tests fail, then \assign_variable\ should be \yes\.
-	#>
-	#> If all of the tests succeed, and the variable is a searchable
-	#> directory, then operand number two contains the value which should
-	#> be assigned to the variable \assign_variable\. See \eval test -x\.
-	#>
-	#> Usage:
-	#>  __make_sure_variable_is_defined_properly__ \
-	#>              [Unexpanded variable name] [affirmative|negative]
-	#>  __make_sure_variable_is_defined_properly__ "HOME" "negative"
-	#>
+  : "Define function:  __make_sure_variable_is_defined_properly__"
+  #>
+  #> If any of the tests fail, then \assign_variable\ should be \yes\.
+  #>
+  #> If all of the tests succeed, and the variable is a searchable
+  #> directory, then operand number two contains the value which should
+  #> be assigned to the variable \assign_variable\. See \eval test -x\.
+  #>
+  #> Usage:
+  #>  __make_sure_variable_is_defined_properly__ \
+  #>          [Unexpanded variable name] [affirmative|negative|yes]
+  #>
   #>  Valid values for $2 are:
   #>                            tests       change var
-  #>                            #####       ##########
-  #>              affirmative   passed      do change 
-  #>              negative      passed      do not change
-  #>              yes           failed      do change
+  #>                          ###########################
+  #>              affirmative # passed      do change
+  #>              negative    # passed      do not change
+  #>              yes         # failed      do change
   #>
-	__make_sure_variable_is_defined_properly__ ()
-	{
-	  if __check_for_variable_assignment__ "$1"
-	  then
-	    : "t:0:${LINENO}" "Parameter $1 is defined" #>
-	    if test -n "$1" # Confirmation test
-	    then
-	      : "t:0:${LINENO}" "Result confirmed" #>
-	      if eval test -e '$'"$1"
-	      then
-	        : "t:0:${LINENO}" "Filesystem object exists" #>
-	        if eval test -d '$'"$1"
-	        then
-	          : "t:0:${LINENO}" "Filesystem object is a directory" #>
-	          if eval test -x '$'"$1"
-	          then
-	            : "t:0:${LINENO}" "Directory is searchable" #>
-	            assign_variable="$2__$1"
-	          else
-	            : "f:0:${LINENO}" "Directory is not searchable" #>
-	            assign_variable="yes__$1"
-	          fi
-	        else
-	          : "f:0:${LINENO}" "Filesystem object is not a directory" #>
-	          assign_variable="yes__$1"
-	        fi
-	      else
-	        : "f:0:${LINENO}" "Filesystem object DNE" #>
-	        assign_variable="yes__$1"
-	      fi
-	    else
-	      : "f:0:${LINENO}" #>
-	      assign_variable="yes__$1"
-	      __print_error__ "Conflicting data" "Line:${LINENO}"
-	      __print_notice__ "Exiting"
-	      exit 2
-	    fi
-	  else
-	    : "f:0:${LINENO}" "Parameter $1 is undefined" #>
-	    assign_variable="yes__$1"
-	  fi
-	  : "Leaving __make_sure_variable_is_defined_properly__'";:
-	}
-	__make_sure_variable_is_defined_properly__ "HOME" "negative"
+  #
+  # Existing commandlines:
+  #
+  #   __make_sure_variable_is_defined_properly__ \
+  #       "HOME" "negative"
+  #
+  #           Var HOME could have values of yes or negative
+  #
+  #   __make_sure_variable_is_defined_properly__ \
+  #       "confirmed_home" "affirmative"
+  #
+  #           Var confirmed_home could have values of yes or affirmative
+  #
+  #   __make_sure_variable_is_defined_properly__ \
+  #       "found_home" "affirmative"
+  #
+  #           Var found_home could have values of yes or affirmative
+  #
+  #
+  #
+  __make_sure_variable_is_defined_properly__ ()
+  {
+    if __check_for_variable_assignment__ "$1"
+    then
+      : "t:0:${LINENO}" "Parameter $1 is defined" #>
+      if test -n "$1" # Confirmation test
+      then
+        : "t:0:${LINENO}" "Result confirmed" #>
+        if eval test -e '$'"$1"
+        then
+          : "t:0:${LINENO}" "Filesystem object exists" #>
+          if eval test -d '$'"$1"
+          then
+            : "t:0:${LINENO}" "Filesystem object is a directory" #>
+            if eval test -x '$'"$1"
+            then
+              : "t:0:${LINENO}" "Directory is searchable" #>
+              assign_variable="$2__$1"
+            else
+              : "f:0:${LINENO}" "Directory is not searchable" #>
+              assign_variable="yes__$1"
+            fi
+          else
+            : "f:0:${LINENO}" "Filesystem object is not a directory" #>
+            assign_variable="yes__$1"
+          fi
+        else
+          : "f:0:${LINENO}" "Filesystem object DNE" #>
+          assign_variable="yes__$1"
+        fi
+      else
+        : "f:0:${LINENO}" #>
+        assign_variable="yes__$1"
+        __print_error__ "Conflicting data" "Line:${LINENO}"
+        #__print_notice__ "Exiting"
+        exit 2
+      fi
+    else
+      : "f:0:${LINENO}" "Parameter $1 is undefined" #>
+      assign_variable="yes__$1"
+    fi
+    : "Leaving __make_sure_variable_is_defined_properly__'";:
+  }
+
+  __make_sure_variable_is_defined_properly__ \
+      "HOME" "negative"
+  # 
+  # Note, possible values for \alter_original_home_value\ are:
+  #   - negative__HOME, or
+  #   - yes__HOME
+  #
   alter_original_home_value="${assign_variable}"
   unset assign_variable
-	  #>
-	  #set -x #>
-	  : exit "${LINENO}" #>
+    #>
+    #set -x #>
+    : exit "${LINENO}" #>
 
-	#_ Note,
-	#_   - Spec. on \logname\: \\The logname utility explicitly ignores
-	#_   the LOGNAME environment variable because environment changes
-	#_   could produce erroneous results.\\
-	#_   - Therefore, use \logname\.
-	#_
-	#_ Question, These commands produce different results. Why?
-	#_       sudo sh -c 'eval echo ~"$( logname )"' sh
-	#_       sudo sh -c 'eval echo ~"${LOGNAME}"' sh
+  #_ Note,
+  #_   - Spec. on \logname\: \\The logname utility explicitly ignores
+  #_   the LOGNAME environment variable because environment changes
+  #_   could produce erroneous results.\\
+  #_   - Therefore, use \logname\.
+  #_
+  #_ Question, These commands produce different results. Why?
+  #_       sudo sh -c 'eval echo ~"$( logname )"' sh
+  #_       sudo sh -c 'eval echo ~"${LOGNAME}"' sh
 
-	:;: "Confirm the value of HOME in two different ways, if possible"
-	#
-	# Get the HOME directory via Tilde Expansion.
-	#_ Note, Workaround for errexit and xtrace visibility, as throughout.
-	if stdout_06_tilde_exp=$(
-	  eval echo ~"$( logname )"
-	)
-	then
-	  : "t:0:${LINENO}" #>
-	  : "Tilde expansion succeeded"
-	else
-	  : "f:$?:${LINENO}" #>
-	  : "Tilde expansion failed"
-	fi
+  :;: "Confirm the value of HOME in two different ways, if possible"
+  #
+  # Get the HOME directory via Tilde Expansion.
+  #
+  #+  Note, Workaround for errexit and xtrace visibility, as
+  #+  throughout.
+  if stdout_06_tilde_exp=$( eval echo ~"$( logname )" )
+  then
+    : "t:0:${LINENO}" #>
+    : "Tilde expansion succeeded"
+  else
+    : "f:$?:${LINENO}" #>
+    : "Tilde expansion failed"
+  fi
 
-	# Get the HOME directory from /etc/passwd.
-	if test -f /etc/passwd
-	then
-	  : "t:0:${LINENO}" #>
-	  stdout_02_id_un=$( id -un )
+  # Get the HOME directory from /etc/passwd.
+  if test -f /etc/passwd
+  then
+    : "t:0:${LINENO}" #>
+    stdout_02_id_un=$( id -un )
 
-	  if grep -q "${stdout_02_id_un}" /etc/passwd
-	  then
-	    : "t:0:${LINENO}" #>
-	    #> Workaround for errexit and xtrace visibility.
-	    if stdout_07_awk_etc_passwd=$(
-	         awk -F: -v usrnm="${stdout_02_id_un}" \
-	           '$1 == usrnm { print $6 }' /etc/passwd
-	         )
-	    then
-	      : "t:0:${LINENO}" #>
-	      : "\\awk\\ succeeded"
-	    else
-	      : "f:$?:${LINENO}" #>
-	      : "\\awk\\ failed"
-	    fi
-	  else
-	    : "f:$?:${LINENO}" #>
-	    __print_error__ \
-	      "Username is not present in /etc/passwd! " "${stdout_02_id_un}"
-	    __print_notice__ "Exiting"
-	    exit 1
-	  fi
-	else
-	  : "f:$?:${LINENO}"
-	  __print_error__ "Are there systems without /etc/passwd?"
-	  __print_notice__ "Exiting"
-	  exit 2
-	fi
-	  #>
-	  #set -x #>
-	  : exit "${LINENO}" #>
+    if grep -q "${stdout_02_id_un}" /etc/passwd
+    then
+      : "t:0:${LINENO}" #>
+      #+ Workaround for errexit and xtrace visibility.
+      if stdout_07_awk_etc_passwd=$(
+           awk -F: -v usrnm="${stdout_02_id_un}" \
+             '$1 == usrnm { print $6 }' /etc/passwd
+           )
+      then
+        : "t:0:${LINENO}" #>
+        : "\\awk\\ succeeded"
+      else
+        : "f:$?:${LINENO}" #>
+        : "\\awk\\ failed"
+      fi
+    else
+      : "f:$?:${LINENO}" #>
+      __print_error__ \
+        "Username is not present in /etc/passwd! " "${stdout_02_id_un}"
+      #__print_notice__ "Exiting"
+      exit 1
+    fi
+  else
+    : "f:$?:${LINENO}"
+    __print_error__ "...there are systems without \"/etc/passwd\"???"
+    __print_notice__ "Exiting"
+    exit 2
+  fi
+    #>
+    #set -x #>
+    : exit "${LINENO}" #>
 
-	# Check for conflicting results.
-	#_ Note, in theory, both variables could be of zero length.
-	if test "X${stdout_06_tilde_exp}" = "X${stdout_07_awk_etc_passwd}"
-	then
-	  : "t:0:${LINENO}" "Result confirmed" #>
-	  confirmed_home=${stdout_06_tilde_exp}
+  # Check for conflicting results.
+  #_ Note, in theory, both variables could be of zero length.
+  if test "X${stdout_06_tilde_exp}" = "X${stdout_07_awk_etc_passwd}"
+  then
+    : "t:0:${LINENO}" "Result confirmed" #>
+    confirmed_home=${stdout_06_tilde_exp}
     found_home=NA
-	else
-	  : "f:$?:${LINENO}"
-	  __print_notice__ "Conflicting data" "Line:${LINENO}"
-	  confirmed_home="::Conflicting_data::"
-
-	  #_ Note, if you don\t exit, then which one do you use? Whichever
-	  #_ one exists. Tilde Expansion is specified. The GNU Coreutils
-	  #_ 9.11 version of \id\ requires /etc/passwd, but that doesn\t
-	  #_ necessarily mean that other implementations do also.
-
-	  if test -n "${stdout_06_tilde_exp}"
-	  then
+  else
+    : "f:$?:${LINENO}"
+    __print_notice__ "Conflicting data" "Line:${LINENO}"
+    confirmed_home="::Conflicting_data::"
+    found_home=""
+    #_
+    #_  Note, 
+    #_    If the data is incongruent, then which variable does the
+    #_  script use? Whichever one exists?
+    #_    Tilde Expansion is specified.
+    #_    The GNU Coreutils 9.11 version of \id\ requires
+    #_  /etc/passwd, but that doesn\t necessarily mean that other
+    #_  implementations do also. The Posix 2008 spec. of \id\ doesn\t
+    #_  mention /etc/passwd at all.
+    #_    So prefer data from Tilde Expansion.
+    #_
+    if test -n "${stdout_06_tilde_exp}"
+    then
       : "t:0:${LINENO}"
-	    found_home=${stdout_06_tilde_exp}
-	  else
+      found_home=${stdout_06_tilde_exp}
+    else
       : "f:$?:${LINENO}"
-	    if test -n "${stdout_07_awk_etc_passwd}"
-	    then
+      if test -n "${stdout_07_awk_etc_passwd}"
+      then
         : "t:0:${LINENO}"
-	      found_home=${stdout_07_awk_etc_passwd}
-	    else
+        found_home=${stdout_07_awk_etc_passwd}
+      else
         : "f:$?:${LINENO}"
-	      found_home="::No_valid_values_were_found::"
-	      __print_warning__ "Value not found" "HOME"
-	      exit 2
-	    fi
-	  fi
-	fi
+        found_home="::No_valid_values_were_found::"
+        __print_warning__ "Value not found" "HOME"
+        exit 2
+      fi
+    fi
+  fi
 
+  # Check the new data for validity.
   if test -n "${confirmed_home}"
   then
     : "t:0:${LINENO}"
-	  __make_sure_variable_is_defined_properly__ "confirmed_home" "affirmative"
+    __make_sure_variable_is_defined_properly__ \
+        "confirmed_home" "affirmative"
+    # 
+    # Note, possible values for \alter_confirmed_home_value\ are:
+    #   - affirmative__confirmed_home, or
+    #   - yes__confirmed_home
+    #
     alter_confirmed_home_value="${assign_variable}"
     alter_found_home_value="no"
     unset assign_variable
   else
     : "f:$?:${LINENO}"
     alter_confirmed_home_value="yes"
+    alter_found_home_value=""
     if test -n "${found_home}"
     then
       : "t:0:${LINENO}"
-	    __make_sure_variable_is_defined_properly__ "found_home" "affirmative"
+      __make_sure_variable_is_defined_properly__ \
+          "found_home" "affirmative"
+      #
+      # Note, possible values for \alter_found_home_value\, are:
+      #   - affirmative__found_home, or
+      #   - yes__found_home
+      #
       alter_found_home_value="${assign_variable}"
       unset assign_variable
     else
       : "f:$?:${LINENO}"
+      __print_notice__ \
+          "Data from both sources are of zero length" "Line:${LINENO}"
     fi
   fi
     :;: #>
@@ -990,175 +1037,177 @@ else
     : "alter_found_home_value: ${alter_found_home_value:-}" #>
     exit "${LINENO}" #>
 
-	  # Bug, there\s a few logic bugs in this section, depending on what
-	  # the outputs from Tilde Expansion and /etc/passwd could be.
+    # Bug, there\s a few logic bugs in this section, depending on what
+    # the outputs from Tilde Expansion and /etc/passwd could be.
     #
     # ...yeah, it\s still messed up...
+    #
+    #   Var  HOME             could have values of  yes   or  negative
+    #   Var  confirmed_home   could have values of  yes   or  affirmative
+    #   Var  found_home       could have values of  yes   or  affirmative
 
-
-  # If HOME matches \confirmed_home\, and if 
+  # If HOME matches \confirmed_home\, and if
   # \alter_original_home_value\ matches \negative\, then you\re
   # done. Leave HOME as-is.
+  #
+  # Do HOME and \confirmed_home\ have the same value?
   if test "${HOME}" = "${confirmed_home}"
   then
-
-    # HOME does match \confirmed_home\
+    # Yes, HOME and \confirmed_home\ have the same value.
+    #
+    # Did HOME pass all of the tests?
+    if test "negative__HOME" = "${alter_original_home_value}"
+    then
+      # Yes, HOME passed all of the tests.
+      if HOME=${HOME}; then : "t:0:${LINENO}"; else : "f:$?:${LINENO}"; fi
+      # Done
     
-    case "${alter_original_home_value}" in
-      negative )
-        # negative    = passed tests; do not change
-        HOME=${HOME}
-        ;;
-      affirmative | yes )
-        # affirmative = passed tests; do change
-        # yes         = failed tests; do change
-        HOME=${confirmed_home}
-        ;;
-      * )
-        : Error
-        ;;
-    esac
+    else 
+      # No, HOME failed some of the tests.
+      #
+      # But HOME is equivalent to \confirmed_home\, so you cannot use
+      # that value either.
+      #
+      # Did the third variable, \found_home\, pass all of the tests?
+      if test "affirmative__found_home" = "${alter_found_home_value}"
+      then
+        # Yes, \found_home\ passed all of the tests.
+        if HOME=${found_home}; then : "t:0:${LINENO}"; else : "f:$?:${LINENO}"; fi
 
+        # Done
+
+      else
+        # No, \found_home\ failed some of the tests.
+        #
+        # So none of the possible values for HOME passed all of the
+        # tests.
+        #
+        # So use the filesystem root directory. Rationale below.
+        if HOME="/"; then : "t:0:${LINENO}"; else : "f:$?:${LINENO}"; fi
+
+        # Done
+
+      fi
+    fi
   else
+    # No, HOME and \confirmed_home\ do NOT have the same value.
+    #
+    # Did HOME pass all of the tests?
+    if test "negative__HOME" = "${alter_original_home_value}"
+    then
+      # Yes, HOME passed all of the tests.
+      #
+      # But, HOME and \confirmed_home\ do not have the same value.
+      #
+      # So, did \confirmed_home\ pass all of the tests?
+      if test "affirmative__confirmed_home" = "${alter_confirmed_home_value}"
+      then
+        # Yes, \confirmed_home\ passed all of the tests.
+        #
+        # So both values passed all of the tests.
+        #
+        __print_warning__ "Conflicting data" "Line:${LINENO}"
 
-    # HOME doesn\t match \confirmed_home\, so
+        # If \found_home\ also passed all of the tests, then use that
+        # one because \found_home\ is based on /etc/passwd.
+        #
+        # Did \found_home\ pass all of the tests?
+        if test "affirmative__found_home" = "${alter_found_home_value}"
+        then
+          # Yes, \found_home\ passed all of the tests.
+          if HOME=${found_home}; then : "t:0:${LINENO}"; else : "f:$?:${LINENO}"; fi
+        
+          # Done
+    
+        else
+          # No, \found_home\ failed some of the tests.
+          #
+          # Between the verified values of HOME and \confirmed_home\,
+          # which should be used: the one set by the user or the one
+          # identified by Tilde Expansion?
+          #
+          # The one set by the user could be malicious, so use the
+          # one identified by Tilde Expansion: \confirmed_home\.
+          if HOME=${confirmed_home}; then : "t:0:${LINENO}"; else : "f:$?:${LINENO}"; fi
 
-    # if \alter_confirmed_home_value\ matches \affirmative\ then
-    # assign the value of \confirmed_home\ to the variable HOME, and
-    # you\re done.
+          # Done
+    
+        fi
+      else
+        # No, \confirmed_home\ failed some of the tests.
+        #
+        # Since HOME passed all of the tests, and since HOME and 
+        # \confirmed_home\ do not have the same value, keep the 
+        # current value of HOME.
+        if HOME=${HOME}; then : "t:0:${LINENO}"; else : "f:$?:${LINENO}"; fi
 
-    case "${alter_confirmed_home_value}" in
-      negative )
-        # negative    = passed tests; do not change
-        ;;
-      affirmative | yes )
-        # affirmative = passed tests; do change
-        # yes         = failed tests; do change
+        # Done
+    
+      fi
+    else 
+      # No, HOME failed some of the tests.
+      #
+      # Since HOME and \confirmed_home\ do not have the same value,
+      #
+      # Did \confirmed_home\ pass all of the tests?
+      if test "affirmative__confirmed_home" = "${alter_confirmed_home_value}"
+      then
+        # Yes, \confirmed_home\ passed all of the tests.
+        if HOME=${confirmed_home}; then : "t:0:${LINENO}"; else : "f:$?:${LINENO}"; fi
 
-        case "${alter_found_home_value}" in
-          affirmative ) # do change
-            HOME="${found_home}"
-            ;;
-          negative )    # do not change
-            ;;
-          yes )         # do change
-            HOME="${found_home}"
-            ;;
-        esac
-        ;;
-      * )
-        : Error
-        ;;
-    esac
+        # Done.
 
-    else
-      # \alter_confirmed_home_value\ doesn't match \affirmative\, so
+      else
+        # No, \confirmed_home\ failed some of the tests.
+        #
+        # So both HOME and \confirmed_home\ failed some of the tests.
+        #
+        # Did \found_home\ pass all of the tests?
+        if test "affirmative__found_home" = "${alter_found_home_value}"
+        then
+          # Yes, \found_home\ passed all of the tests.
+          if HOME=${found_home}; then : "t:0:${LINENO}"; else : "f:$?:${LINENO}"; fi
+        
+          # Done.
 
-      # if \alter_found_home_value\ matches \affirmative\ then
-      # assign the value of \confirmed_home\ to the variable HOME, and
-      # you\re done.
-
-
+        else
+          # No, \found_home\ failed some of the tests.
+          #
+          # So all three values failed some of the tests.
+          #
+          # So then which value should be used?
+          #   - The invalid value from the user,
+          #   - The invalid value from Tilde Expansion, or
+          #   - The invalid value from /etc/passwd?
+          #
+          # It depends on how each value failed the tests.
+          #
+          # If any value failed with reason \.*__nosrch\, then use
+          # that value. 
+          #
+          # But, why on earth would a HOME directory not be
+          # searchable by USER??
+          #
+          # ...yeah, there really isn\t a good reason why a value of
+          # HOME would be non-searchable directory. Yeah, no.
+          #
+          # So use the NUL string? Use the filesystem root?
+          #
+          # Honestly, the filesystem root might be the best choice.
+          # At least it\s guaranteed to always exist, as far as I
+          # know.
+          if HOME="/"; then : "t:0:${LINENO}"; else : "f:$?:${LINENO}"; fi
+        fi
+      fi
     fi
   fi
-
-	#   assign_variable   [y|n]
-	printf '%s' "${assign_variable}" | grep -e 'yes__[STRING]'
-
-	#   assignment stmt   [succeeds|fails]
-	HOME="${confirmed_home}"
-
-
-	#######  INCORRECT  #######
-	#
-	# Here through to section on PWD
-
-	# To assign or not to assign the variable.
-	if test "yes" = "${assign_variable}"
-	then
-	  : "t:0:${LINENO}" #> #>
-	  if ! HOME="${confirmed_home}"
-	  then
-	    : "f:$?:${LINENO}" #>
-	    __print_error__ "Assignment to variable failed" "HOME"
-	    __print_notice__ "Exiting"
-	    exit 1
-	  else : "t:0:${LINENO}" "Assignment to HOME succeeded" #>
-	  fi
-	else
-	  : "f:$?:${LINENO}" #>
-	  if test -n "${stdout_07_awk_etc_passwd}"
-	  then
-	    : "t:0:${LINENO}" #>
-	    if ! test "${HOME}" = "${confirmed_home}"
-	    then
-	      : "f:$?:${LINENO}" #>
-	      __print_notice__ \
-	        "Value of HOME disagrees with /etc/passwd" "${HOME}"
-
-	      __make_sure_variable_is_defined_properly__ "stdout_07_awk_etc_passwd" "yes"
-
-	      if test "yes" = "${assign_variable}"
-	      then
-	        : "t:0:${LINENO}" #> #>
-	        __print_notice__ "Resetting" "${stdout_07_awk_etc_passwd}"
-	        if ! HOME=${stdout_07_awk_etc_passwd}
-	        then
-	          : "f:$?:${LINENO}" #>
-	          : "Assignment to HOME failed: HOME could be set RO" #>
-	          readonly -p | grep -E -e "^readonly HOME="
-	        else : "t:0:${LINENO}" "Assignment to HOME succeeded" #>
-	        fi
-	      else : "f:$?:${LINENO}" "Unreachable code" #>
-	      fi
-	    else : "t:0:${LINENO}" "Variables match" #>
-	    fi
-	  else
-	    : "f:$?:${LINENO}" "Var \\stdout_07_awk_etc_passwd\\: empty" #>
-	    if test -n "${stdout_06_tilde_exp}"
-	    then
-	      : "t:0:${LINENO}" #>
-	      if ! test "${HOME}" = "${stdout_06_tilde_exp}"
-	      then
-	        : "f:$?:${LINENO}" #>
-	        __print_notice__ \
-	          "Value of HOME disagrees with Tilde Expansion" "${HOME}"
-
-	        __make_sure_variable_is_defined_properly__ \
-	            "stdout_06_tilde_exp" "yes"
-
-	        if test "yes" = "${assign_variable}"
-	        then
-	          : "t:0:${LINENO}" #> #>
-	          __print_notice__ "Resetting" "${stdout_06_tilde_exp}"
-	          if ! HOME=${stdout_06_tilde_exp}
-	          then
-	            : "f:$?:${LINENO}" #>
-	            : "Assignment to HOME failed: HOME could be set RO" #>
-	            readonly -p | grep -E -e "^readonly HOME="
-	          else : "t:0:${LINENO}" "Assignment to HOME succeeded" #>
-	          fi
-	        else : "f:$?:${LINENO}" "Unreachable code" #>
-	        fi
-	      else : "t:0:${LINENO}" "Variables match" #>
-	      fi
-	    else
-	      : "t:0:${LINENO}" #>
-	      __print_error__ "Both variables have length zero"
-	      __print_notice__ "Exiting"
-	      exit 2
-	    fi
-	  fi
-	fi
     #>
-	  set -x #>
-	  : "HOME: ${HOME}"
-	  #exit 101 #"${LINENO}" #>
-
+    set -x #>
+    : "HOME: ${HOME}" #>
+    exit "${LINENO}" #>
 fi
   #>
   exit "${LINENO}" #>
-
 
 
 :;: "PWD aught to be defined, for \\cd\\ and \\pwd\\"
@@ -1250,7 +1299,7 @@ else
   else
     : "f:$?:${LINENO}" #>
     __print_error__ "Subshell failed" "cd; cd -P ."
-    __print_notice__ "Exiting"
+    #__print_notice__ "Exiting"
     exit 1
   fi
 
@@ -1268,7 +1317,7 @@ fi
 
 
 :;: "Script Variables"
-canpth=
+canpth=""
 nsfod="(No such file or directory)"
   #>
   set -x #>
@@ -1396,3 +1445,4 @@ done
 
 
 exit 00
+
