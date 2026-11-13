@@ -4,6 +4,7 @@
 #
 #   Script is unfinished - 12 Nov 2026 WY
 #
+  #\set -x #>
 #
 #   Manual canonicalization of directories. Output can be in brief or
 # verbose formats; brief is the default; script accepts multiple
@@ -16,51 +17,55 @@
 #
 # Tested on these distros and shells:
 #   - Fedora 44: bash-5.3.9
-#   - Fedora 45: bash-5.3.15
+#   - Fedora 45: bash-5.3.15, dash-0.5.13.2, ksh-1.0.10,
+#       mksh-59c-16, oksh-7.9-2, yash-2.61, zsh-5.9.2.
 #
 #_ Notes:
 #_  - Redirections are applied before any expansions occur.
 #_  - \#!/bin/env -i sh\ fails.
 #_  - LINENO does exist in Posix 2008.
-#_  - Reportedly, Solaris 10 uses a Bourne s\h w\hich is not Posix
+#_  - Reportedly, Solaris 10 uses a Bourne sh which is not Posix
 #_  compliant.
 #_      https://unix.stackexchange.com/questions/322035/\
 #_        are-there-still-systems-around-with-a-bin-sh-binary
-#_  - Reportedly, in Busybox \a\wk\ is optional.
+#_  - Reportedly, in Busybox \awk\ is optional.
 #_    - \awk\s been removed from this script.
-#_  - When called from a restricted interactive s\hell, the script
-#_  does not inherit the restricted s\etting.
+#_  - When called from a restricted interactive shell, the script
+#_  does not inherit the restricted setting.
 #_  - Both \realpath\ and \readlink\ weren\t specified in Posix until
 #_  2024.
 #_  - The \-P\ option to \type\ is not portable.
-#_  - The \p\athchk\ utility offers three separate s\ets of tests;
-#_  there is no overlap between sai\d s\ets in the specification, but
+#_  - The \pathchk\ utility offers three separate sets of tests;
+#_  there is no overlap between said sets in the specification, but
 #_  in GNU utilities there is.
-#_  - The \-q\ option to \g\rep\ does exist in Posix 2008.
+#_  - The \-q\ option to \grep\ does exist in Posix 2008.
 #_  - In Posix-2008, the handling of \//\ is intentionally
 #_  implementation defined, so catch it, flag it as an error, and
-#_  write a warning to Stderr. See spec. on \d\irname\.
-#_  - Defining directories with a trailing f\orward slas\h will
+#_  write a warning to Stderr. See spec. on \dirname\.
+#_  - Defining directories with a trailing forward slash will
 #_  effect whether \[[\, \test\, \[\ and \stat\ dereference
 #_  symlinks. However, \realpath -e\ will still resolve such
 #_  strings correctly.
-#_  - The \-r\ option to \h\as\h\ does exist in Posix 2008.
-#_  - If PATH is s\et RO in the interactive calling s\hell, in the
+#_  - The \-r\ option to \hash\ does exist in Posix 2008.
+#_  - If PATH is set RO in the interactive calling shell, in the
 #_  script PATH can still be altered.
-#_  - For \r\eadonly\ without arguments, the results are unspecified. In
-#_  Bas\h, attempting in a script to assign a value to a RO variable is
+#_  - For \readonly\ without arguments, the results are unspecified. In
+#_  Bash, attempting in a script to assign a value to a RO variable is
 #_  a fatal error, but that doesn\t appear to have been specified by
 #_  Posix in 2008.
-#_  - Names of special built-ins cannot be us\ed as names of functions
-#_  (ie, \uns\et\).
-#_  - Option \-v\ of utility \uns\et\ is in fact specified in 2008.
+#_  - Names of special built-ins cannot be used as names of functions
+#_  (ie, \unset\).
+#_  - Option \-v\ of utility \unset\ is in fact specified in 2008.
 #_  - The \!\ keyword doesn\t print in xtrace.
 #_  - Reminder: don\t change the name of /etc/passwd. Bad things
 #_  happen.
+#_  - In Zsh...
+#_    - \set +x\ within a function appears to be in local scope.
+#_    - \command\ cannot find built-ins, apparently.
+#_  - In Oksh, evidently, \hash\ is not available.
 
   #> Debug.
   #reset; clear; grep -vFe '#>' -e '#_' ./candr.xtrace 2>&1 | less -RNS
-  #\set -x #>
   \set -e #>
   \set -f #> Disable pathame expansion.
   #\: #>
@@ -85,7 +90,13 @@
 IFS=' 	
 '
 \unalias -a
-unset -f command grep hash set
+#> Workaround for errexit.
+if ! unset -f command grep hash set 2>/dev/null
+then
+  : "f:$?:${LINENO}" #>
+  : "Command \\unset\\ returned non-zero"
+else : "t:0:${LINENO}" #>
+fi
 
 # PATH could be set as RO.
 if ! PATH="$( command -p getconf PATH ):${PATH}"
@@ -122,12 +133,12 @@ usage_msg="${special_var_zero}:
           --help      -h
           --verbose   -v
 "
-unset ec0 ec1 ec2 ec3 ec4 ec5
+unset ec0 ec1 ec2 ec3 ec4 ec5 ec9
 
 
 :;: "Functions"
 #_
-#_ Uns\et xtrace and prepare to restore state at the end of this
+#_ Unset xtrace and prepare to restore state at the end of this
 #_ section.
 #_
 #_ Usage:
@@ -142,6 +153,11 @@ __xtrace_off__ ()
     *) __reset_xtrace__ () { :; } ;;
   esac
   : "Leaving __xtrace_off__";: #>
+}
+
+__reset_xtrace__ ()
+{
+  :
 }
 
 : "Define function:  __input_required__" #>
@@ -168,9 +184,9 @@ __input_required__ ()
 #_     __check_for_variable_assignment__ [Unexpanded variable name]
 #_     __check_for_variable_assignment__ HOME
 #_
-#_ Note, this particular function is us\ed in \if...fi\ tests, so the
-#_ fact that it ends with a pipeline w\hich could r\eturn false is
-#_ intended. However, as a standalone function, erre\xit, if the
+#_ Note, this particular function is used in \if...fi\ tests, so the
+#_ fact that it ends with a pipeline which could return false is
+#_ intended. However, as a standalone function, errexit, if the
 #_ variable at \$1\ has no assigned value, causes the script to
 #_ halt. To have halted would have been an error. Yet, it\s Posix
 #_ 2008, so the least confusing workaround has been applied.
@@ -267,7 +283,7 @@ __print_warning__ ()
 : "Define function:  __exit_per_global_return_code__" #> #>
 #_
 #_ If the value of variable \global_return_code\ is non-zero, then
-#_ e\xit.
+#_ exit.
 #_
 #_ Usage:
 #_       __exit_per_global_return_code__ [no arguments]
@@ -293,7 +309,7 @@ __exit_per_global_return_code__ ()
   #> Script Testing
   #set -- #>
   #set -- a b c #>
-  #set -- a b c; shift 4 #> Error: "s\hift count out of range"
+  #set -- a b c; shift 4 #> Error: "shift count out of range"
   #set -- a b c; shift 3 #>
   #__input_required__ "$@" #>
   #exit "${LINENO}" #>
@@ -330,7 +346,7 @@ case "$1" in
   * )
     : "\\case\\ branch: no options: use default: \\--brief\\" #>
     output_verbose_on=no
-    #_ Note, No \s\hift\ c\ommand.
+    #_ Note, No \shift\ command.
     ;;
 esac
   #>
@@ -345,8 +361,10 @@ __input_required__ "$@"
 
 
 :;: "Commands"
+print_value_of_path=no
 
-#_ Utilities & Special Builtins
+#_ Utilities
+#_
 #_   Script Test string: \codeblocks\ #>
 #_
 # Remove the hash table, so that PATH lookups are forced and
@@ -354,7 +372,7 @@ __input_required__ "$@"
 # \hash\.
 #_
 #_ Note, In Bash on Fedoras 44 & 45, this recommendation works as
-#_ expected even if PATH is s\et as RO.
+#_ expected even if PATH is set as RO.
   #>
   #> Script Testing:
   #readonly PATH #>
@@ -369,42 +387,41 @@ then
   if command -v hash
   then
     : "t:0:${LINENO}" #>
-    if ! hash -r
+    if hash -r
     then
       : "f:$?:${LINENO}" #>
       __print_warning__ "Command failed" "hash -r"
     else : "t:0:${LINENO}" #>
     fi
-  else : "f:$?:${LINENO}" #>
-    #_ Note, If \h\ash\ is NA on the system, then this condition will
+  else
+    : "f:$?:${LINENO}" #>
+    #_ Note, If \hash\ is NA on the system, then this condition will
     #_ be caught in the next section.
+    __print_notice__ "Command is not in PATH" "hash"
+    print_value_of_path=yes
   fi
 else : "t:0:${LINENO}" #>
 fi
 
 #_ If xtrace is on, turn it off.
-__xtrace_off__
+#__xtrace_off__
   #>
   #> Script Testing:
   #enable -n break #>
 
-#_ Tests for each c\ommand
-#_ Note, Commands w\hich are not Posix at all: \e\nable\ and \w\hich\.
-print_value_of_path=no
-
+#_ Tests for each command
+#_ Note, Commands which are not Posix at all: \enable\ and \which\.
 for aA in \
   "awk" \
   "cd" \
   "command" \
   "dirname" \
   "echo" \
-  "enable" \
   "env" \
   "file" \
   "find" \
   "getconf" \
   "grep" \
-  "hash" \
   "id" \
   "logname" \
   "pathchk" \
@@ -416,28 +433,17 @@ for aA in \
   "test" \
   "true" \
   "unalias" \
-  "which" \
-  "break" \
-  ":" \
-  "continue" \
-  "eval" \
-  "exit" \
-  "readonly" \
-  "return" \
-  "set" \
-  "shift" \
-  "unset"
   #>
   #> count is 34
   #>
   #"codeblocks" #> Not Posix at all, 2008-2024, and not installed.
   #>
   #> Special Builtins per Posix 2008:
-  #>    b\reak : c\ontinue . e\val e\xec e\xit e\xport r\eadonly
-  #>    r\eturn s\et s\hift t\imes t\rap u\ns\et
+  #>    break : continue . eval exec exit export readonly
+  #>    return set shift times trap unset
   #>
 do
-    #> Just to see in w\hich directory each utility is located.
+    #> Just to see in which directory each utility is located.
     #which "${aA}" 2>/dev/null || command -v "${aA}" #>
     #continue #>
     #>
@@ -445,19 +451,31 @@ do
     #>   - At 11/12, all non-special-builtins are located in
     #>     /usr/bin on Fedora 45.
     #>
-  #_ Determine whether c\ommand \aA\ is in PATH.
+  #_ Determine whether command \aA\ is in PATH.
   if ! command -pv -- "${aA}" >/dev/null
   then
     : "f:${ec0:=$?}" #>
+      #>
+      #command -v -- "${aA}" ||: #>
+
     global_return_code=${ec0:=$?}
-    __print_notice__ "Command is not in PATH" "${aA}"
     print_value_of_path=yes
+
+    __print_notice__ "Command is not in PATH" "${aA}"
+
   else : "t:0:${LINENO}" #>
   fi
 
-  #_ Uns\et user functions
-  unset -f "${aA}"
+  #_ Unset user functions
+  #> Workaround for errexit.
+  if ! unset -f "${aA}" 2>/dev/null
+  then
+    : "f:$?:${LINENO}" #>
+    : "Command \\unset\\ returned non-zero"
+  else : "t:0:${LINENO}" #>
+  fi
 done
+unset aA #>
   #>
   #exit "${LINENO}" #>
 
@@ -472,7 +490,48 @@ then
 else : "f:$?${LINENO}" #>
 fi
 
-#_ If any of the c\ommands were missing, then e\xit.
+#_ Built-ins, Special and Regular
+for cC in \
+  "break" \
+  ":" \
+  "continue" \
+  "eval" \
+  "exit" \
+  "readonly" \
+  "return" \
+  "set" \
+  "shift" \
+  "unset"
+do
+  #_ Determine whether Special Built-in \cC\ is in PATH.
+  if ! command -v -- "${cC}" >/dev/null
+  then
+    : "f:${ec9:=$?}" #>
+
+    global_return_code=${ec9:=$?}
+    print_value_of_path=yes
+
+    __print_notice__ "Command is not in PATH" "${cC}"
+    
+  else : "t:0:${LINENO}" #>
+  fi
+
+  #_ Unset user functions
+  #> Workaround for errexit.
+  if ! unset -f "${cC}" 2>/dev/null
+  then
+    : "f:$?:${LINENO}" #>
+    : "Command \\unset\\ returned non-zero"
+  else : "t:0:${LINENO}" #>
+  fi
+done
+unset cC #>
+  #>
+  #exit "${LINENO}" #>
+
+
+
+#_ If any of the commands were missing, then exit.
 __exit_per_global_return_code__
   #>
   #set -x #>
@@ -495,7 +554,7 @@ do
     #./candr.xtrace "$(dd if=/dev/urandom bs=32b count=1 2>/dev/null)" #>
     #>
   stdout_10_tr_d=$(
-    printf '%s' "${bB}"
+    printf '%s' "${bB}" \
       | tr -d '\0'
     )
   stdout_11_strings_n1=$(
@@ -549,14 +608,14 @@ do
   else : "t:0:${LINENO}" #>
   fi
 
-  # Tests on f\ilename length.
+  # Tests on filename length.
   #_
-  #_ \p\athchk [no arguments]\ checks \each component of each pathname
-  #_ of the underlying f\ile system\ using PATH_MAX and NAME_MAX, for any
-  #_ non-searchable directory, and for any character that is invali\d in
+  #_ \pathchk [no arguments]\ checks \\each component of each pathname
+  #_ of the underlying file system\\ using PATH_MAX and NAME_MAX, for any
+  #_ non-searchable directory, and for any character that is invalid in
   #_ its containing directory.
   #_
-  #_ On Fedora 45, the default values according to \g\etconf\:
+  #_ On Fedora 45, the default values according to \getconf\:
   #_   NAME_MAX                            255
   #_   PATH_MAX                            4096
     #>
@@ -568,7 +627,7 @@ do
     : "f:${ec4:=$?}:${LINENO}" #>
     global_return_code=${ec4:=$?}
     __print_error__ \
-      "Error received from \\p\athchk [no args]\\" "${bB}"
+      "Error received from \\pathchk [no args]\\" "${bB}"
 
     #_ Print out the values of the relevant variables.
     __print_notice__ "Values of relevant system parameters"
@@ -589,14 +648,14 @@ do
     : "f:${ec5:=$?}:${LINENO}" #>
     global_return_code=${ec5:=$?}
     __print_error__ \
-      "Error received from \\p\athchk -P\\" "${bB}"
+      "Error received from \\pathchk -P\\" "${bB}"
     break 1
   else : "t:0:${LINENO}" #>
   fi
 done
 :;: "End of loop" #>
 
-#_ If any input vali\dation problems occurred, then e\xit.
+#_ If any input validation problems occurred, then exit.
 __exit_per_global_return_code__
   #>
   #set -x #>
@@ -604,29 +663,29 @@ __exit_per_global_return_code__
 
 #> DEBUG BLOCK
 #>
-:;: "IF XTRACE IS ON -- Section on \\g\etconf\\" #>
-#>  BASH_ENV          # for \bas\h\
-#>  CDPATH            # for \c\d\
-#>  ENV               # for \s\h\
-#>  HOME              # for \c\d\
+:;: "IF XTRACE IS ON -- Section on \\getconf\\" #>
+#>  BASH_ENV          # for \bash\
+#>  CDPATH            # for \cd\
+#>  ENV               # for \sh\
+#>  HOME              # for \cd\
 #>  LC_ALL            # Common
 #>  LD_PRELOAD        # for paranoia ;-P
 #>  LOGNAME           # for ?
-#>  NAME_MAX          # for \p\athchk [no args]\
-#>  PATH_MAX          # for \c\d\, \p\athchk [no args]\ and \p\wd\
-#>  OLDPWD            # for \c\d\
-#>  PATH              # for \s\h\
-#>  PWD               # for \c\d\ and \p\wd\
+#>  NAME_MAX          # for \pathchk [no args]\
+#>  PATH_MAX          # for \cd\, \pathchk [no args]\ and \pwd\
+#>  OLDPWD            # for \cd\
+#>  PATH              # for \sh\
+#>  PWD               # for \cd\ and \pwd\
 #>  SYMLOOP_MAX       # for \chdir()\
 if printf '%s' "$-" | grep -q -e "x" #>
 then #>
-  : "t:0:${LINENO}" "Parameter values per \\g\etconf\\" #>
-  __xtrace_off__ #>
+  : "t:0:${LINENO}" "Parameter values per \\getconf\\" #>
+  __xtrace_off__; set +x #>
   stdout_01_getconf_a=$( getconf -a ) #>
   for eE in BASH_ENV CDPATH ENV HOME LC_ALL LD_PRELOAD NAME_MAX PATH_MAX OLDPWD PATH PWD SYMLOOP_MAX #>
   do #>
       #echo "eE: ${eE}" #>
-    #> Note, this particular \if..fi\ is a workaround for erre\xit
+    #> Note, this particular \if..fi\ is a workaround for errexit
     #> and xtrace visibility.
     if printf '%s\n' "${stdout_01_getconf_a}" | grep -E -e "^${eE} " #>
     then : "t:0:${LINENO}" #>
@@ -634,7 +693,7 @@ then #>
     fi #>
   done #>
   __reset_xtrace__ #>
-else : "f:$?:${LINENO}" "Section on \\g\etconf\\: xtrace is off" #>
+else : "f:$?:${LINENO}" "Section on \\getconf\\: xtrace is off" #>
 fi #>
   #>
   #set -x #>
@@ -642,7 +701,7 @@ fi #>
   #>
 
 :;: "Unset Environment Variables"
-#_ Uns\et certain e\nv. vars. if possible and if they\re defined. See
+#_ Unset certain env. vars. if possible and if they\re defined. See
 #_ specification pages under Posix 2008.
   #>
   #> Script Testing:
@@ -670,12 +729,12 @@ do
   then
     : "t:0:${LINENO}" "${fF} is defined" #>
     #_ Note, define \cmd_str\ as a particular invocation so that (a)
-    #_ the c\ommand can be executed and so that (b) the various related
-    #_ messages can cite the precise c\ommand string w\hich was
+    #_ the command can be executed and so that (b) the various related
+    #_ messages can cite the precise command string which was
     #_ executed.
     cmd_str='unset -v -- "${fF}"'
 
-    if eval command -p -- "${cmd_str}"
+    if eval -- "${cmd_str}"
     then
       : "t:0:${LINENO}" "\\${cmd_str}\\ returned zero" #>
       if __check_for_variable_assignment__ "${fF}"
@@ -693,7 +752,7 @@ do
   fi
 done
   #>
-  set -x #>
+  #set -x #>
   : exit "${LINENO}" #>
   #unset HOME #>
   #HOME=/ #>
@@ -713,11 +772,11 @@ done
 # Make sure HOME is defined, for \cd\.
 #_
 #_ Notes,
-#_   - Assigning PWD depends on HOME having a vali\d value.
+#_   - Assigning PWD depends on HOME having a valid value.
 #_   - From Posix 2008:
-#_     - Shell Command Language 2.6.1: \\If HOME is uns\et, the results
+#_     - Shell Command Language 2.6.1: \\If HOME is unset, the results
 #_     are unspecified.\\
-#_   - The \i\d\ utility has no knowledge of \sudo\ or means of
+#_   - The \id\ utility has no knowledge of \sudo\ or means of
 #_   differentiating regular vs. elevated permissions.
 #_   - If the name of /etc/passwd is changed, \id\ throws an error.
 stdout_02_id_un=$( id -un )
@@ -784,10 +843,10 @@ __make_sure_home_is_defined__ "HOME" "no"
   : exit "${LINENO}" #>
 
 #_ Note,
-#_   - Spec. on \l\ogname\: \\The l\ogname utility explicitly ignores
-#_   the LOGNAME e\nvironment variable because e\nvironment changes
+#_   - Spec. on \logname\: \\The logname utility explicitly ignores
+#_   the LOGNAME environment variable because environment changes
 #_   could produce erroneous results.\\
-#_   - Therefore, use \l\ogname\.
+#_   - Therefore, use \logname\.
 #_
 #_ Question, These commands produce different results. Why?
 #_       sudo sh -c 'eval echo ~"$( logname )"' sh
@@ -936,19 +995,19 @@ else
   fi
 fi
 
-  echo "HOME: ${HOME}"
-  #set -x #>
-  exit "${LINENO}" #>
+  set -x #>
+  : "HOME: ${HOME}"
+  exit 101 #"${LINENO}" #>
 
-# PWD aught to be defined, for \c\d\ and \p\wd\.
+# PWD aught to be defined, for \cd\ and \pwd\.
 #_
 #_ Notes,
 #_   - In Posix-2008 effects of assignments to PWD are unspecified.
-#_   - In Bas\h 5.3.9+,
-#_     - If restricted mode is e\nabled and PWD is undefined, a call to
-#_     \c\d\ will not assign a value to PWD.
+#_   - In Bash 5.3.9+,
+#_     - If restricted mode is enabled and PWD is undefined, a call to
+#_     \cd\ will not assign a value to PWD.
 #_     - Values of HOME and PWD are inherited from the calling
-#_     interactive s\hell.
+#_     interactive shell.
 #_
 if __check_for_variable_assignment__ "PWD"
 then
@@ -956,74 +1015,74 @@ then
 else
   : "f:$?:${LINENO}" #>
 
-  #_ A call to \c\d\ is suppos\ed to assign a value to PWD.
+  #_ A call to \cd\ is supposed to assign a value to PWD.
   #_
   #_ Notes, from Posix 2008:
-  #_  - Shell Command Language 2.6.1: \\If HOME is uns\et, the results
+  #_  - Shell Command Language 2.6.1: \\If HOME is unset, the results
   #_  are unspecified.\\
-  #_  - Spec. of \c\d\, description of algorithm:
+  #_  - Spec. of \cd\, description of algorithm:
   #_    - (Step 1) \\If no directory operand is given and the HOME
-  #_    e\nvironment variable is empty or undefined, the default
+  #_    environment variable is empty or undefined, the default
   #_    behavior is implementation-defined and no further steps
-  #_    s\hall be taken.\\
+  #_    shall be taken.\\
   #_      -- HOME aught to be defined.
-  #_      -- A directory operand aught to be us\ed.
+  #_      -- A directory operand aught to be used.
   #_    - (Step 2) \\If no directory operand is given and the HOME
-  #_    e\nvironment variable is s\et to a non-empty value, the c\d
-  #_    utility s\hall behave as if the directory named in the HOME
-  #_    e\nvironment variable was specified as the directory
+  #_    environment variable is set to a non-empty value, the cd
+  #_    utility shall behave as if the directory named in the HOME
+  #_    environment variable was specified as the directory
   #_    operand.\\
-  #_    - (Step 3) \\If the directory operand begins with a <slas\h>
-  #_    character, s\et curpath to the operand and proceed to step 7.\\
+  #_    - (Step 3) \\If the directory operand begins with a <slash>
+  #_    character, set curpath to the operand and proceed to step 7.\\
   #_    - (Step 4) \\If the first component of the directory operand
   #_    is dot or dot-dot, proceed to step 6.\\
-  #_    - (Step 6) \\If the -P option is in effect, s\et curpath to
+  #_    - (Step 6) \\If the -P option is in effect, set curpath to
   #_    the directory operand. Otherwise....\\
   #_      -- Use the -P option.
   #_    - (Step 7) \\If the -P option is in effect, proceed to step
   #_    10.\\
-  #_    - (Step 10) \\The c\d utility s\hall then perform actions
+  #_    - (Step 10) \\The cd utility shall then perform actions
   #_    equivalent to the chdir() function called with curpath as
   #_    the path argument. If these actions fail for any reason, the
-  #_    c\d utility s\hall display an appropriate error message and the
-  #_    remainder of this step s\hall not be executed. ... If the -P
-  #_    option is in effect, the PWD e\nvironment variable s\hall be
-  #_    s\et to the string that would be output by p\wd -P. If there is
+  #_    cd utility shall display an appropriate error message and the
+  #_    remainder of this step shall not be executed. ... If the -P
+  #_    option is in effect, the PWD environment variable shall be
+  #_    set to the string that would be output by pwd -P. If there is
   #_    insufficient permission on the new directory, or on any
   #_    parent of that directory, to determine the current working
-  #_    directory, the value of the PWD e\nvironment variable is
+  #_    directory, the value of the PWD environment variable is
   #_    unspecified.\\
   #_      -- Any error message aught to be assigned to a variable.
-  #_      -- The output of \p\wd -P\ is relevant.
+  #_      -- The output of \pwd -P\ is relevant.
   #_    - \-P\: \\Handle the operand dot-dot physically; symbolic
-  #_    link components s\hall be resolved before dot-dot components
-  #_    are process\ed.\\
+  #_    link components shall be resolved before dot-dot components
+  #_    are processed.\\
   #_    - SYNOPSIS:
-  #_      - \\c\d [-L|-P] [directory]\\
+  #_      - \\cd [-L|-P] [directory]\\
   #_        - \directory\: \\An absolute or relative pathname of the
-  #_        directory that s\hall become the new working directory.
-  #_        The interpretation of a relative pathname by c\d depends
-  #_        on the -L option and the CDPATH and PWD e\nvironment
+  #_        directory that shall become the new working directory.
+  #_        The interpretation of a relative pathname by cd depends
+  #_        on the -L option and the CDPATH and PWD environment
   #_        variables. If directory is an empty string, the results
   #_        are unspecified.\\
   #_
-  #_  - Posix 2008 \p\wd\:
-  #_    - \\The p\wd utility s\hall write to standard output an
-  #_    absolute pathname of the current working directory, w\hich
-  #_    does not contain the f\ilenames dot or dot-dot.\\
-  #_    - \-P\: \\The pathname written to standard output s\hall not
-  #_    contain any components that refer to f\iles of type symbolic
+  #_  - Posix 2008 \pwd\:
+  #_    - \\The pwd utility shall write to standard output an
+  #_    absolute pathname of the current working directory, which
+  #_    does not contain the filenames dot or dot-dot.\\
+  #_    - \-P\: \\The pathname written to standard output shall not
+  #_    contain any components that refer to files of type symbolic
   #_    link.\\
   #_    - \PWD\: \\An absolute pathname of the current working
-  #_    directory. If an application s\ets or uns\ets the value of PWD,
-  #_    the behavior of p\wd is unspecified.\\
-  #_  - This \if..fi\ structure is a workaround for erre\xit and
+  #_    directory. If an application sets or unsets the value of PWD,
+  #_    the behavior of pwd is unspecified.\\
+  #_  - This \if..fi\ structure is a workaround for errexit and
   #_  xtrace visibility
   #_
   if stderr_cd_P=$(
     cd -- "${HOME}"
     cd -P -- . 2>&1 >/dev/null
-  ) #_ Subs\hell
+  ) #_ Subshell
   then
     : "t:0:${LINENO}" #>
   else
@@ -1044,7 +1103,7 @@ fi
 
 :;: "Script Variables"
 canpth=
-nsfod="(No such f\ile or directory)"
+nsfod="(No such file or directory)"
 
   set -x #>
   #printf '%s\n' stdout #>
@@ -1057,8 +1116,8 @@ nsfod="(No such f\ile or directory)"
 #_ Pseudocode re function __print_output__
 #_
 #_ GL-scriptnm = defined
-#_ GL-p\rintformat=[-b|-v]          (per execution)
-#_ GL-rtnc\de=0                     (per execution)
+#_ GL-printformat=[-b|-v]          (per execution)
+#_ GL-rtncde=0                     (per execution)
 #_
 #_ GL-majloop-input-1 = defined    (per line)
 #_
@@ -1070,11 +1129,11 @@ nsfod="(No such f\ile or directory)"
 #_       _print_output_
 #_
 #_           verbose
-#_             e\cho GL-scriptnm: GL-majloop-input: \
+#_             echo GL-scriptnm: GL-majloop-input: \
 #_                                 [GL-minloop-canpth GL-minloop-STDo/e]
 #_
 #_           brief
-#_             e\cho                                \
+#_             echo                                \
 #_                                 [GL-minloop-canpth GL-minloop-STDo/e]
 #_
 #_
@@ -1084,15 +1143,15 @@ nsfod="(No such f\ile or directory)"
 #_       _print_output_
 #_
 #_           verbose
-#_             e\cho GL-scriptnm: GL-majloop-input: \
+#_             echo GL-scriptnm: GL-majloop-input: \
 #_                                 [GL-minloop-NSFOD GL-minloop-STDo/e]
 #_
 #_           brief
-#_             e\cho                                \
+#_             echo                                \
 #_                                 [GL-minloop-NSFOD GL-minloop-STDo/e]
 #_
 #_
-#_ e\xit GL-rtncode
+#_ exit GL-rtncode
 
 
 : "Define function: __print_output__" #> #>
@@ -1148,7 +1207,7 @@ __print_output__ ()
   set -x #>
 
 
-:;: "The given path must exist in the f\ilesystem"
+:;: "The given path must exist in the filesystem"
 # Script Test input: /dev/qwertyuiop
 for gG
 do
@@ -1167,32 +1226,32 @@ done
 
   # Buggy - rewrite script from this point on.
   #  - put the entire thing in a true loop
-  #    - check for leading forward slas\h
-  #      - if missing, then prepend output of \p\wd\
-  #    - handle a double forward slas\h at the far left of the string
-  #    - using \a\wk -F/\, separate the pathname out into separate
+  #    - check for leading forward slash
+  #      - if missing, then prepend output of \pwd\
+  #    - handle a double forward slash at the far left of the string
+  #    - using \awk -F/\, separate the pathname out into separate
   #    elements
   #    - load the elements into the positional array
-  #    - start with a \symlink_detected\ canary variable, s\et to \no\
-  #      - loop through the array; the i\dea is to use concatenation to
-  #      build up a new pathname; loop on \$# and \$1; use \s\hift\
-  #        - for each element, ad\d one leading forward slas\h to the
+  #    - start with a \symlink_detected\ canary variable, set to \no\
+  #      - loop through the array; the idea is to use concatenation to
+  #      build up a new pathname; loop on \$# and \$1; use \shift\
+  #        - for each element, add one leading forward slash to the
   #        current element
   #        - if there was an existing \canpath\ string from a previous
   #        loop, then prepend that on
-  #        - use both \f\ile\ and \test\ to determine the f\iletype of
+  #        - use both \file\ and \test\ to determine the filetype of
   #        the basename of the \canpath\ string
   #        - if both utilities agree, then
   #          - if element is a symlink, then switch \symlink_detected\
   #          to \yes\
-  #            - get the value of the symlink from \f\ile\
-  #            - test for whether the of value from \f\ile\ has a
-  #            leading forward slas\h
+  #            - get the value of the symlink from \file\
+  #            - test for whether the of value from \file\ has a
+  #            leading forward slash
   #              - if yes, then use the symlink\s value as the total
-  #              pathname thus far and c\ontinue
+  #              pathname thus far and continue
   #              - if no, then append the symlink\s value to the
-  #              existing value of \canpath\ ...and c\ontinue?
-  #          - if element is a directory, then c\ontinue
+  #              existing value of \canpath\ ...and continue?
+  #          - if element is a directory, then continue
   #          - if element is neither a symlink nor a directory, then
   #            - if there are no more elements in the loop, then
   #            \break 1\
@@ -1204,7 +1263,7 @@ done
   #      - if \symlink_detected\ is \yes\, then remain in the true
   #      loop; otherwise \break 2\
   #  - end true loop
-  #  - how do you detect data loops? tmp f\ile of pathnames at top of
+  #  - how do you detect data loops? tmp file of pathnames at top of
   #  each true loop - duplicates mean data loop and error?
 
   #: "output_verbose_on: ${output_verbose_on}"
