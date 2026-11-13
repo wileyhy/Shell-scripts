@@ -1,5 +1,5 @@
 #!/bin/env sh
-# candr.sh / canonicalize-dir.sh
+# candr.xtrace / canonicalize-dir.sh
 # shellcheck disable=SC2028,SC2268,SC2310
 #
 #   Script is unfinished - 12 Nov 2026 WY
@@ -18,47 +18,49 @@
 #   - Fedora 44: bash-5.3.9
 #   - Fedora 45: bash-5.3.15
 #
-#N Notes:
-#N   - Redirections are applied before any expansions occur.
-#N   - \#!/bin/env -i sh\ fails.
-#N   - LINENO does exist in Posix 2008.
-#N   - Reportedly, Solaris 10 uses a Bourne s\h w\hich is not Posix
-#N   compliant.
-#N       https://unix.stackexchange.com/questions/322035/\
-#N         are-there-still-systems-around-with-a-bin-sh-binary
-#N   - Reportedly, in Busybox \a\wk\ is optional.
-#N     - \awk\s been removed from this script.
-#N   - When called from a restricted interactive s\hell, the script
-#N   does not inherit the restricted s\etting.
-#N   - Both \realpath\ and \readlink\ weren\t specified in Posix until
-#N   2024.
-#N   - The \-P\ option to \type\ is not portable.
-#N   - The \p\athchk\ utility offers three separate s\ets of tests;
-#N   there is no overlap between sai\d s\ets in the specification, but
-#N   in GNU utilities there is.
-#N   - The \-q\ option to \g\rep\ does exist in Posix 2008.
-#N   - In Posix-2008, the handling of \//\ is intentionally
-#N   implementation defined, so catch it, flag it as an error, and
-#N   write a warning to Stderr. See spec. on \d\irname\.
-#N   - Defining directories with a trailing f\orward slas\h will
-#N   effect whether \[[\, \test\, \[\ and \stat\ dereference
-#N   symlinks. However, \realpath -e\ will still resolve such
-#N   strings correctly.
-#N   - The \-r\ option to \h\as\h\ does exist in Posix 2008.
-#N   - If PATH is s\et RO in the interactive calling s\hell, in the
-#N   script PATH can still be altered.
-#N   - For \r\eadonly\ without arguments, the results are unspecified. In
-#N   Bas\h, attempting in a script to assign a value to a RO variable is
-#N   a fatal error, but that doesn\t appear to have been specified by
-#N   Posix in 2008.
-#N   - Names of special built-ins cannot be us\ed as names of functions
-#N   (ie, \uns\et\).
-#N   - Option \-v\ of utility \uns\et\ is in fact specified in 2008.
-#N   - The \!\ keyword doesn\t print in xtrace.
+#_ Notes:
+#_  - Redirections are applied before any expansions occur.
+#_  - \#!/bin/env -i sh\ fails.
+#_  - LINENO does exist in Posix 2008.
+#_  - Reportedly, Solaris 10 uses a Bourne s\h w\hich is not Posix
+#_  compliant.
+#_      https://unix.stackexchange.com/questions/322035/\
+#_        are-there-still-systems-around-with-a-bin-sh-binary
+#_  - Reportedly, in Busybox \a\wk\ is optional.
+#_    - \awk\s been removed from this script.
+#_  - When called from a restricted interactive s\hell, the script
+#_  does not inherit the restricted s\etting.
+#_  - Both \realpath\ and \readlink\ weren\t specified in Posix until
+#_  2024.
+#_  - The \-P\ option to \type\ is not portable.
+#_  - The \p\athchk\ utility offers three separate s\ets of tests;
+#_  there is no overlap between sai\d s\ets in the specification, but
+#_  in GNU utilities there is.
+#_  - The \-q\ option to \g\rep\ does exist in Posix 2008.
+#_  - In Posix-2008, the handling of \//\ is intentionally
+#_  implementation defined, so catch it, flag it as an error, and
+#_  write a warning to Stderr. See spec. on \d\irname\.
+#_  - Defining directories with a trailing f\orward slas\h will
+#_  effect whether \[[\, \test\, \[\ and \stat\ dereference
+#_  symlinks. However, \realpath -e\ will still resolve such
+#_  strings correctly.
+#_  - The \-r\ option to \h\as\h\ does exist in Posix 2008.
+#_  - If PATH is s\et RO in the interactive calling s\hell, in the
+#_  script PATH can still be altered.
+#_  - For \r\eadonly\ without arguments, the results are unspecified. In
+#_  Bas\h, attempting in a script to assign a value to a RO variable is
+#_  a fatal error, but that doesn\t appear to have been specified by
+#_  Posix in 2008.
+#_  - Names of special built-ins cannot be us\ed as names of functions
+#_  (ie, \uns\et\).
+#_  - Option \-v\ of utility \uns\et\ is in fact specified in 2008.
+#_  - The \!\ keyword doesn\t print in xtrace.
+#_  - Reminder: don\t change the name of /etc/passwd. Bad things
+#_  happen.
 
   #> Debug.
-  #reset; clear; grep -vFe '#>' -e '#N' ./candr.sh 2>&1 | less -RNS
-  \set -x #>
+  #reset; clear; grep -vFe '#>' -e '#_' ./candr.xtrace 2>&1 | less -RNS
+  #\set -x #>
   \set -e #>
   \set -f #> Disable pathame expansion.
   #\: #>
@@ -73,7 +75,7 @@
   #\exit "${LINENO}" #>
   #>
 
-\:;\: "Security."
+\:;\: "Security"
 #
 # Posix-2024 suggestion for \Start off a \\secure shell script\\ in
 # which the script avoids being spoofed by its parent,\ as found in
@@ -100,22 +102,22 @@ fi
   #set -x #>
 
 
-:;: "Settings."
+:;: "Settings"
 set -a
 set -u
 set -C
 
 
-:;: "Bootstrap Variables."
+:;: "Bootstrap Variables"
 LC_ALL=C
 global_return_code=0
-#N Note, the Special Variable zero is of global scope.
+#_ Note, the Special Variable zero is of global scope.
 special_var_zero=${0#./}
 special_var_zero=${0##*/}
 usage_msg="${special_var_zero}:
 
     Usage: The first argument may be an option flag.
-        candr.sh [-b|-h|-v] [FILE] ...
+        candr.xtrace [-b|-h|-v] [FILE] ...
           --brief     -b
           --help      -h
           --verbose   -v
@@ -123,16 +125,16 @@ usage_msg="${special_var_zero}:
 unset ec0 ec1 ec2 ec3 ec4 ec5
 
 
-:;: "Functions."
-#N
-#N Uns\et xtrace and prepare to restore state at the end of this
-#N section.
-#N
-#N Usage:
-#N     __xtrace_off__ [No arguments]
-#N     __reset_xtrace__  [No arguments]
-#N
-: "Define functions: __xtrace_off__ & __reset_xtrace__." #>
+:;: "Functions"
+#_
+#_ Uns\et xtrace and prepare to restore state at the end of this
+#_ section.
+#_
+#_ Usage:
+#_     __xtrace_off__ [No arguments]
+#_     __reset_xtrace__  [No arguments]
+#_
+: "Define functions: __xtrace_off__ & __reset_xtrace__" #>
 __xtrace_off__ ()
 {
   case $- in
@@ -142,17 +144,17 @@ __xtrace_off__ ()
   : "Leaving __xtrace_off__";: #>
 }
 
-: "Define function:  __input_required__." #>
-#N
-#N Usage:    __input_required__ "$@"
-#N
+: "Define function:  __input_required__" #>
+#_
+#_ Usage:    __input_required__ "$@"
+#_
 __input_required__ ()
 {
   if ! test 0 -lt "$#"
   then
     : "f:$?:${LINENO}" #>
     __print_error__ "Input required"
-    __print_notice__ "Exiting."
+    __print_notice__ "Exiting"
     printf '%s\n' "${usage_msg:?}" 1>&2
     exit 1
   else : "t:0:${LINENO}" #>
@@ -161,21 +163,21 @@ __input_required__ ()
 }
 
 : "Define function:  __check_for_variable_assignment__" #>
-#N
-#N Usage:
-#N     __check_for_variable_assignment__ [Variable]
-#N     __check_for_variable_assignment__ HOME
-#N
-#N Note, this particular function is us\ed in \if...fi\ tests, so the
-#N fact that it ends with a pipeline w\hich could r\eturn false is
-#N intended. However, as a standalone function, erre\xit, if the
-#N variable at \$1\ has no assigned value, causes the script to
-#N halt. To have halted would have been an error. Yet, it\s Posix
-#N 2008, so the least confusing workaround has been applied.
-#N
+#_
+#_ Usage:
+#_     __check_for_variable_assignment__ [Unexpanded variable name]
+#_     __check_for_variable_assignment__ HOME
+#_
+#_ Note, this particular function is us\ed in \if...fi\ tests, so the
+#_ fact that it ends with a pipeline w\hich could r\eturn false is
+#_ intended. However, as a standalone function, erre\xit, if the
+#_ variable at \$1\ has no assigned value, causes the script to
+#_ halt. To have halted would have been an error. Yet, it\s Posix
+#_ 2008, so the least confusing workaround has been applied.
+#_
 __check_for_variable_assignment__ ()
 {
-  if ! set | grep -q -E -e "^${1}=.+"
+  if ! set | grep -q -E -e "^${1}=.+" 2>/dev/null
   then
     : "f:$?:${LINENO}" #>
     : "Leaving __check_for_variable_assignment__" #>
@@ -190,13 +192,13 @@ __check_for_variable_assignment__ ()
   #__check_for_variable_assignment__ TTY #>
   #exit "${LINENO}" #>
 
-: "Define function:  __print_message__." #>
-#N
-#N Usage:
-#N         __print_message__ [Message type] [Description] [Data]
-#N         __print_message__ "Warning" "$1" "${2:-}"
-#N         __print_message__ "Exiting."
-#N
+: "Define function:  __print_message__" #>
+#_
+#_ Usage:
+#_         __print_message__ [Message type] [Description] [Data]
+#_         __print_message__ "Warning" "$1" "${2:-}"
+#_         __print_message__ "Exiting"
+#_
 __print_message__ ()
 {
   local_posparm_one=${1:-}
@@ -232,16 +234,16 @@ __print_message__ ()
   : "Leaving __print_message__";: #>
 }
 
-: "Define functions: __print_{error,notice,warning}__." #> #>
-#N
-#N Usage:
-#N         __print_error__   [Description] [Data]
-#N         __print_warning__ "Command failed" "hash -r"
-#N
+: "Define functions: __print_{error,notice,warning}__" #> #>
+#_
+#_ Usage:
+#_         __print_error__   [Description] [Data]
+#_         __print_warning__ "Command failed" "hash -r"
+#_
 __print_error__   ()
 {
   __xtrace_off__
-  __print_message__ "Error"    "$1" "${2:-}"
+  __print_message__ "Error"   "$1" "${2:-}"
   __reset_xtrace__
   : "Leaving __print_error__";: #>
 }
@@ -249,7 +251,7 @@ __print_error__   ()
 __print_notice__  ()
 {
   __xtrace_off__
-  __print_message__ "Notice"   "$1" "${2:-}"
+  __print_message__ "Notice"  "$1" "${2:-}"
   __reset_xtrace__
   : "Leaving __print_notice__";: #>
 }
@@ -257,33 +259,33 @@ __print_notice__  ()
 __print_warning__ ()
 {
   __xtrace_off__
-  __print_message__ "Warning"  "$1" "${2:-}"
+  __print_message__ "Warning" "$1" "${2:-}"
   __reset_xtrace__
   : "Leaving __print_warning__";: #>
 }
 
-: "Define function:  __exit_per_global_return_code__." #> #>
-#N
-#N If the value of variable \global_return_code\ is non-zero, then
-#N e\xit.
-#N
-#N Usage:
-#N       __exit_per_global_return_code__ [no arguments]
-#N
+: "Define function:  __exit_per_global_return_code__" #> #>
+#_
+#_ If the value of variable \global_return_code\ is non-zero, then
+#_ e\xit.
+#_
+#_ Usage:
+#_       __exit_per_global_return_code__ [no arguments]
+#_
 __exit_per_global_return_code__ ()
 {
   if ! test 0 -eq "${global_return_code}"
   then
     : "f:$?:${LINENO}" #>
-    __print_notice__ "Exiting."
+    __print_notice__ "Exiting"
     exit "${global_return_code}"
   else : "t:0:${LINENO}" #>
   fi
   : "Leaving __exit_per_global_return_code__";: #>
 }
   #> Debug
-  #__print_notice__ "Exiting."
-  #__print_error__ "Input contains one or more non-printable strings."
+  #__print_notice__ "Exiting"
+  #__print_error__ "Input contains one or more non-printable strings"
   #__print_warning__ "Command failed" "hash -r"
   #__print_notice__ "Value of PATH" "${PATH}"
   #exit "${LINENO}" #>
@@ -297,7 +299,7 @@ __exit_per_global_return_code__ ()
   #exit "${LINENO}" #>
 
 
-:;: "Parse input."
+:;: "Parse input"
   #>
   #> Script Testing:
   #set -- -ve #>
@@ -307,28 +309,28 @@ __exit_per_global_return_code__ ()
 
 __input_required__ "$@"
 
-: "\\case\\ on posparm 1."
+: "\\case\\ on posparm 1"
 case "$1" in
   --verbose | -v* | --v* )
-    : "\\case\\ branch: \\--verbose\\." #>
+    : "\\case\\ branch: \\--verbose\\" #>
     output_verbose_on=yes
     shift
     ;;
   --brief   | -b* | --b* )
-    : "\\case\\ branch: \\--brief\\." #>
+    : "\\case\\ branch: \\--brief\\" #>
     output_verbose_on=no
     shift
     ;;
   --help    | -h* | --h* | -? )
-    : "\\case\\ branch: \\--help\\." #>
+    : "\\case\\ branch: \\--help\\" #>
     printf '%s\n' "${usage_msg:?}" 1>&2
-    __print_notice__ "Exiting."
+    __print_notice__ "Exiting"
     exit 1
     ;;
   * )
-    : "\\case\\ branch: no options: use default: \\--brief\\." #>
+    : "\\case\\ branch: no options: use default: \\--brief\\" #>
     output_verbose_on=no
-    #N Note, No \s\hift\ c\ommand.
+    #_ Note, No \s\hift\ c\ommand.
     ;;
 esac
   #>
@@ -342,17 +344,17 @@ __input_required__ "$@"
   #set +x #>
 
 
-:;: "Commands."
+:;: "Commands"
 
-#N Utilities & Special Builtins
-#N   Script Test string: \codeblocks\ #>
-#N
-# Remove the h\ash table, so that PATH lookups are forced and
+#_ Utilities & Special Builtins
+#_   Script Test string: \codeblocks\ #>
+#_
+# Remove the hash table, so that PATH lookups are forced and
 # therefore current. Posix recommends \PATH=${PATH}\ in spec. on
-# \h\ash\.
-#N
-#N Note, In Bash on Fedoras 44 & 45, this recommendation works as
-#N expected even if PATH is s\et as RO.
+# \hash\.
+#_
+#_ Note, In Bash on Fedoras 44 & 45, this recommendation works as
+#_ expected even if PATH is s\et as RO.
   #>
   #> Script Testing:
   #readonly PATH #>
@@ -374,23 +376,24 @@ then
     else : "t:0:${LINENO}" #>
     fi
   else : "f:$?:${LINENO}" #>
-    #N Note, If \h\ash\ is NA on the system, then this condition will
-    #N be caught in the next section.
+    #_ Note, If \h\ash\ is NA on the system, then this condition will
+    #_ be caught in the next section.
   fi
 else : "t:0:${LINENO}" #>
 fi
 
-#N If xtrace is on, turn it off.
+#_ If xtrace is on, turn it off.
 __xtrace_off__
   #>
   #> Script Testing:
   #enable -n break #>
 
-#N Tests for each c\ommand
-#N Note, Commands w\hich are not Posix at all: \e\nable\ and \w\hich\.
+#_ Tests for each c\ommand
+#_ Note, Commands w\hich are not Posix at all: \e\nable\ and \w\hich\.
 print_value_of_path=no
 
 for aA in \
+  "awk" \
   "cd" \
   "command" \
   "dirname" \
@@ -425,7 +428,7 @@ for aA in \
   "shift" \
   "unset"
   #>
-  #> count is 33
+  #> count is 34
   #>
   #"codeblocks" #> Not Posix at all, 2008-2024, and not installed.
   #>
@@ -441,8 +444,8 @@ do
     #> Note
     #>   - At 11/12, all non-special-builtins are located in
     #>     /usr/bin on Fedora 45.
-
-  #N Determine whether c\ommand \aA\ is in PATH.
+    #>
+  #_ Determine whether c\ommand \aA\ is in PATH.
   if ! command -pv -- "${aA}" >/dev/null
   then
     : "f:${ec0:=$?}" #>
@@ -452,16 +455,16 @@ do
   else : "t:0:${LINENO}" #>
   fi
 
-  #N Uns\et user functions
+  #_ Uns\et user functions
   unset -f "${aA}"
 done
   #>
   #exit "${LINENO}" #>
 
-#N If xtrace was on, restore it.
+#_ If xtrace was on, restore it.
 __reset_xtrace__
 
-#N Print the value of PATH if necessary.
+#_ Print the value of PATH if necessary.
 if test "yes" = "${print_value_of_path}"
 then
   : "t:0:${LINENO}" #>
@@ -469,7 +472,7 @@ then
 else : "f:$?${LINENO}" #>
 fi
 
-#N If any of the c\ommands were missing, then e\xit.
+#_ If any of the c\ommands were missing, then e\xit.
 __exit_per_global_return_code__
   #>
   #set -x #>
@@ -477,32 +480,35 @@ __exit_per_global_return_code__
   #set +x #>
 
 
-:;: "Input vali\dation: \\tr\\, \\strings\\ and \\p\athchk\\."
+:;: "Input validation: \\tr\\, \\strings\\ and \\pathchk\\"
 #
 for bB in "$@"
 do
-    :;: "Top of loop.";: #>
-    #>
-  # Non-printable input is disallowed.
-    #>
-    #> Script Testing:
-    #reset;clear #>
-    #./candr.s\h "$(dd if=/dev/urandom bs=32b count=1 2>/dev/null)" #>
+    :;: "Top of loop";: #>
     #>
   __xtrace_off__
 
-  # Remove NULs
-  cC=$( printf '%s' "${bB}" | tr -d '\0'   )
-  
-  # Remove nonprintable
-  dD=$( printf '%s' "${cC}" | strings -n 1 )
+  # Remove NULs and nonprintable bytes.
+    #>
+    #> Script Testing:
+    #reset;clear #>
+    #./candr.xtrace "$(dd if=/dev/urandom bs=32b count=1 2>/dev/null)" #>
+    #>
+  stdout_10_tr_d=$(
+    printf '%s' "${bB}"
+      | tr -d '\0'
+    )
+  stdout_11_strings_n1=$(
+    printf '%s' "${stdout_10_tr_d}" \
+      | strings -n 1
+    )
 
-  if ! test "X${bB}" = "X${dD}"
+  if ! test "X${bB}" = "X${stdout_11_strings_n1}"
   then
     : "f:${ec1:=$?}:${LINENO}" #>
     global_return_code=${ec1:=$?}
     __print_error__ \
-      "Input contains one or more non-printable strings."
+      "Input contains one or more non-printable strings"
     break 1
   else : "t:0:${LINENO}" #>
   fi
@@ -511,25 +517,25 @@ do
   # Zero length input is disallowed.
     #>
     #> Script Testing:
-    #reset; clear; ./candr.s\h -v "" #>
+    #reset; clear; ./candr.xtrace -v "" #>
     #>
   if ! test -n "${bB}"
   then
     : "f:${ec2:=$?}:${LINENO}" #>
     global_return_code=${ec2:=$?}
-    __print_error__ "Zero length input." ""
+    __print_error__ "Zero length input"
     break 1
   else : "t:0:${LINENO}" #>
   fi
 
     #set -x #>
 
-  # Filenames beginning with a hyphen are disallowed.
-  #N
-  #N Note, see Posix 2008, General Concepts 4.7.
+  # Filenames beginning with a hyphen are disallowed, part 1\2.
+  #_
+  #_ Note, see Posix 2008, General Concepts 4.7.
     #>
     # Script Testing: #>
-    #reset; clear; ./candr.s\h -v -foo #>
+    #reset; clear; ./candr.xtrace -v -foo #>
     #>
   stdout_00_cut=$( printf '%s' "${bB}" | cut -c 1 )
 
@@ -538,59 +544,59 @@ do
     : "f:${ec3:=$?}:${LINENO}" #>
     global_return_code=${ec3:=$?}
     __print_error__ \
-      "Filenames beginning with a hyphen are disallowed." "${bB}"
+      "Filenames beginning with a hyphen are disallowed" "${bB}"
     break 1
   else : "t:0:${LINENO}" #>
   fi
 
   # Tests on f\ilename length.
-  #N
-  #N \p\athchk [no arguments]\ checks \each component of each pathname
-  #N of the underlying f\ile system\ using PATH_MAX and NAME_MAX, for any
-  #N non-searchable directory, and for any character that is invali\d in
-  #N its containing directory.
-  #N
-  #N On Fedora 45, the default values according to \g\etconf\:
-  #N   NAME_MAX                            255
-  #N   PATH_MAX                            4096
+  #_
+  #_ \p\athchk [no arguments]\ checks \each component of each pathname
+  #_ of the underlying f\ile system\ using PATH_MAX and NAME_MAX, for any
+  #_ non-searchable directory, and for any character that is invali\d in
+  #_ its containing directory.
+  #_
+  #_ On Fedora 45, the default values according to \g\etconf\:
+  #_   NAME_MAX                            255
+  #_   PATH_MAX                            4096
     #>
     #> Script Testing:
-    #reset; clear; ./candr.s\h -v foooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo #>
+    #reset; clear; ./candr.xtrace -v foooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo #>
     #>
   if ! pathchk -- "${bB}"
   then
     : "f:${ec4:=$?}:${LINENO}" #>
     global_return_code=${ec4:=$?}
     __print_error__ \
-      "Error received from \\p\athchk [no args]\\." "${bB}"
+      "Error received from \\p\athchk [no args]\\" "${bB}"
 
-    #N Print out the values of the relevant variables.
+    #_ Print out the values of the relevant variables.
     __print_notice__ "Values of relevant system parameters"
     getconf -a | grep -E -e ^"PATH_MAX" -e ^"NAME_MAX"
     break 1
   else : "t:0:${LINENO}" #>
   fi
 
-  # Filenames beginning with a hyphen are disallowed.
-  #N
-  ##NNote, see Posix 2008, General Concepts 4.7.
+  # Filenames beginning with a hyphen are disallowed, part 2\2.
+  #_
+  #_ Note, see Posix 2008, General Concepts 4.7.
     #>
     # Script Testing: #>
-    #reset; clear; ./candr.s\h -v /-foo #>
+    #reset; clear; ./candr.xtrace -v /-foo #>
     #>
   if ! pathchk -P -- "${bB}"
   then
     : "f:${ec5:=$?}:${LINENO}" #>
     global_return_code=${ec5:=$?}
     __print_error__ \
-      "Error received from \\p\athchk -P\\." "${bB}"
+      "Error received from \\p\athchk -P\\" "${bB}"
     break 1
   else : "t:0:${LINENO}" #>
   fi
 done
-:;: "End of loop." #>
+:;: "End of loop" #>
 
-#N If any input vali\dation problems occurred, then e\xit.
+#_ If any input vali\dation problems occurred, then e\xit.
 __exit_per_global_return_code__
   #>
   #set -x #>
@@ -598,14 +604,14 @@ __exit_per_global_return_code__
 
 #> DEBUG BLOCK
 #>
-:;: "IF XTRACE IS ON -- Section on \\g\etconf\\." #>
+:;: "IF XTRACE IS ON -- Section on \\g\etconf\\" #>
 #>  BASH_ENV          # for \bas\h\
 #>  CDPATH            # for \c\d\
 #>  ENV               # for \s\h\
 #>  HOME              # for \c\d\
 #>  LC_ALL            # Common
 #>  LD_PRELOAD        # for paranoia ;-P
-#>  LOGNAME           # for ? 
+#>  LOGNAME           # for ?
 #>  NAME_MAX          # for \p\athchk [no args]\
 #>  PATH_MAX          # for \c\d\, \p\athchk [no args]\ and \p\wd\
 #>  OLDPWD            # for \c\d\
@@ -620,23 +626,24 @@ then #>
   for eE in BASH_ENV CDPATH ENV HOME LC_ALL LD_PRELOAD NAME_MAX PATH_MAX OLDPWD PATH PWD SYMLOOP_MAX #>
   do #>
       #echo "eE: ${eE}" #>
-    #> Note, this particular \if..fi\ is a workaround for erre\xit.
+    #> Note, this particular \if..fi\ is a workaround for erre\xit
+    #> and xtrace visibility.
     if printf '%s\n' "${stdout_01_getconf_a}" | grep -E -e "^${eE} " #>
     then : "t:0:${LINENO}" #>
     else : "f:$?:${LINENO}" #>
     fi #>
   done #>
   __reset_xtrace__ #>
-else : "f:$?:${LINENO}: Section on \\g\etconf\\: xtrace is off." #>
+else : "f:$?:${LINENO}" "Section on \\g\etconf\\: xtrace is off" #>
 fi #>
   #>
-  set -x #>
-  : exit "${LINENO}" #>
+  #set -x #>
+  #: exit "${LINENO}" #>
   #>
 
-:;: "Unset Environment Variables."
-#N Uns\et certain e\nv. vars. if possible and if they\re defined. See
-#N specification pages under Posix 2008.
+:;: "Unset Environment Variables"
+#_ Uns\et certain e\nv. vars. if possible and if they\re defined. See
+#_ specification pages under Posix 2008.
   #>
   #> Script Testing:
   #POSIXLY_CORRECT=yes #>
@@ -645,6 +652,7 @@ fi #>
   #set | grep -E "^${fF}=.+"; echo $? #>
   #unset LD_PRELOAD; echo $? #>
   #set | grep -E "^${fF}=.+"; echo $? #>
+  #LD_PRELOAD=x #>
 
 for fF in \
   BASH_ENV \
@@ -655,178 +663,372 @@ for fF in \
 do
     #: "fF: ${fF}" #>
     #>
+  #_ Note, using \test -n\ and a loop at the same time is problematic
+  #_ due to multiple layers of expansion. \set | grep\ is an okay
+  #_ solution.
   if __check_for_variable_assignment__ "${fF}"
   then
-    : "t:0:${LINENO}: ${fF} is defined." #>
-
-    #N Note, define \cmd_str\ as a particular invocation so that (a)
-    #N the c\ommand can be executed and so that (b) the various related
-    #N messages can cite the precise c\ommand string w\hich was
-    #N executed.
+    : "t:0:${LINENO}" "${fF} is defined" #>
+    #_ Note, define \cmd_str\ as a particular invocation so that (a)
+    #_ the c\ommand can be executed and so that (b) the various related
+    #_ messages can cite the precise c\ommand string w\hich was
+    #_ executed.
     cmd_str='unset -v -- "${fF}"'
 
-    #N Note, Word Splitting is intended in this particular c\ommand.
-    # shellcheck disable=SC2086
-    if ! eval command -p -- "${cmd_str}"
+    if eval command -p -- "${cmd_str}"
     then
-      __print_notice__ "Command failed." "\\${cmd_str}\\"
-    else : "t:0:${LINENO}: \\${cmd_str}\\ returned zero" #>
+      : "t:0:${LINENO}" "\\${cmd_str}\\ returned zero" #>
+      if __check_for_variable_assignment__ "${fF}"
+      then
+        : "t:0:${LINENO}" #>
+        __print_error__ "${fF} is defined"
+        __print_notice__ "Exiting"
+        exit 1
+      else : "f:$?:${LINENO}" "${fF} is undefined or of zero length";: #>
+      fi
+    else
+      __print_notice__ "Command failed" "\\${cmd_str}\\"
     fi
-  else : "f:$?:${LINENO}: Parameter ${fF} is undefined.";: #>
+  else : "f:$?:${LINENO}" "${fF} is undefined or of zero length";: #>
   fi
 done
   #>
-  exit "${LINENO}" #>
+  set -x #>
+  : exit "${LINENO}" #>
+  #unset HOME #>
+  #HOME=/ #>
+  #HOME=~/nonexistent.d #>
+  #HOME=~/nonexistent.sym #>
+  #HOME=~/existent.d #>
+  #HOME=~/existent.sym #>
+  #HOME="" #>
+  #HOME=$'\0' #>
+  #HOME='.+' #>
+  #HOME=. #>
+  #HOME=.. #>
+  #HOME=~ #>
+  #HOME=~root #>
+  #readonly HOME #>
 
 # Make sure HOME is defined, for \cd\.
-#N
-#N Notes,
-#N   - Assigning PWD depends on HOME having a vali\d value.
-#N   - From Posix 2008:
-#N     - Shell Command Language 2.6.1: \\If HOME is uns\et, the results
-#N     are unspecified.\\
-#N   - The \i\d\ utility has no knowledge of \sudo\ or means of
-#N   differentiating regular vs. elevated permissions.
+#_
+#_ Notes,
+#_   - Assigning PWD depends on HOME having a vali\d value.
+#_   - From Posix 2008:
+#_     - Shell Command Language 2.6.1: \\If HOME is uns\et, the results
+#_     are unspecified.\\
+#_   - The \i\d\ utility has no knowledge of \sudo\ or means of
+#_   differentiating regular vs. elevated permissions.
+#_   - If the name of /etc/passwd is changed, \id\ throws an error.
 stdout_02_id_un=$( id -un )
-assign_home=no
+assign_variable=no
 
-  # Bug, the logic of this codeblock is a little fuzzy.
-  #   - Why use the \p\rintf | g\rep\?
-  #   - The \e\val\ seems like the most dependable solution, but the
-  #   stdout of \l\ogname\ vs. the value of LOGNAME happens why?
-  #
-
-if __check_for_variable_assignment__ "HOME"
-then
-  : "t:0:${LINENO}" "Parameter HOME is defined." #>
-  if printf '%s\n' "${HOME}" | grep -q -e "${stdout_02_id_un}"
+: "Define function:  __make_sure_home_is_defined__"
+#>
+#> If any of the tests fail, then \assign_variable\ should be \yes\.
+#>
+#> If all of the tests succeed, and the variable is a searchable
+#> directory, then operand number two contains the value which should
+#> be assigned to the variable \assign_variable\. See \eval test -x\.
+#>
+#> Usage: 
+#>  __make_sure_home_is_defined__ [Unexpanded variable name] [yes|no]
+#>  __make_sure_home_is_defined__ "HOME" "no"
+#>
+__make_sure_home_is_defined__ ()
+{
+  if __check_for_variable_assignment__ "$1"
   then
-    : "t:0:${LINENO}" #>
+    : "t:0:${LINENO}" "Parameter $1 is defined" #>
+    if test -n "$1" # Confirmation test
+    then
+      : "t:0:${LINENO}" "Result confirmed" #>
+      if eval test -e '$'"$1"
+      then
+        : "t:0:${LINENO}" "Filesystem object exists" #>
+        if eval test -d '$'"$1"
+        then
+          : "t:0:${LINENO}" "Filesystem object is a directory" #>
+          if eval test -x '$'"$1"
+          then
+            : "t:0:${LINENO}" "Directory is searchable" #>
+            assign_variable=$2
+          else
+            : "f:0:${LINENO}" "Directory is not searchable" #>
+            assign_variable=yes
+          fi
+        else
+          : "f:0:${LINENO}" "Filesystem object is not a directory" #>
+          assign_variable=yes
+        fi
+      else
+        : "f:0:${LINENO}" "Filesystem object DNE" #>
+        assign_variable=yes
+      fi
+    else
+      : "f:0:${LINENO}" #>
+      assign_variable=yes
+      __print_error__ "Conflicting test results" "Line:${LINENO}"
+      __print_notice__ "Exiting"
+      exit 2
+    fi
   else
-    : "f:$?:${LINENO}" #>
-    assign_home=yes
+    : "f:0:${LINENO}" "Parameter $1 is undefined" #>
+    assign_variable=yes
   fi
-else
-  : "f:$?:${LINENO}: Parameter HOME is undefined." #>
-  assign_home=yes
-fi
+  : "Leaving __make_sure_home_is_defined__'";:
+}
+__make_sure_home_is_defined__ "HOME" "no"
+  #>
+  #set -x #>
+  : exit "${LINENO}" #>
 
-#N Note,
-#N   - Spec. on \l\ogname\: \\The l\ogname utility explicitly ignores
-#N   the LOGNAME e\nvironment variable because e\nvironment changes
-#N   could produce erroneous results.\\
+#_ Note,
+#_   - Spec. on \l\ogname\: \\The l\ogname utility explicitly ignores
+#_   the LOGNAME e\nvironment variable because e\nvironment changes
+#_   could produce erroneous results.\\
+#_   - Therefore, use \l\ogname\.
+#_
+#_ Question, These commands produce different results. Why?
+#_       sudo sh -c 'eval echo ~"$( logname )"' sh
+#_       sudo sh -c 'eval echo ~"${LOGNAME}"' sh
 
-  # Bug, These c\ommands produce different results:
-  #       sudo sh -c 'eval echo ~"$( logname )"' sh
-  #       sudo sh -c 'eval echo ~"${LOGNAME}"' sh
-
-if test "yes" = "${assign_home}"
+:;: "Assign HOME in two different ways, if possible"
+#
+# Get the HOME directory via Tilde Expansion.
+#_ Note, Workaround for errexit and xtrace visibility, as throughout.
+if stdout_06_tilde_exp=$(
+  eval echo ~"$( logname )"
+)
 then
   : "t:0:${LINENO}" #>
-  :;: "Assign HOME."
-  if HOME=$(
-    eval echo ~"$(logname)"
-  )
+  : "Tilde expansion succeeded"
+else
+  : "f:$?:${LINENO}" #>
+  : "Tilde expansion failed"
+fi
+
+# Get the HOME directory from /etc/passwd.
+if test -f /etc/passwd
+then
+  : "t:0:${LINENO}" #>
+  if grep -q "${stdout_02_id_un}" /etc/passwd
   then
-    : "t:0:${LINENO}: Assignment to HOME succeeded." #>
+    : "t:0:${LINENO}" #>
+    #> Workaround for errexit and xtrace visibility.
+    if stdout_07_awk_etc_passwd=$(
+         awk -F: -v usrnm="${stdout_02_id_un}" \
+           '$1 == usrnm { print $6 }' /etc/passwd
+         )
+    then
+      : "t:0:${LINENO}" #>
+      : "\\awk\\ succeeded"
+    else
+      : "f:$?:${LINENO}" #>
+      : "\\awk\\ failed"
+    fi
   else
     : "f:$?:${LINENO}" #>
-    __print_error__ "Assignment to variable failed" "HOME"
+    __print_error__ \
+      "Username is not present in /etc/passwd! " "${stdout_02_id_un}"
     __print_notice__ "Exiting"
     exit 1
   fi
 else
-  : "f:$?:${LINENO}" #>
+  : "f:$?:${LINENO}"
+  __print_error__ "Are there systems without /etc/passwd?"
+  __print_notice__ "Exiting"
+  exit 2
+fi
+  #>
+  #set -x #>
+  : exit "${LINENO}" #>
+
+# Check for conflicting results.
+if ! test "X${stdout_06_tilde_exp}" = "X${stdout_07_awk_etc_passwd}"
+then
+  : "f:$?:${LINENO}"
+  __print_error__ "Conflicting test results" "Line:${LINENO}"
+  __print_notice__ "Exiting"
+  exit 2
+else : "t:0:${LINENO}" "Result confirmed" #>
 fi
 
+  # Bug, there\s a few logic bugs in this section, depending on what
+  # the outputs from Tilde Expansion and /etc/passwd could be.
+
+# To assign or not to assign the variable.
+if test "yes" = "${assign_variable}"
+then
+  : "t:0:${LINENO}" #> #>
+  if ! HOME="${stdout_06_tilde_exp}"
+  then
+    : "f:$?:${LINENO}" #>
+    __print_error__ "Assignment to variable failed" "HOME"
+    __print_notice__ "Exiting"
+    exit 1
+  else : "t:0:${LINENO}" "Assignment to HOME succeeded" #>
+  fi
+else
+  : "f:$?:${LINENO}" #>
+  if test -n "${stdout_07_awk_etc_passwd}"
+  then
+    : "t:0:${LINENO}" #>
+    if ! test "${HOME}" = "${stdout_07_awk_etc_passwd}"
+    then
+      : "f:$?:${LINENO}" #>
+      __print_notice__ \
+        "Value of HOME disagrees with /etc/passwd" "${HOME}"
+      
+      __make_sure_home_is_defined__ \
+          "stdout_07_awk_etc_passwd" "yes"
+      
+      if test "yes" = "${assign_variable}"
+      then
+        : "t:0:${LINENO}" #> #>
+        __print_notice__ "Resetting" "${stdout_07_awk_etc_passwd}"
+        if ! HOME=${stdout_07_awk_etc_passwd}
+        then
+          : "f:$?:${LINENO}" #>
+          : "Assignment to HOME failed: HOME could be set RO" #>
+          readonly -p | grep -E -e "^readonly HOME="
+        else : "t:0:${LINENO}" "Assignment to HOME succeeded" #>
+        fi
+      else : "f:$?:${LINENO}" "Unreachable code" #>
+      fi
+    else : "t:0:${LINENO}" "Variables match" #>
+    fi
+  else
+    : "f:$?:${LINENO}" "Var \\stdout_07_awk_etc_passwd\\: empty" #>
+    if test -n "${stdout_06_tilde_exp}"
+    then
+      : "t:0:${LINENO}" #>
+      if ! test "${HOME}" = "${stdout_06_tilde_exp}"
+      then
+        : "f:$?:${LINENO}" #>
+        __print_notice__ \
+          "Value of HOME disagrees with Tilde Expansion" "${HOME}"
+      
+        __make_sure_home_is_defined__ \
+            "stdout_06_tilde_exp" "yes"
+      
+        if test "yes" = "${assign_variable}"
+        then
+          : "t:0:${LINENO}" #> #>
+          __print_notice__ "Resetting" "${stdout_06_tilde_exp}"
+          if ! HOME=${stdout_06_tilde_exp}
+          then
+            : "f:$?:${LINENO}" #>
+            : "Assignment to HOME failed: HOME could be set RO" #>
+            readonly -p | grep -E -e "^readonly HOME="
+          else : "t:0:${LINENO}" "Assignment to HOME succeeded" #>
+          fi
+        else : "f:$?:${LINENO}" "Unreachable code" #>
+        fi
+      else : "t:0:${LINENO}" "Variables match" #>
+      fi
+    else
+      : "t:0:${LINENO}" #>
+      __print_error__ "Both variables have length zero"
+      __print_notice__ "Exiting"
+      exit 2
+    fi
+  fi
+fi
+
+  echo "HOME: ${HOME}"
+  #set -x #>
+  exit "${LINENO}" #>
+
 # PWD aught to be defined, for \c\d\ and \p\wd\.
-#N
-#N Notes,
-#N   - In Posix-2008 effects of assignments to PWD are unspecified.
-#N   - In Bas\h 5.3.9+,
-#N     - If restricted mode is e\nabled and PWD is undefined, a call to
-#N     \c\d\ will not assign a value to PWD.
-#N     - Values of HOME and PWD are inherited from the calling
-#N     interactive s\hell.
-#N
+#_
+#_ Notes,
+#_   - In Posix-2008 effects of assignments to PWD are unspecified.
+#_   - In Bas\h 5.3.9+,
+#_     - If restricted mode is e\nabled and PWD is undefined, a call to
+#_     \c\d\ will not assign a value to PWD.
+#_     - Values of HOME and PWD are inherited from the calling
+#_     interactive s\hell.
+#_
 if __check_for_variable_assignment__ "PWD"
 then
   : "t:0:${LINENO}" #>
 else
   : "f:$?:${LINENO}" #>
 
-  #N A call to \c\d\ is suppos\ed to assign a value to PWD.
-  #N
-  #N Notes, from Posix 2008:
-  #N   - Shell Command Language 2.6.1: \\If HOME is uns\et, the results
-  #N   are unspecified.\\
-  #N   - Spec. of \c\d\, description of algorithm:
-  #N     - (Step 1) \\If no directory operand is given and the HOME
-  #N     e\nvironment variable is empty or undefined, the default
-  #N     behavior is implementation-defined and no further steps
-  #N     s\hall be taken.\\
-  #N       -- HOME aught to be defined.
-  #N       -- A directory operand aught to be us\ed.
-  #N     - (Step 2) \\If no directory operand is given and the HOME
-  #N     e\nvironment variable is s\et to a non-empty value, the c\d
-  #N     utility s\hall behave as if the directory named in the HOME
-  #N     e\nvironment variable was specified as the directory
-  #N     operand.\\
-  #N     - (Step 3) \\If the directory operand begins with a <slas\h>
-  #N     character, s\et curpath to the operand and proceed to step 7.\\
-  #N     - (Step 4) \\If the first component of the directory operand
-  #N     is dot or dot-dot, proceed to step 6.\\
-  #N     - (Step 6) \\If the -P option is in effect, s\et curpath to
-  #N     the directory operand. Otherwise....\\
-  #N       -- Use the -P option.
-  #N     - (Step 7) \\If the -P option is in effect, proceed to step
-  #N     10.\\
-  #N     - (Step 10) \\The c\d utility s\hall then perform actions
-  #N     equivalent to the chdir() function called with curpath as
-  #N     the path argument. If these actions fail for any reason, the
-  #N     c\d utility s\hall display an appropriate error message and the
-  #N     remainder of this step s\hall not be executed. ... If the -P
-  #N     option is in effect, the PWD e\nvironment variable s\hall be
-  #N     s\et to the string that would be output by p\wd -P. If there is
-  #N     insufficient permission on the new directory, or on any
-  #N     parent of that directory, to determine the current working
-  #N     directory, the value of the PWD e\nvironment variable is
-  #N     unspecified.\\
-  #N       -- Any error message aught to be assigned to a variable.
-  #N       -- The output of \p\wd -P\ is relevant.
-  #N     - \-P\: \\Handle the operand dot-dot physically; symbolic
-  #N     link components s\hall be resolved before dot-dot components
-  #N     are process\ed.\\
-  #N     - SYNOPSIS:
-  #N       - \\c\d [-L|-P] [directory]\\
-  #N         - \directory\: \\An absolute or relative pathname of the
-  #N         directory that s\hall become the new working directory.
-  #N         The interpretation of a relative pathname by c\d depends
-  #N         on the -L option and the CDPATH and PWD e\nvironment
-  #N         variables. If directory is an empty string, the results
-  #N         are unspecified.\\
-  #N
-  #N   - Posix 2008 \p\wd\:
-  #N     - \\The p\wd utility s\hall write to standard output an
-  #N     absolute pathname of the current working directory, w\hich
-  #N     does not contain the f\ilenames dot or dot-dot.\\
-  #N     - \-P\: \\The pathname written to standard output s\hall not
-  #N     contain any components that refer to f\iles of type symbolic
-  #N     link.\\
-  #N     - \PWD\: \\An absolute pathname of the current working
-  #N     directory. If an application s\ets or uns\ets the value of PWD,
-  #N     the behavior of p\wd is unspecified.\\
-  #N   - This \if..fi\ structure is a workaround for erre\xit.
-  #N
+  #_ A call to \c\d\ is suppos\ed to assign a value to PWD.
+  #_
+  #_ Notes, from Posix 2008:
+  #_  - Shell Command Language 2.6.1: \\If HOME is uns\et, the results
+  #_  are unspecified.\\
+  #_  - Spec. of \c\d\, description of algorithm:
+  #_    - (Step 1) \\If no directory operand is given and the HOME
+  #_    e\nvironment variable is empty or undefined, the default
+  #_    behavior is implementation-defined and no further steps
+  #_    s\hall be taken.\\
+  #_      -- HOME aught to be defined.
+  #_      -- A directory operand aught to be us\ed.
+  #_    - (Step 2) \\If no directory operand is given and the HOME
+  #_    e\nvironment variable is s\et to a non-empty value, the c\d
+  #_    utility s\hall behave as if the directory named in the HOME
+  #_    e\nvironment variable was specified as the directory
+  #_    operand.\\
+  #_    - (Step 3) \\If the directory operand begins with a <slas\h>
+  #_    character, s\et curpath to the operand and proceed to step 7.\\
+  #_    - (Step 4) \\If the first component of the directory operand
+  #_    is dot or dot-dot, proceed to step 6.\\
+  #_    - (Step 6) \\If the -P option is in effect, s\et curpath to
+  #_    the directory operand. Otherwise....\\
+  #_      -- Use the -P option.
+  #_    - (Step 7) \\If the -P option is in effect, proceed to step
+  #_    10.\\
+  #_    - (Step 10) \\The c\d utility s\hall then perform actions
+  #_    equivalent to the chdir() function called with curpath as
+  #_    the path argument. If these actions fail for any reason, the
+  #_    c\d utility s\hall display an appropriate error message and the
+  #_    remainder of this step s\hall not be executed. ... If the -P
+  #_    option is in effect, the PWD e\nvironment variable s\hall be
+  #_    s\et to the string that would be output by p\wd -P. If there is
+  #_    insufficient permission on the new directory, or on any
+  #_    parent of that directory, to determine the current working
+  #_    directory, the value of the PWD e\nvironment variable is
+  #_    unspecified.\\
+  #_      -- Any error message aught to be assigned to a variable.
+  #_      -- The output of \p\wd -P\ is relevant.
+  #_    - \-P\: \\Handle the operand dot-dot physically; symbolic
+  #_    link components s\hall be resolved before dot-dot components
+  #_    are process\ed.\\
+  #_    - SYNOPSIS:
+  #_      - \\c\d [-L|-P] [directory]\\
+  #_        - \directory\: \\An absolute or relative pathname of the
+  #_        directory that s\hall become the new working directory.
+  #_        The interpretation of a relative pathname by c\d depends
+  #_        on the -L option and the CDPATH and PWD e\nvironment
+  #_        variables. If directory is an empty string, the results
+  #_        are unspecified.\\
+  #_
+  #_  - Posix 2008 \p\wd\:
+  #_    - \\The p\wd utility s\hall write to standard output an
+  #_    absolute pathname of the current working directory, w\hich
+  #_    does not contain the f\ilenames dot or dot-dot.\\
+  #_    - \-P\: \\The pathname written to standard output s\hall not
+  #_    contain any components that refer to f\iles of type symbolic
+  #_    link.\\
+  #_    - \PWD\: \\An absolute pathname of the current working
+  #_    directory. If an application s\ets or uns\ets the value of PWD,
+  #_    the behavior of p\wd is unspecified.\\
+  #_  - This \if..fi\ structure is a workaround for erre\xit and
+  #_  xtrace visibility
+  #_
   if stderr_cd_P=$(
     cd -- "${HOME}"
     cd -P -- . 2>&1 >/dev/null
-  ) #N Subs\hell
+  ) #_ Subs\hell
   then
     : "t:0:${LINENO}" #>
   else
     : "f:$?:${LINENO}" #>
-    __print_error__ "Subs\hell failed" "cd; cd -P ."
+    __print_error__ "Subshell failed" "cd; cd -P ."
     __print_notice__ "Exiting"
     exit 1
   fi
@@ -836,7 +1038,7 @@ else
     : "t:0:${LINENO}" #>
   else
     : "f:$?:${LINENO}" #>
-    __print_warning__ "Parameter is undefined." "PWD"
+    __print_warning__ "Parameter is undefined" "PWD"
   fi
 fi
 
@@ -852,56 +1054,56 @@ nsfod="(No such f\ile or directory)"
   exit "${LINENO}" #>
 
 
-#N Pseudocode re function __print_output__
-#N
-#N GL-scriptnm = defined
-#N GL-p\rintformat=[-b|-v]          (per execution)
-#N GL-rtnc\de=0                     (per execution)
-#N
-#N GL-majloop-input-1 = defined    (per line)
-#N
-#N   GL-minloop-canpth = [exists/dne]
-#N
-#N     exists  .'. GL-minloop-STDo/e = STDOUT
-#N             .'. GL-rtncode = no change
-#N
-#N       _print_output_
-#N
-#N           verbose
-#N             e\cho GL-scriptnm: GL-majloop-input: \
-#N                                 [GL-minloop-canpth GL-minloop-STDo/e]
-#N
-#N           brief
-#N             e\cho                                \
-#N                                 [GL-minloop-canpth GL-minloop-STDo/e]
-#N
-#N
-#N     dne     .'. GL-minloop-STDo/e = STDERR
-#N             .'. GL-rtncode = 1
-#N
-#N       _print_output_
-#N
-#N           verbose
-#N             e\cho GL-scriptnm: GL-majloop-input: \
-#N                                 [GL-minloop-NSFOD GL-minloop-STDo/e]
-#N
-#N           brief
-#N             e\cho                                \
-#N                                 [GL-minloop-NSFOD GL-minloop-STDo/e]
-#N
-#N
-#N e\xit GL-rtncode
+#_ Pseudocode re function __print_output__
+#_
+#_ GL-scriptnm = defined
+#_ GL-p\rintformat=[-b|-v]          (per execution)
+#_ GL-rtnc\de=0                     (per execution)
+#_
+#_ GL-majloop-input-1 = defined    (per line)
+#_
+#_   GL-minloop-canpth = [exists/dne]
+#_
+#_     exists  .'. GL-minloop-STDo/e = STDOUT
+#_             .'. GL-rtncode = no change
+#_
+#_       _print_output_
+#_
+#_           verbose
+#_             e\cho GL-scriptnm: GL-majloop-input: \
+#_                                 [GL-minloop-canpth GL-minloop-STDo/e]
+#_
+#_           brief
+#_             e\cho                                \
+#_                                 [GL-minloop-canpth GL-minloop-STDo/e]
+#_
+#_
+#_     dne     .'. GL-minloop-STDo/e = STDERR
+#_             .'. GL-rtncode = 1
+#_
+#_       _print_output_
+#_
+#_           verbose
+#_             e\cho GL-scriptnm: GL-majloop-input: \
+#_                                 [GL-minloop-NSFOD GL-minloop-STDo/e]
+#_
+#_           brief
+#_             e\cho                                \
+#_                                 [GL-minloop-NSFOD GL-minloop-STDo/e]
+#_
+#_
+#_ e\xit GL-rtncode
 
 
-: "Define function: __print_output__." #> #>
-#N
-#N Usage:    __print_output__ [Script input] [canpth|nsfod] [redirection]
-#N Usage:    __print_output__ "${gG}" "${canpth}"
-#N                                         # ^normal output to STDOUT
-#N Usage:    __print_output__ "${gG}" "${nsfod}" >&2
-#N                                         # ^redirect output to STDERR
-#N
-#N shellcheck disable=SC2329
+: "Define function: __print_output__" #> #>
+#_
+#_ Usage:    __print_output__ [Script input] [canpth|nsfod] [redirection]
+#_ Usage:    __print_output__ "${gG}" "${canpth}"
+#_                                         # ^normal output to STDOUT
+#_ Usage:    __print_output__ "${gG}" "${nsfod}" >&2
+#_                                         # ^redirect output to STDERR
+#_
+#_ shellcheck disable=SC2329
 __print_output__ ()
 {
     #set -x #>
@@ -915,7 +1117,7 @@ __print_output__ ()
     : "\$output_verbose_on: ${output_verbose_on}" #>
     #exit "${LINENO}" #>
 
-  :;: "If error, then switch verbose on."
+  :;: "If error, then switch verbose on"
   if test 0 -ne "${global_return_code}"
   then
     : "t:0:${LINENO}" #>
@@ -924,18 +1126,18 @@ __print_output__ ()
     : "f:$?:${LINENO}" #>
   fi
 
-  :;: "\\case\\ on \\output_verbose_on\\."
+  :;: "\\case\\ on \\output_verbose_on\\"
   case "${output_verbose_on}" in
     yes | y )
-      : "\\case\\ branch: \\yes\\." #>
+      : "\\case\\ branch: \\yes\\" #>
       printf '%s: %b%s%b -> %s\n' \
         "${special_var_zero}" "\x27" "$1" "\x27" "$2"
       ;;
     no | n )
-      : "\\case\\ branch: \\no\\." #>
+      : "\\case\\ branch: \\no\\" #>
       printf '%s\n' "$2"
       ;;
-    * ) printf '%s\n' "Unreachable code."; exit "${LINENO}";; #>
+    * ) printf '%s\n' "Unreachable code"; exit "${LINENO}";; #>
   esac
     #>
     #exit "${LINENO}" #>
@@ -946,14 +1148,14 @@ __print_output__ ()
   set -x #>
 
 
-:;: "The given path must exist in the f\ilesystem."
+:;: "The given path must exist in the f\ilesystem"
 # Script Test input: /dev/qwertyuiop
 for gG
 do
   if test -e "${gG}"
   then
     : "t:0:${LINENO}" #>
-    : "Path exists."
+    : "Path exists"
   else
     : "f:$?:${LINENO}" #>
     global_return_code=1
