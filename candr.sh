@@ -2,7 +2,7 @@
 # candr.xtrace / canonicalize-dir.sh
 # shellcheck disable=SC2028,SC2268,SC2310
 #
-#   Script is unfinished - 12 Nov 2026 WY
+#   Script is unfinished - 13 Nov 2026 WY
 #
   #\set -x #>
 #
@@ -512,7 +512,7 @@ do
     print_value_of_path=yes
 
     __print_notice__ "Command is not in PATH" "${cC}"
-    
+
   else : "t:0:${LINENO}" #>
   fi
 
@@ -732,6 +732,7 @@ do
     #_ the command can be executed and so that (b) the various related
     #_ messages can cite the precise command string which was
     #_ executed.
+    # shellcheck disable=SC2016
     cmd_str='unset -v -- "${fF}"'
 
     if eval -- "${cmd_str}"
@@ -754,7 +755,7 @@ done
   #>
   #set -x #>
   : exit "${LINENO}" #>
-  #unset HOME #>
+  unset HOME #>
   #HOME=/ #>
   #HOME=~/nonexistent.d #>
   #HOME=~/nonexistent.sym #>
@@ -769,7 +770,8 @@ done
   #HOME=~root #>
   #readonly HOME #>
 
-# Make sure HOME is defined, for \cd\.
+
+:;: "Make sure HOME is defined, for \\cd\\"
 #_
 #_ Notes,
 #_   - Assigning PWD depends on HOME having a valid value.
@@ -779,227 +781,387 @@ done
 #_   - The \id\ utility has no knowledge of \sudo\ or means of
 #_   differentiating regular vs. elevated permissions.
 #_   - If the name of /etc/passwd is changed, \id\ throws an error.
-stdout_02_id_un=$( id -un )
-assign_variable=no
 
-: "Define function:  __make_sure_home_is_defined__"
-#>
-#> If any of the tests fail, then \assign_variable\ should be \yes\.
-#>
-#> If all of the tests succeed, and the variable is a searchable
-#> directory, then operand number two contains the value which should
-#> be assigned to the variable \assign_variable\. See \eval test -x\.
-#>
-#> Usage: 
-#>  __make_sure_home_is_defined__ [Unexpanded variable name] [yes|no]
-#>  __make_sure_home_is_defined__ "HOME" "no"
-#>
-__make_sure_home_is_defined__ ()
-{
-  if __check_for_variable_assignment__ "$1"
-  then
-    : "t:0:${LINENO}" "Parameter $1 is defined" #>
-    if test -n "$1" # Confirmation test
-    then
-      : "t:0:${LINENO}" "Result confirmed" #>
-      if eval test -e '$'"$1"
-      then
-        : "t:0:${LINENO}" "Filesystem object exists" #>
-        if eval test -d '$'"$1"
-        then
-          : "t:0:${LINENO}" "Filesystem object is a directory" #>
-          if eval test -x '$'"$1"
-          then
-            : "t:0:${LINENO}" "Directory is searchable" #>
-            assign_variable=$2
-          else
-            : "f:0:${LINENO}" "Directory is not searchable" #>
-            assign_variable=yes
-          fi
-        else
-          : "f:0:${LINENO}" "Filesystem object is not a directory" #>
-          assign_variable=yes
-        fi
-      else
-        : "f:0:${LINENO}" "Filesystem object DNE" #>
-        assign_variable=yes
-      fi
-    else
-      : "f:0:${LINENO}" #>
-      assign_variable=yes
-      __print_error__ "Conflicting test results" "Line:${LINENO}"
-      __print_notice__ "Exiting"
-      exit 2
-    fi
-  else
-    : "f:0:${LINENO}" "Parameter $1 is undefined" #>
-    assign_variable=yes
-  fi
-  : "Leaving __make_sure_home_is_defined__'";:
-}
-__make_sure_home_is_defined__ "HOME" "no"
+  set -x
+
+# Is the existing variable HOME set as RO?
+if readonly -p | grep -q -E -e "^readonly HOME="
+then
+  : "t:0:${LINENO}"
+else
+  : "f:0:${LINENO}"
+	assign_variable=no
+
+	: "Define function:  __make_sure_variable_is_defined_properly__"
+	#>
+	#> If any of the tests fail, then \assign_variable\ should be \yes\.
+	#>
+	#> If all of the tests succeed, and the variable is a searchable
+	#> directory, then operand number two contains the value which should
+	#> be assigned to the variable \assign_variable\. See \eval test -x\.
+	#>
+	#> Usage:
+	#>  __make_sure_variable_is_defined_properly__ \
+	#>              [Unexpanded variable name] [affirmative|negative]
+	#>  __make_sure_variable_is_defined_properly__ "HOME" "negative"
+	#>
+  #>  Valid values for $2 are:
+  #>                            tests       change var
+  #>                            #####       ##########
+  #>              affirmative   passed      do change 
+  #>              negative      passed      do not change
+  #>              yes           failed      do change
   #>
-  #set -x #>
-  : exit "${LINENO}" #>
+	__make_sure_variable_is_defined_properly__ ()
+	{
+	  if __check_for_variable_assignment__ "$1"
+	  then
+	    : "t:0:${LINENO}" "Parameter $1 is defined" #>
+	    if test -n "$1" # Confirmation test
+	    then
+	      : "t:0:${LINENO}" "Result confirmed" #>
+	      if eval test -e '$'"$1"
+	      then
+	        : "t:0:${LINENO}" "Filesystem object exists" #>
+	        if eval test -d '$'"$1"
+	        then
+	          : "t:0:${LINENO}" "Filesystem object is a directory" #>
+	          if eval test -x '$'"$1"
+	          then
+	            : "t:0:${LINENO}" "Directory is searchable" #>
+	            assign_variable="$2__$1"
+	          else
+	            : "f:0:${LINENO}" "Directory is not searchable" #>
+	            assign_variable="yes__$1"
+	          fi
+	        else
+	          : "f:0:${LINENO}" "Filesystem object is not a directory" #>
+	          assign_variable="yes__$1"
+	        fi
+	      else
+	        : "f:0:${LINENO}" "Filesystem object DNE" #>
+	        assign_variable="yes__$1"
+	      fi
+	    else
+	      : "f:0:${LINENO}" #>
+	      assign_variable="yes__$1"
+	      __print_error__ "Conflicting data" "Line:${LINENO}"
+	      __print_notice__ "Exiting"
+	      exit 2
+	    fi
+	  else
+	    : "f:0:${LINENO}" "Parameter $1 is undefined" #>
+	    assign_variable="yes__$1"
+	  fi
+	  : "Leaving __make_sure_variable_is_defined_properly__'";:
+	}
+	__make_sure_variable_is_defined_properly__ "HOME" "negative"
+  alter_original_home_value="${assign_variable}"
+  unset assign_variable
+	  #>
+	  #set -x #>
+	  : exit "${LINENO}" #>
 
-#_ Note,
-#_   - Spec. on \logname\: \\The logname utility explicitly ignores
-#_   the LOGNAME environment variable because environment changes
-#_   could produce erroneous results.\\
-#_   - Therefore, use \logname\.
-#_
-#_ Question, These commands produce different results. Why?
-#_       sudo sh -c 'eval echo ~"$( logname )"' sh
-#_       sudo sh -c 'eval echo ~"${LOGNAME}"' sh
+	#_ Note,
+	#_   - Spec. on \logname\: \\The logname utility explicitly ignores
+	#_   the LOGNAME environment variable because environment changes
+	#_   could produce erroneous results.\\
+	#_   - Therefore, use \logname\.
+	#_
+	#_ Question, These commands produce different results. Why?
+	#_       sudo sh -c 'eval echo ~"$( logname )"' sh
+	#_       sudo sh -c 'eval echo ~"${LOGNAME}"' sh
 
-:;: "Assign HOME in two different ways, if possible"
-#
-# Get the HOME directory via Tilde Expansion.
-#_ Note, Workaround for errexit and xtrace visibility, as throughout.
-if stdout_06_tilde_exp=$(
-  eval echo ~"$( logname )"
-)
-then
-  : "t:0:${LINENO}" #>
-  : "Tilde expansion succeeded"
-else
-  : "f:$?:${LINENO}" #>
-  : "Tilde expansion failed"
-fi
+	:;: "Confirm the value of HOME in two different ways, if possible"
+	#
+	# Get the HOME directory via Tilde Expansion.
+	#_ Note, Workaround for errexit and xtrace visibility, as throughout.
+	if stdout_06_tilde_exp=$(
+	  eval echo ~"$( logname )"
+	)
+	then
+	  : "t:0:${LINENO}" #>
+	  : "Tilde expansion succeeded"
+	else
+	  : "f:$?:${LINENO}" #>
+	  : "Tilde expansion failed"
+	fi
 
-# Get the HOME directory from /etc/passwd.
-if test -f /etc/passwd
-then
-  : "t:0:${LINENO}" #>
-  if grep -q "${stdout_02_id_un}" /etc/passwd
+	# Get the HOME directory from /etc/passwd.
+	if test -f /etc/passwd
+	then
+	  : "t:0:${LINENO}" #>
+	  stdout_02_id_un=$( id -un )
+
+	  if grep -q "${stdout_02_id_un}" /etc/passwd
+	  then
+	    : "t:0:${LINENO}" #>
+	    #> Workaround for errexit and xtrace visibility.
+	    if stdout_07_awk_etc_passwd=$(
+	         awk -F: -v usrnm="${stdout_02_id_un}" \
+	           '$1 == usrnm { print $6 }' /etc/passwd
+	         )
+	    then
+	      : "t:0:${LINENO}" #>
+	      : "\\awk\\ succeeded"
+	    else
+	      : "f:$?:${LINENO}" #>
+	      : "\\awk\\ failed"
+	    fi
+	  else
+	    : "f:$?:${LINENO}" #>
+	    __print_error__ \
+	      "Username is not present in /etc/passwd! " "${stdout_02_id_un}"
+	    __print_notice__ "Exiting"
+	    exit 1
+	  fi
+	else
+	  : "f:$?:${LINENO}"
+	  __print_error__ "Are there systems without /etc/passwd?"
+	  __print_notice__ "Exiting"
+	  exit 2
+	fi
+	  #>
+	  #set -x #>
+	  : exit "${LINENO}" #>
+
+	# Check for conflicting results.
+	#_ Note, in theory, both variables could be of zero length.
+	if test "X${stdout_06_tilde_exp}" = "X${stdout_07_awk_etc_passwd}"
+	then
+	  : "t:0:${LINENO}" "Result confirmed" #>
+	  confirmed_home=${stdout_06_tilde_exp}
+    found_home=NA
+	else
+	  : "f:$?:${LINENO}"
+	  __print_notice__ "Conflicting data" "Line:${LINENO}"
+	  confirmed_home="::Conflicting_data::"
+
+	  #_ Note, if you don\t exit, then which one do you use? Whichever
+	  #_ one exists. Tilde Expansion is specified. The GNU Coreutils
+	  #_ 9.11 version of \id\ requires /etc/passwd, but that doesn\t
+	  #_ necessarily mean that other implementations do also.
+
+	  if test -n "${stdout_06_tilde_exp}"
+	  then
+      : "t:0:${LINENO}"
+	    found_home=${stdout_06_tilde_exp}
+	  else
+      : "f:$?:${LINENO}"
+	    if test -n "${stdout_07_awk_etc_passwd}"
+	    then
+        : "t:0:${LINENO}"
+	      found_home=${stdout_07_awk_etc_passwd}
+	    else
+        : "f:$?:${LINENO}"
+	      found_home="::No_valid_values_were_found::"
+	      __print_warning__ "Value not found" "HOME"
+	      exit 2
+	    fi
+	  fi
+	fi
+
+  if test -n "${confirmed_home}"
   then
-    : "t:0:${LINENO}" #>
-    #> Workaround for errexit and xtrace visibility.
-    if stdout_07_awk_etc_passwd=$(
-         awk -F: -v usrnm="${stdout_02_id_un}" \
-           '$1 == usrnm { print $6 }' /etc/passwd
-         )
-    then
-      : "t:0:${LINENO}" #>
-      : "\\awk\\ succeeded"
-    else
-      : "f:$?:${LINENO}" #>
-      : "\\awk\\ failed"
-    fi
+    : "t:0:${LINENO}"
+	  __make_sure_variable_is_defined_properly__ "confirmed_home" "affirmative"
+    alter_confirmed_home_value="${assign_variable}"
+    alter_found_home_value="no"
+    unset assign_variable
   else
-    : "f:$?:${LINENO}" #>
-    __print_error__ \
-      "Username is not present in /etc/passwd! " "${stdout_02_id_un}"
-    __print_notice__ "Exiting"
-    exit 1
+    : "f:$?:${LINENO}"
+    alter_confirmed_home_value="yes"
+    if test -n "${found_home}"
+    then
+      : "t:0:${LINENO}"
+	    __make_sure_variable_is_defined_properly__ "found_home" "affirmative"
+      alter_found_home_value="${assign_variable}"
+      unset assign_variable
+    else
+      : "f:$?:${LINENO}"
+    fi
   fi
-else
-  : "f:$?:${LINENO}"
-  __print_error__ "Are there systems without /etc/passwd?"
-  __print_notice__ "Exiting"
-  exit 2
+    :;: #>
+    : "HOME: ${HOME:-}" #>
+    : "alter_original_home_value: ${alter_original_home_value:-}" #>
+    : "confirmed_home: ${confirmed_home:-}" #>
+    : "alter_confirmed_home_value: ${alter_confirmed_home_value:-}" #>
+    : "found_home: ${found_home:-}" #>
+    : "alter_found_home_value: ${alter_found_home_value:-}" #>
+    exit "${LINENO}" #>
+
+	  # Bug, there\s a few logic bugs in this section, depending on what
+	  # the outputs from Tilde Expansion and /etc/passwd could be.
+    #
+    # ...yeah, it\s still messed up...
+
+
+  # If HOME matches \confirmed_home\, and if 
+  # \alter_original_home_value\ matches \negative\, then you\re
+  # done. Leave HOME as-is.
+  if test "${HOME}" = "${confirmed_home}"
+  then
+
+    # HOME does match \confirmed_home\
+    
+    case "${alter_original_home_value}" in
+      negative )
+        # negative    = passed tests; do not change
+        HOME=${HOME}
+        ;;
+      affirmative | yes )
+        # affirmative = passed tests; do change
+        # yes         = failed tests; do change
+        HOME=${confirmed_home}
+        ;;
+      * )
+        : Error
+        ;;
+    esac
+
+  else
+
+    # HOME doesn\t match \confirmed_home\, so
+
+    # if \alter_confirmed_home_value\ matches \affirmative\ then
+    # assign the value of \confirmed_home\ to the variable HOME, and
+    # you\re done.
+
+    case "${alter_confirmed_home_value}" in
+      negative )
+        # negative    = passed tests; do not change
+        ;;
+      affirmative | yes )
+        # affirmative = passed tests; do change
+        # yes         = failed tests; do change
+
+        case "${alter_found_home_value}" in
+          affirmative ) # do change
+            HOME="${found_home}"
+            ;;
+          negative )    # do not change
+            ;;
+          yes )         # do change
+            HOME="${found_home}"
+            ;;
+        esac
+        ;;
+      * )
+        : Error
+        ;;
+    esac
+
+    else
+      # \alter_confirmed_home_value\ doesn't match \affirmative\, so
+
+      # if \alter_found_home_value\ matches \affirmative\ then
+      # assign the value of \confirmed_home\ to the variable HOME, and
+      # you\re done.
+
+
+    fi
+  fi
+
+	#   assign_variable   [y|n]
+	printf '%s' "${assign_variable}" | grep -e 'yes__[STRING]'
+
+	#   assignment stmt   [succeeds|fails]
+	HOME="${confirmed_home}"
+
+
+	#######  INCORRECT  #######
+	#
+	# Here through to section on PWD
+
+	# To assign or not to assign the variable.
+	if test "yes" = "${assign_variable}"
+	then
+	  : "t:0:${LINENO}" #> #>
+	  if ! HOME="${confirmed_home}"
+	  then
+	    : "f:$?:${LINENO}" #>
+	    __print_error__ "Assignment to variable failed" "HOME"
+	    __print_notice__ "Exiting"
+	    exit 1
+	  else : "t:0:${LINENO}" "Assignment to HOME succeeded" #>
+	  fi
+	else
+	  : "f:$?:${LINENO}" #>
+	  if test -n "${stdout_07_awk_etc_passwd}"
+	  then
+	    : "t:0:${LINENO}" #>
+	    if ! test "${HOME}" = "${confirmed_home}"
+	    then
+	      : "f:$?:${LINENO}" #>
+	      __print_notice__ \
+	        "Value of HOME disagrees with /etc/passwd" "${HOME}"
+
+	      __make_sure_variable_is_defined_properly__ "stdout_07_awk_etc_passwd" "yes"
+
+	      if test "yes" = "${assign_variable}"
+	      then
+	        : "t:0:${LINENO}" #> #>
+	        __print_notice__ "Resetting" "${stdout_07_awk_etc_passwd}"
+	        if ! HOME=${stdout_07_awk_etc_passwd}
+	        then
+	          : "f:$?:${LINENO}" #>
+	          : "Assignment to HOME failed: HOME could be set RO" #>
+	          readonly -p | grep -E -e "^readonly HOME="
+	        else : "t:0:${LINENO}" "Assignment to HOME succeeded" #>
+	        fi
+	      else : "f:$?:${LINENO}" "Unreachable code" #>
+	      fi
+	    else : "t:0:${LINENO}" "Variables match" #>
+	    fi
+	  else
+	    : "f:$?:${LINENO}" "Var \\stdout_07_awk_etc_passwd\\: empty" #>
+	    if test -n "${stdout_06_tilde_exp}"
+	    then
+	      : "t:0:${LINENO}" #>
+	      if ! test "${HOME}" = "${stdout_06_tilde_exp}"
+	      then
+	        : "f:$?:${LINENO}" #>
+	        __print_notice__ \
+	          "Value of HOME disagrees with Tilde Expansion" "${HOME}"
+
+	        __make_sure_variable_is_defined_properly__ \
+	            "stdout_06_tilde_exp" "yes"
+
+	        if test "yes" = "${assign_variable}"
+	        then
+	          : "t:0:${LINENO}" #> #>
+	          __print_notice__ "Resetting" "${stdout_06_tilde_exp}"
+	          if ! HOME=${stdout_06_tilde_exp}
+	          then
+	            : "f:$?:${LINENO}" #>
+	            : "Assignment to HOME failed: HOME could be set RO" #>
+	            readonly -p | grep -E -e "^readonly HOME="
+	          else : "t:0:${LINENO}" "Assignment to HOME succeeded" #>
+	          fi
+	        else : "f:$?:${LINENO}" "Unreachable code" #>
+	        fi
+	      else : "t:0:${LINENO}" "Variables match" #>
+	      fi
+	    else
+	      : "t:0:${LINENO}" #>
+	      __print_error__ "Both variables have length zero"
+	      __print_notice__ "Exiting"
+	      exit 2
+	    fi
+	  fi
+	fi
+    #>
+	  set -x #>
+	  : "HOME: ${HOME}"
+	  #exit 101 #"${LINENO}" #>
+
 fi
   #>
-  #set -x #>
-  : exit "${LINENO}" #>
+  exit "${LINENO}" #>
 
-# Check for conflicting results.
-if ! test "X${stdout_06_tilde_exp}" = "X${stdout_07_awk_etc_passwd}"
-then
-  : "f:$?:${LINENO}"
-  __print_error__ "Conflicting test results" "Line:${LINENO}"
-  __print_notice__ "Exiting"
-  exit 2
-else : "t:0:${LINENO}" "Result confirmed" #>
-fi
 
-  # Bug, there\s a few logic bugs in this section, depending on what
-  # the outputs from Tilde Expansion and /etc/passwd could be.
 
-# To assign or not to assign the variable.
-if test "yes" = "${assign_variable}"
-then
-  : "t:0:${LINENO}" #> #>
-  if ! HOME="${stdout_06_tilde_exp}"
-  then
-    : "f:$?:${LINENO}" #>
-    __print_error__ "Assignment to variable failed" "HOME"
-    __print_notice__ "Exiting"
-    exit 1
-  else : "t:0:${LINENO}" "Assignment to HOME succeeded" #>
-  fi
-else
-  : "f:$?:${LINENO}" #>
-  if test -n "${stdout_07_awk_etc_passwd}"
-  then
-    : "t:0:${LINENO}" #>
-    if ! test "${HOME}" = "${stdout_07_awk_etc_passwd}"
-    then
-      : "f:$?:${LINENO}" #>
-      __print_notice__ \
-        "Value of HOME disagrees with /etc/passwd" "${HOME}"
-      
-      __make_sure_home_is_defined__ \
-          "stdout_07_awk_etc_passwd" "yes"
-      
-      if test "yes" = "${assign_variable}"
-      then
-        : "t:0:${LINENO}" #> #>
-        __print_notice__ "Resetting" "${stdout_07_awk_etc_passwd}"
-        if ! HOME=${stdout_07_awk_etc_passwd}
-        then
-          : "f:$?:${LINENO}" #>
-          : "Assignment to HOME failed: HOME could be set RO" #>
-          readonly -p | grep -E -e "^readonly HOME="
-        else : "t:0:${LINENO}" "Assignment to HOME succeeded" #>
-        fi
-      else : "f:$?:${LINENO}" "Unreachable code" #>
-      fi
-    else : "t:0:${LINENO}" "Variables match" #>
-    fi
-  else
-    : "f:$?:${LINENO}" "Var \\stdout_07_awk_etc_passwd\\: empty" #>
-    if test -n "${stdout_06_tilde_exp}"
-    then
-      : "t:0:${LINENO}" #>
-      if ! test "${HOME}" = "${stdout_06_tilde_exp}"
-      then
-        : "f:$?:${LINENO}" #>
-        __print_notice__ \
-          "Value of HOME disagrees with Tilde Expansion" "${HOME}"
-      
-        __make_sure_home_is_defined__ \
-            "stdout_06_tilde_exp" "yes"
-      
-        if test "yes" = "${assign_variable}"
-        then
-          : "t:0:${LINENO}" #> #>
-          __print_notice__ "Resetting" "${stdout_06_tilde_exp}"
-          if ! HOME=${stdout_06_tilde_exp}
-          then
-            : "f:$?:${LINENO}" #>
-            : "Assignment to HOME failed: HOME could be set RO" #>
-            readonly -p | grep -E -e "^readonly HOME="
-          else : "t:0:${LINENO}" "Assignment to HOME succeeded" #>
-          fi
-        else : "f:$?:${LINENO}" "Unreachable code" #>
-        fi
-      else : "t:0:${LINENO}" "Variables match" #>
-      fi
-    else
-      : "t:0:${LINENO}" #>
-      __print_error__ "Both variables have length zero"
-      __print_notice__ "Exiting"
-      exit 2
-    fi
-  fi
-fi
-
-  set -x #>
-  : "HOME: ${HOME}"
-  exit 101 #"${LINENO}" #>
-
-# PWD aught to be defined, for \cd\ and \pwd\.
+:;: "PWD aught to be defined, for \\cd\\ and \\pwd\\"
 #_
 #_ Notes,
 #_   - In Posix-2008 effects of assignments to PWD are unspecified.
@@ -1082,7 +1244,7 @@ else
   if stderr_cd_P=$(
     cd -- "${HOME}"
     cd -P -- . 2>&1 >/dev/null
-  ) #_ Subshell
+  ) # Subshell
   then
     : "t:0:${LINENO}" #>
   else
@@ -1097,61 +1259,24 @@ else
     : "t:0:${LINENO}" #>
   else
     : "f:$?:${LINENO}" #>
+
+    # Bug, try also \pwd -P\
+
     __print_warning__ "Parameter is undefined" "PWD"
   fi
 fi
 
+
 :;: "Script Variables"
 canpth=
 nsfod="(No such file or directory)"
-
+  #>
   set -x #>
   #printf '%s\n' stdout #>
   #printf '%s\n' stderr 1>&2 #>
   :;: set #>
   set | grep -E -e '^HOME=' -e '^PWD=' #>
   exit "${LINENO}" #>
-
-
-#_ Pseudocode re function __print_output__
-#_
-#_ GL-scriptnm = defined
-#_ GL-printformat=[-b|-v]          (per execution)
-#_ GL-rtncde=0                     (per execution)
-#_
-#_ GL-majloop-input-1 = defined    (per line)
-#_
-#_   GL-minloop-canpth = [exists/dne]
-#_
-#_     exists  .'. GL-minloop-STDo/e = STDOUT
-#_             .'. GL-rtncode = no change
-#_
-#_       _print_output_
-#_
-#_           verbose
-#_             echo GL-scriptnm: GL-majloop-input: \
-#_                                 [GL-minloop-canpth GL-minloop-STDo/e]
-#_
-#_           brief
-#_             echo                                \
-#_                                 [GL-minloop-canpth GL-minloop-STDo/e]
-#_
-#_
-#_     dne     .'. GL-minloop-STDo/e = STDERR
-#_             .'. GL-rtncode = 1
-#_
-#_       _print_output_
-#_
-#_           verbose
-#_             echo GL-scriptnm: GL-majloop-input: \
-#_                                 [GL-minloop-NSFOD GL-minloop-STDo/e]
-#_
-#_           brief
-#_             echo                                \
-#_                                 [GL-minloop-NSFOD GL-minloop-STDo/e]
-#_
-#_
-#_ exit GL-rtncode
 
 
 : "Define function: __print_output__" #> #>
@@ -1162,7 +1287,7 @@ nsfod="(No such file or directory)"
 #_ Usage:    __print_output__ "${gG}" "${nsfod}" >&2
 #_                                         # ^redirect output to STDERR
 #_
-#_ shellcheck disable=SC2329
+# shellcheck disable=SC2329
 __print_output__ ()
 {
     #set -x #>
@@ -1271,4 +1396,3 @@ done
 
 
 exit 00
-
