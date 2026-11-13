@@ -4,7 +4,6 @@
 #
 #   Script is unfinished - 13 Nov 2026 WY
 #
-  #\set -x #>
 #
 #   Manual canonicalization of directories. Output can be in brief or
 # verbose formats; brief is the default; script accepts multiple
@@ -19,7 +18,7 @@
 #   - Fedora 44: bash-5.3.9
 #   - Fedora 45: bash-5.3.15, dash-0.5.13.2, ksh-1.0.10,
 #       mksh-59c-16, oksh-7.9-2, yash-2.61, zsh-5.9.2.
-#
+#_
 #_ Notes:
 #_  - Redirections are applied before any expansions occur.
 #_  - \#!/bin/env -i sh\ fails.
@@ -63,9 +62,14 @@
 #_    - \set +x\ within a function appears to be in local scope.
 #_    - \command\ cannot find built-ins, apparently.
 #_  - In Oksh, evidently, \hash\ is not available.
+#_  - In Posix, \set -o posix\ DNE, in 2008 or 2024. Also, it appears
+#_  that POSIXLY_CORRECT also DNE exist in Posix 2008 or 2024.
+#_  - In Dash, \eval\ cannot accept the string \--\ to signify end
+#_  of options.
 
   #> Debug.
   #reset; clear; grep -vFe '#>' -e '#_' ./candr.xtrace 2>&1 | less -RNS
+  #\set -x #>
   \set -e #>
   \set -f #> Disable pathame expansion.
   #\: #>
@@ -82,15 +86,15 @@
 
 \:;\: "Security"
 #
-# Posix-2024 suggestion for \Start off a \\secure shell script\\ in
-# which the script avoids being spoofed by its parent,\ as found in
+# Posix-2024 suggestion for \\Start off a \secure shell script\ in
+# which the script avoids being spoofed by its parent,\\ as found in
 # its spec. for \command\.
 #
 # Value of IFS should include one tabstop.
 IFS=' 	
 '
 \unalias -a
-#> Workaround for errexit.
+#+ Workaround for errexit.
 if ! unset -f command grep hash set 2>/dev/null
 then
   : "f:$?:${LINENO}" #>
@@ -133,7 +137,7 @@ usage_msg="${special_var_zero}:
           --help      -h
           --verbose   -v
 "
-unset ec0 ec1 ec2 ec3 ec4 ec5 ec9
+unset ec0 ec1 ec2 ec3 ec4 ec5 ec6
 
 
 :;: "Functions"
@@ -383,15 +387,17 @@ print_value_of_path=no
 if ! PATH=${PATH}
 then
   : "f:$?:${LINENO}" #>
-  if command -v hash
+  if command -v hash >/dev/null 2>&1
   then
     : "t:0:${LINENO}" #>
-    if hash -r
+    cmd_str="hash -r"
+    if eval "${cmd_str}" 2>/dev/null
     then
       : "f:$?:${LINENO}" #>
-      __print_warning__ "Command failed" "hash -r"
+      __print_warning__ "Command failed" "${cmd_str}"
     else : "t:0:${LINENO}" #>
     fi
+    unset cmd_str
   else
     : "f:$?:${LINENO}" #>
     #_ Note, If \hash\ is NA on the system, then this condition will
@@ -407,6 +413,10 @@ fi
   #>
   #> Script Testing:
   #enable -n break #>
+
+
+  # Bug, these two loops are nearly the same: convert to a function.
+
 
 #_ Tests for each command
 #_ Note, Commands which are not Posix at all: \enable\ and \which\.
@@ -433,7 +443,7 @@ for aA in \
   "true" \
   "unalias" \
   #>
-  #> count is 34
+  #> count is ?
   #>
   #"codeblocks" #> Not Posix at all, 2008-2024, and not installed.
   #>
@@ -447,7 +457,7 @@ do
     #continue #>
     #>
     #> Note
-    #>   - At 11/12, all non-special-builtins are located in
+    #>   - At 11/12, all non-builtins are located in
     #>     /usr/bin on Fedora 45.
     #>
   #_ Determine whether command \aA\ is in PATH.
@@ -456,23 +466,22 @@ do
     : "f:${ec0:=$?}" #>
       #>
       #command -v -- "${aA}" ||: #>
-
     global_return_code=${ec0:=$?}
     print_value_of_path=yes
-
     __print_notice__ "Command is not in PATH" "${aA}"
-
   else : "t:0:${LINENO}" #>
   fi
 
-  #_ Unset user functions
-  #> Workaround for errexit.
-  if ! unset -f "${aA}" 2>/dev/null
+  # Unset user functions
+  #+ Workaround for errexit.
+  cmd_str="unset -f"
+  if ! eval "${cmd_str}" -- "${aA}" 2>/dev/null
   then
     : "f:$?:${LINENO}" #>
-    : "Command \\unset\\ returned non-zero"
+    : "Command \\${cmd_str}\\ returned non-zero"
   else : "t:0:${LINENO}" #>
   fi
+  unset cmd_str
 done
 unset aA #>
   #>
@@ -489,7 +498,7 @@ then
 else : "f:$?${LINENO}" #>
 fi
 
-#_ Built-ins, Special and Regular
+#_ Built-ins: Special and Regular
 for cC in \
   "break" \
   ":" \
@@ -502,32 +511,31 @@ for cC in \
   "shift" \
   "unset"
 do
-  #_ Determine whether Special Built-in \cC\ is in PATH.
+  #_ Determine whether Built-in \cC\ is in PATH.
   if ! command -v -- "${cC}" >/dev/null
   then
-    : "f:${ec9:=$?}" #>
-
-    global_return_code=${ec9:=$?}
-    print_value_of_path=yes
-
-    __print_notice__ "Command is not in PATH" "${cC}"
-
+    #_ Note, \ec6\ is used for transmitting the exit code from
+    #_ \:\ into \global_return_code\.
+    : "f:${ec6:=$?}" #>
+    global_return_code=${ec6:=$?}
+    __print_notice__ "Built-in is not available" "${cC}"
   else : "t:0:${LINENO}" #>
   fi
 
-  #_ Unset user functions
-  #> Workaround for errexit.
-  if ! unset -f "${cC}" 2>/dev/null
+  # Unset user functions
+  #+ Workaround for errexit.
+  cmd_str="unset -f"
+  if ! eval "${cmd_str}" -- "${cC}" 2>/dev/null
   then
     : "f:$?:${LINENO}" #>
-    : "Command \\unset\\ returned non-zero"
+    : "Command \\${cmd_str}\\ returned non-zero"
   else : "t:0:${LINENO}" #>
   fi
+  unset cmd_str
 done
 unset cC #>
   #>
   #exit "${LINENO}" #>
-
 
 
 #_ If any of the commands were missing, then exit.
@@ -552,24 +560,21 @@ do
     #reset;clear #>
     #./candr.xtrace "$(dd if=/dev/urandom bs=32b count=1 2>/dev/null)" #>
     #>
-  stdout_10_tr_d=$(
-    printf '%s' "${bB}" \
-      | tr -d '\0'
-    )
+  stdout_10_tr_d=$( printf '%s' "${bB}" | tr -d '\0' )
   stdout_11_strings_n1=$(
-    printf '%s' "${stdout_10_tr_d}" \
-      | strings -n 1
-    )
+    printf '%s' "${stdout_10_tr_d}" | strings -n 1
+  )
 
   if ! test "X${bB}" = "X${stdout_11_strings_n1}"
   then
     : "f:${ec1:=$?}:${LINENO}" #>
     global_return_code=${ec1:=$?}
     __print_error__ \
-      "Input contains one or more non-printable strings"
+        "Input contains one or more non-printable strings"
     break 1
   else : "t:0:${LINENO}" #>
   fi
+
   __reset_xtrace__
 
   # Zero length input is disallowed.
@@ -684,8 +689,8 @@ then #>
   for eE in BASH_ENV CDPATH ENV HOME LC_ALL LD_PRELOAD NAME_MAX PATH_MAX OLDPWD PATH PWD SYMLOOP_MAX #>
   do #>
       #echo "eE: ${eE}" #>
-    #> Note, this particular \if..fi\ is a workaround for errexit
-    #> and xtrace visibility.
+    #+ Note, this particular \if..fi\ is a workaround for errexit
+    #+ and xtrace visibility.
     if printf '%s\n' "${stdout_01_getconf_a}" | grep -E -e "^${eE} " #>
     then : "t:0:${LINENO}" #>
     else : "f:$?:${LINENO}" #>
@@ -734,7 +739,7 @@ do
     # shellcheck disable=SC2016
     cmd_str='unset -v -- "${fF}"'
 
-    if eval -- "${cmd_str}"
+    if eval "${cmd_str}"
     then
       : "t:0:${LINENO}" "\\${cmd_str}\\ returned zero" #>
       if __check_for_variable_assignment__ "${fF}"
@@ -746,15 +751,22 @@ do
       else : "f:$?:${LINENO}" "${fF} is undefined or of zero length";: #>
       fi
     else
+      : "f:$?:${LINENO}" #>
       __print_notice__ "Command failed" "\\${cmd_str}\\"
     fi
+    unset cmd_str
   else : "f:$?:${LINENO}" "${fF} is undefined or of zero length";: #>
   fi
 done
   #>
   #set -x #>
   : exit "${LINENO}" #>
+  #>
+  #> Script Testing
+  #unset PWD #>
   #unset HOME #>
+  #unset USER #>
+  #>
   #HOME=/ #>
   #HOME=~/nonexistent.d #>
   #HOME=~/nonexistent.sym #>
@@ -765,6 +777,7 @@ done
   #HOME='.+' #>
   #HOME=. #>
   #HOME=.. #>
+  #unset HOME
   #HOME=~ #>
   #HOME=~root #>
   #readonly HOME #>
@@ -780,15 +793,25 @@ done
 #_   - The \id\ utility has no knowledge of \sudo\ or means of
 #_   differentiating regular vs. elevated permissions.
 #_   - If the name of /etc/passwd is changed, \id\ throws an error.
-
-  set -x
+  #>
+  #set -x #>
 
 # Is the existing variable HOME set as RO?
-if readonly -p | grep -q -E -e "^readonly HOME="
+stdout_12_readonly_awk=$(
+  readonly -p \
+    | awk \
+      '{
+        split($0, arr)
+        for (a in arr) {
+          if(arr[a] ~ /^HOME=/) {
+            printf("%s\n", arr[a])
+          }
+        }
+      }'
+    )
+if ! test -n "${stdout_12_readonly_awk:-}"
 then
-  : "t:0:${LINENO}"
-else
-  : "f:0:${LINENO}"
+  : "f:0:${LINENO}" #>
   assign_variable=no
 
   : "Define function:  __make_sure_variable_is_defined_properly__"
@@ -797,7 +820,8 @@ else
   #>
   #> If all of the tests succeed, and the variable is a searchable
   #> directory, then operand number two contains the value which should
-  #> be assigned to the variable \assign_variable\. See \eval test -x\.
+  #> be assigned to the variable \assign_variable\. See
+  #> \eval test -x\.
   #>
   #> Usage:
   #>  __make_sure_variable_is_defined_properly__ \
@@ -805,31 +829,29 @@ else
   #>
   #>  Valid values for $2 are:
   #>                            tests       change var
-  #>                          ###########################
+  #>                          ##########################
   #>              affirmative # passed      do change
   #>              negative    # passed      do not change
   #>              yes         # failed      do change
   #>
-  #
-  # Existing commandlines:
-  #
-  #   __make_sure_variable_is_defined_properly__ \
-  #       "HOME" "negative"
-  #
-  #           Var HOME could have values of yes or negative
-  #
-  #   __make_sure_variable_is_defined_properly__ \
-  #       "confirmed_home" "affirmative"
-  #
-  #           Var confirmed_home could have values of yes or affirmative
-  #
-  #   __make_sure_variable_is_defined_properly__ \
-  #       "found_home" "affirmative"
-  #
-  #           Var found_home could have values of yes or affirmative
-  #
-  #
-  #
+  #>
+  #> Existing commandlines:
+  #>
+  #>   __make_sure_variable_is_defined_properly__ \
+  #>       "HOME" "negative"
+  #>
+  #>           Var HOME could have values of yes or negative
+  #>
+  #>   __make_sure_variable_is_defined_properly__ \
+  #>       "confirmed_home" "affirmative"
+  #>
+  #>           Var confirmed_home could have values of yes or affirmative
+  #>
+  #>   __make_sure_variable_is_defined_properly__ \
+  #>       "found_home" "affirmative"
+  #>
+  #>           Var found_home could have values of yes or affirmative
+  #>
   __make_sure_variable_is_defined_properly__ ()
   {
     if __check_for_variable_assignment__ "$1"
@@ -871,16 +893,16 @@ else
       : "f:0:${LINENO}" "Parameter $1 is undefined" #>
       assign_variable="yes__$1"
     fi
-    : "Leaving __make_sure_variable_is_defined_properly__'";:
+    : "Leaving __make_sure_variable_is_defined_properly__'";: #>
   }
 
   __make_sure_variable_is_defined_properly__ \
       "HOME" "negative"
-  # 
-  # Note, possible values for \alter_original_home_value\ are:
-  #   - negative__HOME, or
-  #   - yes__HOME
-  #
+  #_ Note,
+  #_   Possible values for \alter_original_home_value\ are:
+  #_   - negative__HOME, or
+  #_   - yes__HOME
+  #_
   alter_original_home_value="${assign_variable}"
   unset assign_variable
     #>
@@ -936,12 +958,12 @@ else
     else
       : "f:$?:${LINENO}" #>
       __print_error__ \
-        "Username is not present in /etc/passwd! " "${stdout_02_id_un}"
+        "Username is not present in /etc/passwd " "${stdout_02_id_un}"
       #__print_notice__ "Exiting"
       exit 1
     fi
   else
-    : "f:$?:${LINENO}"
+    : "f:$?:${LINENO}" #>
     __print_error__ "...there are systems without \"/etc/passwd\"???"
     __print_notice__ "Exiting"
     exit 2
@@ -958,12 +980,12 @@ else
     confirmed_home=${stdout_06_tilde_exp}
     found_home=NA
   else
-    : "f:$?:${LINENO}"
+    : "f:$?:${LINENO}" #>
     __print_notice__ "Conflicting data" "Line:${LINENO}"
     confirmed_home="::Conflicting_data::"
     found_home=""
     #_
-    #_  Note, 
+    #_  Note,
     #_    If the data is incongruent, then which variable does the
     #_  script use? Whichever one exists?
     #_    Tilde Expansion is specified.
@@ -975,16 +997,16 @@ else
     #_
     if test -n "${stdout_06_tilde_exp}"
     then
-      : "t:0:${LINENO}"
+      : "t:0:${LINENO}" #>
       found_home=${stdout_06_tilde_exp}
     else
-      : "f:$?:${LINENO}"
+      : "f:$?:${LINENO}" #>
       if test -n "${stdout_07_awk_etc_passwd}"
       then
-        : "t:0:${LINENO}"
+        : "t:0:${LINENO}" #>
         found_home=${stdout_07_awk_etc_passwd}
       else
-        : "f:$?:${LINENO}"
+        : "f:$?:${LINENO}" #>
         found_home="::No_valid_values_were_found::"
         __print_warning__ "Value not found" "HOME"
         exit 2
@@ -995,35 +1017,35 @@ else
   # Check the new data for validity.
   if test -n "${confirmed_home}"
   then
-    : "t:0:${LINENO}"
+    : "t:0:${LINENO}" #>
     __make_sure_variable_is_defined_properly__ \
         "confirmed_home" "affirmative"
-    # 
-    # Note, possible values for \alter_confirmed_home_value\ are:
-    #   - affirmative__confirmed_home, or
-    #   - yes__confirmed_home
-    #
+    #_
+    #_ Note, possible values for \alter_confirmed_home_value\ are:
+    #_   - affirmative__confirmed_home, or
+    #_   - yes__confirmed_home
+    #_
     alter_confirmed_home_value="${assign_variable}"
     alter_found_home_value="no"
     unset assign_variable
   else
-    : "f:$?:${LINENO}"
+    : "f:$?:${LINENO}" #>
     alter_confirmed_home_value="yes"
     alter_found_home_value=""
     if test -n "${found_home}"
     then
-      : "t:0:${LINENO}"
+      : "t:0:${LINENO}" #>
       __make_sure_variable_is_defined_properly__ \
           "found_home" "affirmative"
-      #
-      # Note, possible values for \alter_found_home_value\, are:
-      #   - affirmative__found_home, or
-      #   - yes__found_home
-      #
+      #_ Note,
+      #_   Possible values for \alter_found_home_value\, are:
+      #_   - affirmative__found_home, or
+      #_   - yes__found_home
+      #_
       alter_found_home_value="${assign_variable}"
       unset assign_variable
     else
-      : "f:$?:${LINENO}"
+      : "f:$?:${LINENO}" #>
       __print_notice__ \
           "Data from both sources are of zero length" "Line:${LINENO}"
     fi
@@ -1035,177 +1057,192 @@ else
     : "alter_confirmed_home_value: ${alter_confirmed_home_value:-}" #>
     : "found_home: ${found_home:-}" #>
     : "alter_found_home_value: ${alter_found_home_value:-}" #>
-    exit "${LINENO}" #>
+    #exit "${LINENO}" #>
 
-    # Bug, there\s a few logic bugs in this section, depending on what
-    # the outputs from Tilde Expansion and /etc/passwd could be.
-    #
-    # ...yeah, it\s still messed up...
-    #
-    #   Var  HOME             could have values of  yes   or  negative
-    #   Var  confirmed_home   could have values of  yes   or  affirmative
-    #   Var  found_home       could have values of  yes   or  affirmative
+    #_ Note,
+    #_   Var  HOME             could have values of  yes   or  negative
+    #_   Var  confirmed_home   could have values of  yes   or  affirmative
+    #_   Var  found_home       could have values of  yes   or  affirmative
 
-  # If HOME matches \confirmed_home\, and if
-  # \alter_original_home_value\ matches \negative\, then you\re
-  # done. Leave HOME as-is.
-  #
-  # Do HOME and \confirmed_home\ have the same value?
-  if test "${HOME}" = "${confirmed_home}"
+  # Assign HOME accordingly.
+  #_ Do HOME and \confirmed_home\ have the same value?
+  if test "${HOME:=}" = "${confirmed_home}"
   then
-    # Yes, HOME and \confirmed_home\ have the same value.
-    #
-    # Did HOME pass all of the tests?
-    if test "negative__HOME" = "${alter_original_home_value}"
+    : "t:0:${LINENO}" #>
+    #_ Yes, HOME and \confirmed_home\ have the same value.
+    #_
+    #_ Did HOME pass all of the tests?
+    if ! test "negative__HOME" = "${alter_original_home_value}"
     then
-      # Yes, HOME passed all of the tests.
-      if HOME=${HOME}; then : "t:0:${LINENO}"; else : "f:$?:${LINENO}"; fi
-      # Done
-    
-    else 
-      # No, HOME failed some of the tests.
-      #
-      # But HOME is equivalent to \confirmed_home\, so you cannot use
-      # that value either.
-      #
-      # Did the third variable, \found_home\, pass all of the tests?
+      : "f:$?:${LINENO}" #>
+      #_ No, HOME failed some of the tests.
+      #_
+      #_ But HOME is equivalent to \confirmed_home\, so you cannot use
+      #_ that value either.
+      #_
+      #_ Did the third variable, \found_home\, pass all of the tests?
       if test "affirmative__found_home" = "${alter_found_home_value}"
       then
-        # Yes, \found_home\ passed all of the tests.
-        if HOME=${found_home}; then : "t:0:${LINENO}"; else : "f:$?:${LINENO}"; fi
-
-        # Done
-
+        : "t:0:${LINENO}" #>
+        #_ Yes, \found_home\ passed all of the tests.
+        if HOME=${found_home}
+        then : "t:0:${LINENO}"
+        else : "f:$?:${LINENO}"
+        fi
+        #_ Done
       else
-        # No, \found_home\ failed some of the tests.
-        #
-        # So none of the possible values for HOME passed all of the
-        # tests.
-        #
-        # So use the filesystem root directory. Rationale below.
-        if HOME="/"; then : "t:0:${LINENO}"; else : "f:$?:${LINENO}"; fi
-
-        # Done
-
+        : "f:$?:${LINENO}" #>
+        #_ No, \found_home\ failed some of the tests.
+        #_
+        #_ So none of the possible values for HOME passed all of the
+        #_ tests.
+        #_
+        #_ So use the filesystem root directory. Rationale below.
+        if HOME="/"
+        then : "t:0:${LINENO}"
+        else : "f:$?:${LINENO}"
+        fi
+        #_ Done
       fi
+    else : "t:0:${LINENO}" #>
+      #_ Yes, HOME passed all of the tests.
+      #if HOME=${HOME}; then : "t:0:${LINENO}"; else : "f:$?:${LINENO}"; fi #>
+      #_ Done
     fi
   else
-    # No, HOME and \confirmed_home\ do NOT have the same value.
-    #
-    # Did HOME pass all of the tests?
+    : "f:$?:${LINENO}" #>
+    #_ No, HOME and \confirmed_home\ do NOT have the same value.
+    #_
+    #_ Did HOME pass all of the tests?
     if test "negative__HOME" = "${alter_original_home_value}"
     then
-      # Yes, HOME passed all of the tests.
-      #
-      # But, HOME and \confirmed_home\ do not have the same value.
-      #
-      # So, did \confirmed_home\ pass all of the tests?
+      : "t:0:${LINENO}" #>
+      #_ Yes, HOME passed all of the tests.
+      #_
+      #_ But, HOME and \confirmed_home\ do not have the same value.
+      #_
+      #_ So, did \confirmed_home\ pass all of the tests?
       if test "affirmative__confirmed_home" = "${alter_confirmed_home_value}"
       then
-        # Yes, \confirmed_home\ passed all of the tests.
-        #
-        # So both values passed all of the tests.
-        #
+        : "t:0:${LINENO}" #>
+        #_ Yes, \confirmed_home\ passed all of the tests.
+        #_
+        #_ So both values passed all of the tests.
+        #_
         __print_warning__ "Conflicting data" "Line:${LINENO}"
-
-        # If \found_home\ also passed all of the tests, then use that
-        # one because \found_home\ is based on /etc/passwd.
-        #
-        # Did \found_home\ pass all of the tests?
+        #_ If \found_home\ also passed all of the tests, then use that
+        #_ one because \found_home\ is based on /etc/passwd.
+        #_
+        #_ Did \found_home\ pass all of the tests?
         if test "affirmative__found_home" = "${alter_found_home_value}"
         then
-          # Yes, \found_home\ passed all of the tests.
-          if HOME=${found_home}; then : "t:0:${LINENO}"; else : "f:$?:${LINENO}"; fi
-        
-          # Done
-    
+          : "t:0:${LINENO}" #>
+          #_ Yes, \found_home\ passed all of the tests.
+          if HOME=${found_home}
+          then : "t:0:${LINENO}"
+          else : "f:$?:${LINENO}"
+          fi
+          #_ Done
         else
-          # No, \found_home\ failed some of the tests.
-          #
-          # Between the verified values of HOME and \confirmed_home\,
-          # which should be used: the one set by the user or the one
-          # identified by Tilde Expansion?
-          #
-          # The one set by the user could be malicious, so use the
-          # one identified by Tilde Expansion: \confirmed_home\.
-          if HOME=${confirmed_home}; then : "t:0:${LINENO}"; else : "f:$?:${LINENO}"; fi
-
-          # Done
-    
+          : "f:$?:${LINENO}" #>
+          #_ No, \found_home\ failed some of the tests.
+          #_
+          #_ Between both verified values HOME and \confirmed_home\,
+          #_ which should be used: the one set by the user or the one
+          #_ identified by Tilde Expansion?
+          #_
+          #_ The one set by the user could be malicious, so use the
+          #_ one identified by Tilde Expansion: \confirmed_home\.
+          if HOME=${confirmed_home}
+          then : "t:0:${LINENO}"
+          else : "f:$?:${LINENO}"
+          fi
+          #_ Done
         fi
-      else
-        # No, \confirmed_home\ failed some of the tests.
-        #
-        # Since HOME passed all of the tests, and since HOME and 
-        # \confirmed_home\ do not have the same value, keep the 
-        # current value of HOME.
-        if HOME=${HOME}; then : "t:0:${LINENO}"; else : "f:$?:${LINENO}"; fi
-
-        # Done
-    
+      else : "f:$?:${LINENO}" #>
+        #_ No, \confirmed_home\ failed some of the tests.
+        #_
+        #_ Since HOME passed all of the tests, and since HOME and
+        #_ \confirmed_home\ do not have the same value, keep the
+        #_ current value of HOME.
+        #if HOME=${HOME}; then : "t:0:${LINENO}"; else : "f:$?:${LINENO}"; fi #>
+        #_ Done
       fi
-    else 
-      # No, HOME failed some of the tests.
-      #
-      # Since HOME and \confirmed_home\ do not have the same value,
-      #
-      # Did \confirmed_home\ pass all of the tests?
+    else
+      : "f:$?:${LINENO}" #>
+      #_ No, HOME failed some of the tests.
+      #_
+      #_ Since HOME and \confirmed_home\ do not have the same value,
+      #_
+      #_ Did \confirmed_home\ pass all of the tests?
       if test "affirmative__confirmed_home" = "${alter_confirmed_home_value}"
       then
-        # Yes, \confirmed_home\ passed all of the tests.
-        if HOME=${confirmed_home}; then : "t:0:${LINENO}"; else : "f:$?:${LINENO}"; fi
-
-        # Done.
-
+        : "t:0:${LINENO}" #>
+        #_ Yes, \confirmed_home\ passed all of the tests.
+        if HOME=${confirmed_home}
+        then : "t:0:${LINENO}"
+        else : "f:$?:${LINENO}"
+        fi
+        #_ Done.
       else
-        # No, \confirmed_home\ failed some of the tests.
-        #
-        # So both HOME and \confirmed_home\ failed some of the tests.
-        #
-        # Did \found_home\ pass all of the tests?
+        : "f:$?:${LINENO}" #>
+        #_ No, \confirmed_home\ failed some of the tests.
+        #_
+        #_ So both HOME and \confirmed_home\ failed some of the tests.
+        #_
+        #_ Did \found_home\ pass all of the tests?
         if test "affirmative__found_home" = "${alter_found_home_value}"
         then
-          # Yes, \found_home\ passed all of the tests.
-          if HOME=${found_home}; then : "t:0:${LINENO}"; else : "f:$?:${LINENO}"; fi
-        
-          # Done.
-
+          : "t:0:${LINENO}" #>
+          #_ Yes, \found_home\ passed all of the tests.
+          if HOME=${found_home}
+          then : "t:0:${LINENO}"
+          else : "f:$?:${LINENO}"
+          fi
+          #_ Done.
         else
-          # No, \found_home\ failed some of the tests.
-          #
-          # So all three values failed some of the tests.
-          #
-          # So then which value should be used?
-          #   - The invalid value from the user,
-          #   - The invalid value from Tilde Expansion, or
-          #   - The invalid value from /etc/passwd?
-          #
-          # It depends on how each value failed the tests.
-          #
-          # If any value failed with reason \.*__nosrch\, then use
-          # that value. 
-          #
-          # But, why on earth would a HOME directory not be
-          # searchable by USER??
-          #
-          # ...yeah, there really isn\t a good reason why a value of
-          # HOME would be non-searchable directory. Yeah, no.
-          #
-          # So use the NUL string? Use the filesystem root?
-          #
-          # Honestly, the filesystem root might be the best choice.
-          # At least it\s guaranteed to always exist, as far as I
-          # know.
-          if HOME="/"; then : "t:0:${LINENO}"; else : "f:$?:${LINENO}"; fi
+          : "f:$?:${LINENO}" #>
+          #_ No, \found_home\ failed some of the tests.
+          #_
+          #_ So all three values failed some of the tests.
+          #_
+          #_ So then which value should be used?
+          #_   - The invalid value from the user,
+          #_   - The invalid value from Tilde Expansion, or
+          #_   - The invalid value from /etc/passwd?
+          #_
+          #_ It depends on how each value failed the tests.
+          #_
+          #_ If any value failed with reason \.*__nosrch\, then use
+          #_ that value.
+          #_
+          #_ But, why on earth would a HOME directory not be
+          #_ searchable by USER??
+          #_
+          #_ ...yeah, there really isn\t a good reason why a value of
+          #_ HOME would be non-searchable directory. Yeah, no.
+          #_
+          #_ So use the NUL string? Use the filesystem root?
+          #_
+          #_ Honestly, the filesystem root might be the best choice.
+          #_ At least it\s guaranteed to always exist, as far as I
+          #_ know.
+          if HOME="/"
+          then : "t:0:${LINENO}"
+          else : "f:$?:${LINENO}"
+          fi
         fi
       fi
     fi
   fi
     #>
-    set -x #>
+    #set -x #>
     : "HOME: ${HOME}" #>
-    exit "${LINENO}" #>
+    exit 101 #"${LINENO}" #>
+    #>
+else : "t:0:${LINENO}" #>
 fi
+unset stdout_12_readonly_awk
   #>
   exit "${LINENO}" #>
 
@@ -1220,10 +1257,8 @@ fi
 #_     - Values of HOME and PWD are inherited from the calling
 #_     interactive shell.
 #_
-if __check_for_variable_assignment__ "PWD"
+if ! __check_for_variable_assignment__ "PWD"
 then
-  : "t:0:${LINENO}" #>
-else
   : "f:$?:${LINENO}" #>
 
   #_ A call to \cd\ is supposed to assign a value to PWD.
@@ -1287,32 +1322,31 @@ else
   #_    - \PWD\: \\An absolute pathname of the current working
   #_    directory. If an application sets or unsets the value of PWD,
   #_    the behavior of pwd is unspecified.\\
-  #_  - This \if..fi\ structure is a workaround for errexit and
-  #_  xtrace visibility
+  #+  - This \if..fi\ structure is a workaround for errexit and
+  #+  xtrace visibility
   #_
-  if stderr_cd_P=$(
+  if ! stderr_cd_P=$(
     cd -- "${HOME}"
     cd -P -- . 2>&1 >/dev/null
   ) # Subshell
   then
-    : "t:0:${LINENO}" #>
-  else
     : "f:$?:${LINENO}" #>
     __print_error__ "Subshell failed" "cd; cd -P ."
     #__print_notice__ "Exiting"
     exit 1
+  else : "t:0:${LINENO}" #>
   fi
 
-  if __check_for_variable_assignment__ "PWD"
+  if ! __check_for_variable_assignment__ "PWD"
   then
-    : "t:0:${LINENO}" #>
-  else
     : "f:$?:${LINENO}" #>
 
     # Bug, try also \pwd -P\
 
     __print_warning__ "Parameter is undefined" "PWD"
+  else : "t:0:${LINENO}" #>
   fi
+else : "t:0:${LINENO}" #>
 fi
 
 
@@ -1320,7 +1354,7 @@ fi
 canpth=""
 nsfod="(No such file or directory)"
   #>
-  set -x #>
+  #set -x #>
   #printf '%s\n' stdout #>
   #printf '%s\n' stderr 1>&2 #>
   :;: set #>
@@ -1355,8 +1389,7 @@ __print_output__ ()
   then
     : "t:0:${LINENO}" #>
     output_verbose_on=yes
-  else
-    : "f:$?:${LINENO}" #>
+  else : "f:$?:${LINENO}" #>
   fi
 
   :;: "\\case\\ on \\output_verbose_on\\"
@@ -1370,7 +1403,10 @@ __print_output__ ()
       : "\\case\\ branch: \\no\\" #>
       printf '%s\n' "$2"
       ;;
-    * ) printf '%s\n' "Unreachable code"; exit "${LINENO}";; #>
+    * )
+      printf '%s\n' "Unreachable code"
+      exit "${LINENO}"
+      ;;
   esac
     #>
     #exit "${LINENO}" #>
@@ -1378,70 +1414,68 @@ __print_output__ ()
   #>
   #set -x #>
   #exit "${LINENO}" #>
-  set -x #>
+  #set -x #>
 
 
 :;: "The given path must exist in the filesystem"
-# Script Test input: /dev/qwertyuiop
+#> Script Test input: /dev/qwertyuiop
 for gG
 do
-  if test -e "${gG}"
+  if ! test -e "${gG}"
   then
-    : "t:0:${LINENO}" #>
-    : "Path exists"
-  else
     : "f:$?:${LINENO}" #>
     global_return_code=1
     __print_output__ "${gG}" "${nsfod}" >&2
     continue 1
+  else : "t:0:${LINENO}" "Path exists" #>
   fi
 done
 
 
-  # Buggy - rewrite script from this point on.
-  #  - put the entire thing in a true loop
-  #    - check for leading forward slash
-  #      - if missing, then prepend output of \pwd\
-  #    - handle a double forward slash at the far left of the string
-  #    - using \awk -F/\, separate the pathname out into separate
-  #    elements
-  #    - load the elements into the positional array
-  #    - start with a \symlink_detected\ canary variable, set to \no\
-  #      - loop through the array; the idea is to use concatenation to
-  #      build up a new pathname; loop on \$# and \$1; use \shift\
-  #        - for each element, add one leading forward slash to the
-  #        current element
-  #        - if there was an existing \canpath\ string from a previous
-  #        loop, then prepend that on
-  #        - use both \file\ and \test\ to determine the filetype of
-  #        the basename of the \canpath\ string
-  #        - if both utilities agree, then
-  #          - if element is a symlink, then switch \symlink_detected\
-  #          to \yes\
-  #            - get the value of the symlink from \file\
-  #            - test for whether the of value from \file\ has a
-  #            leading forward slash
-  #              - if yes, then use the symlink\s value as the total
-  #              pathname thus far and continue
-  #              - if no, then append the symlink\s value to the
-  #              existing value of \canpath\ ...and continue?
-  #          - if element is a directory, then continue
-  #          - if element is neither a symlink nor a directory, then
-  #            - if there are no more elements in the loop, then
-  #            \break 1\
-  #            - if there are elements remaining, then error
-  #              ...and figure out what that means. is it a dangling
-  #              symlink?
-  #        - if the two utilities disagree, then error
-  #      end element loop
-  #      - if \symlink_detected\ is \yes\, then remain in the true
-  #      loop; otherwise \break 2\
-  #  - end true loop
-  #  - how do you detect data loops? tmp file of pathnames at top of
-  #  each true loop - duplicates mean data loop and error?
-
-  #: "output_verbose_on: ${output_verbose_on}"
-  #exit "${LINENO}"
+  #> Buggy - rewrite script from this point on.
+  #>  - put the entire thing in a true loop
+  #>    - check for leading forward slash
+  #>      - if missing, then prepend output of \pwd\
+  #>    - handle a double forward slash at the far left of the string
+  #>    - using \awk -F/\, separate the pathname out into separate
+  #>    elements
+  #>    - load the elements into the positional array
+  #>    - start with a \symlink_detected\ canary variable, set to \no\
+  #>      - loop through the array; the idea is to use concatenation to
+  #>      build up a new pathname; loop on \$# and \$1; use \shift\
+  #>        - for each element, add one leading forward slash to the
+  #>        current element
+  #>        - if there was an existing \canpath\ string from a previous
+  #>        loop, then prepend that on
+  #>        - use both \file\ and \test\ to determine the filetype of
+  #>        the basename of the \canpath\ string
+  #>        - if both utilities agree, then
+  #>          - if element is a symlink, then switch \symlink_detected\
+  #>          to \yes\
+  #>            - get the value of the symlink from \file\
+  #>            - test for whether the of value from \file\ has a
+  #>            leading forward slash
+  #>              - if yes, then use the symlink\s value as the total
+  #>              pathname thus far and continue
+  #>              - if no, then append the symlink\s value to the
+  #>              existing value of \canpath\ ...and continue?
+  #>          - if element is a directory, then continue
+  #>          - if element is neither a symlink nor a directory, then
+  #>            - if there are no more elements in the loop, then
+  #>            \break 1\
+  #>            - if there are elements remaining, then error
+  #>              ...and figure out what that means. is it a dangling
+  #>              symlink?
+  #>        - if the two utilities disagree, then error
+  #>      end element loop
+  #>      - if \symlink_detected\ is \yes\, then remain in the true
+  #>      loop; otherwise \break 2\
+  #>  - end true loop
+  #>  - how do you detect data loops? tmp file of pathnames at top of
+  #>  each true loop - duplicates mean data loop and error?
+  #>
+  #: "output_verbose_on: ${output_verbose_on}" #>
+  #exit "${LINENO}" #>
 
 
 exit 00
