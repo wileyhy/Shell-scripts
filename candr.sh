@@ -118,6 +118,7 @@ fi
 
 
 :;: "Settings"
+POSIXLY_CORRECT=yes
 set -a
 set -u
 set -C
@@ -668,25 +669,30 @@ __exit_per_global_return_code__
 #> DEBUG BLOCK
 #>
 :;: "IF XTRACE IS ON -- Section on \\getconf\\" #>
+#>  _POSIX_NO_TRUNC   # for Pathname Resolution
 #>  BASH_ENV          # for \bash\
+#>  BLOCK_SIZE        # for GNU Coreutils
+#>  BLOCKSIZE         # for GNU Coreutils
 #>  CDPATH            # for \cd\
 #>  ENV               # for \sh\
 #>  HOME              # for \cd\
 #>  LC_ALL            # Common
 #>  LD_PRELOAD        # for paranoia ;-P
 #>  LOGNAME           # for ?
-#>  NAME_MAX          # for \pathchk [no args]\
+#>  NAME_MAX          # for \pathchk [no args]\ and Pathname Resolution
 #>  PATH_MAX          # for \cd\, \pathchk [no args]\ and \pwd\
 #>  OLDPWD            # for \cd\
 #>  PATH              # for \sh\
+#>  POSIXLY_CORRECT   # for GNU Coreutils
 #>  PWD               # for \cd\ and \pwd\
 #>  SYMLOOP_MAX       # for \chdir()\
+#>
 if printf '%s' "$-" | grep -q -e "x" #>
 then #>
   : "t:0:${LINENO}" "Parameter values per \\getconf\\" #>
   __xtrace_off__; set +x #>
   stdout_01_getconf_a=$( getconf -a ) #>
-  for eE in BASH_ENV CDPATH ENV HOME LC_ALL LD_PRELOAD NAME_MAX PATH_MAX OLDPWD PATH PWD SYMLOOP_MAX #>
+  for eE in _POSIX_NO_TRUNC BASH_ENV CDPATH ENV HOME LC_ALL LD_PRELOAD NAME_MAX PATH_MAX OLDPWD PATH PWD SYMLOOP_MAX #>
   do #>
       #echo "eE: ${eE}" #>
     #+ Note, this particular \if..fi\ is a workaround for errexit
@@ -1129,7 +1135,7 @@ then
         #_
         #_ So both values passed all of the tests.
         #_
-        __print_warning__ "Conflicting data" "Line:${LINENO}"
+        #__print_warning__ "Conflicting data" "Line:${LINENO}"
         #_ If \found_home\ also passed all of the tests, then use that
         #_ one because \found_home\ is based on /etc/passwd.
         #_
@@ -1238,13 +1244,13 @@ then
     #>
     #set -x #>
     : "HOME: ${HOME}" #>
-    exit 101 #"${LINENO}" #>
+    #exit 101 #"${LINENO}" #>
     #>
 else : "t:0:${LINENO}" #>
 fi
 unset stdout_12_readonly_awk
   #>
-  exit "${LINENO}" #>
+  #exit "${LINENO}" #>
 
 
 :;: "PWD aught to be defined, for \\cd\\ and \\pwd\\"
@@ -1270,12 +1276,12 @@ then
   #_    - (Step 1) \\If no directory operand is given and the HOME
   #_    environment variable is empty or undefined, the default
   #_    behavior is implementation-defined and no further steps
-  #_    shall be taken.\\
+  #_    Shall be taken.\\
   #_      -- HOME aught to be defined.
   #_      -- A directory operand aught to be used.
   #_    - (Step 2) \\If no directory operand is given and the HOME
   #_    environment variable is set to a non-empty value, the cd
-  #_    utility shall behave as if the directory named in the HOME
+  #_    utility Shall behave as if the directory named in the HOME
   #_    environment variable was specified as the directory
   #_    operand.\\
   #_    - (Step 3) \\If the directory operand begins with a <slash>
@@ -1287,12 +1293,12 @@ then
   #_      -- Use the -P option.
   #_    - (Step 7) \\If the -P option is in effect, proceed to step
   #_    10.\\
-  #_    - (Step 10) \\The cd utility shall then perform actions
+  #_    - (Step 10) \\The cd utility Shall then perform actions
   #_    equivalent to the chdir() function called with curpath as
   #_    the path argument. If these actions fail for any reason, the
-  #_    cd utility shall display an appropriate error message and the
-  #_    remainder of this step shall not be executed. ... If the -P
-  #_    option is in effect, the PWD environment variable shall be
+  #_    cd utility Shall display an appropriate error message and the
+  #_    remainder of this step Shall not be executed. ... If the -P
+  #_    option is in effect, the PWD environment variable Shall be
   #_    set to the string that would be output by pwd -P. If there is
   #_    insufficient permission on the new directory, or on any
   #_    parent of that directory, to determine the current working
@@ -1301,22 +1307,22 @@ then
   #_      -- Any error message aught to be assigned to a variable.
   #_      -- The output of \pwd -P\ is relevant.
   #_    - \-P\: \\Handle the operand dot-dot physically; symbolic
-  #_    link components shall be resolved before dot-dot components
+  #_    link components Shall be resolved before dot-dot components
   #_    are processed.\\
   #_    - SYNOPSIS:
   #_      - \\cd [-L|-P] [directory]\\
   #_        - \directory\: \\An absolute or relative pathname of the
-  #_        directory that shall become the new working directory.
+  #_        directory that Shall become the new working directory.
   #_        The interpretation of a relative pathname by cd depends
   #_        on the -L option and the CDPATH and PWD environment
   #_        variables. If directory is an empty string, the results
   #_        are unspecified.\\
   #_
   #_  - Posix 2008 \pwd\:
-  #_    - \\The pwd utility shall write to standard output an
+  #_    - \\The pwd utility Shall write to standard output an
   #_    absolute pathname of the current working directory, which
   #_    does not contain the filenames dot or dot-dot.\\
-  #_    - \-P\: \\The pathname written to standard output shall not
+  #_    - \-P\: \\The pathname written to standard output Shall not
   #_    contain any components that refer to files of type symbolic
   #_    link.\\
   #_    - \PWD\: \\An absolute pathname of the current working
@@ -1357,9 +1363,9 @@ nsfod="(No such file or directory)"
   #set -x #>
   #printf '%s\n' stdout #>
   #printf '%s\n' stderr 1>&2 #>
-  :;: set #>
-  set | grep -E -e '^HOME=' -e '^PWD=' #>
-  exit "${LINENO}" #>
+  #:;: set #>
+  #set | grep -E -e '^HOME=' -e '^PWD=' #>
+  #exit "${LINENO}" #>
 
 
 : "Define function: __print_output__" #> #>
@@ -1385,11 +1391,11 @@ __print_output__ ()
     #exit "${LINENO}" #>
 
   :;: "If error, then switch verbose on"
-  if test 0 -ne "${global_return_code}"
+  if ! test 0 -eq "${global_return_code}"
   then
-    : "t:0:${LINENO}" #>
+    : "f:$?:${LINENO}" #>
     output_verbose_on=yes
-  else : "f:$?:${LINENO}" #>
+  else : "t:0:${LINENO}" #>
   fi
 
   :;: "\\case\\ on \\output_verbose_on\\"
@@ -1404,8 +1410,8 @@ __print_output__ ()
       printf '%s\n' "$2"
       ;;
     * )
-      printf '%s\n' "Unreachable code"
-      exit "${LINENO}"
+      __print_error__ "Unreachable code" "Line:${LINENO}"
+      exit 2
       ;;
   esac
     #>
@@ -1432,48 +1438,139 @@ do
 done
 
 
-  #> Buggy - rewrite script from this point on.
-  #>  - put the entire thing in a true loop
-  #>    - check for leading forward slash
-  #>      - if missing, then prepend output of \pwd\
-  #>    - handle a double forward slash at the far left of the string
-  #>    - using \awk -F/\, separate the pathname out into separate
-  #>    elements
-  #>    - load the elements into the positional array
-  #>    - start with a \symlink_detected\ canary variable, set to \no\
-  #>      - loop through the array; the idea is to use concatenation to
-  #>      build up a new pathname; loop on \$# and \$1; use \shift\
-  #>        - for each element, add one leading forward slash to the
-  #>        current element
-  #>        - if there was an existing \canpath\ string from a previous
-  #>        loop, then prepend that on
-  #>        - use both \file\ and \test\ to determine the filetype of
-  #>        the basename of the \canpath\ string
-  #>        - if both utilities agree, then
-  #>          - if element is a symlink, then switch \symlink_detected\
-  #>          to \yes\
-  #>            - get the value of the symlink from \file\
-  #>            - test for whether the of value from \file\ has a
-  #>            leading forward slash
-  #>              - if yes, then use the symlink\s value as the total
-  #>              pathname thus far and continue
-  #>              - if no, then append the symlink\s value to the
-  #>              existing value of \canpath\ ...and continue?
-  #>          - if element is a directory, then continue
-  #>          - if element is neither a symlink nor a directory, then
-  #>            - if there are no more elements in the loop, then
-  #>            \break 1\
-  #>            - if there are elements remaining, then error
-  #>              ...and figure out what that means. is it a dangling
-  #>              symlink?
-  #>        - if the two utilities disagree, then error
-  #>      end element loop
-  #>      - if \symlink_detected\ is \yes\, then remain in the true
-  #>      loop; otherwise \break 2\
-  #>  - end true loop
-  #>  - how do you detect data loops? tmp file of pathnames at top of
-  #>  each true loop - duplicates mean data loop and error?
-  #>
+  # Buggy - rewrite script from this point on.
+  #
+  # See Posix 2008, Base Definitions, General Concepts,
+  #   4.13 Pathname Resolution
+  #
+  # Requirements:
+  # - \\existing directory entry\\
+  # - ID predecessor directory.
+  #   - If ID is inconclusive, 
+  #     - then the process fails and errors out.
+  #   - if pathname begins with a (forward-)slash \/\, 
+  #     - then the predecessor of 1st filename in the pathname is
+  #     taken to be FS root: \/\.
+  #   - if pathname does not begin with a slash \/\,
+  #     - then the predecessor of 1st filename in the pathname is
+  #     taken to be either:
+  #       - \A\, the current working directory, or
+  #       - \B\, for \\certain processes\\ ...??... the directory
+  #       identified by a file descriptor. ???
+  #   - if any pathname component, ie filename, is longer than 
+  #   NAME_MAX, 
+  #     - then the process fails and errors out.
+  #   - if pathname contains at least one non-slash character, and
+  #   ends with one or more trailing slash characters, then the last
+  #   pathname component before the trailing slash character(s) must
+  #   be an existing directory.
+  #     - or the process fails and errors out.
+  #   - If a symbolic link is encountered during pathname resolution, 
+  #     - then behavior Shall depend on: 
+  #       - \A\, whether the pathname component is at the end of the
+  #       component, and
+  #       - \B\, on the function being performed. 
+  #     - If all three of these are true, then pathname resolution
+  #     succeeds:
+  #       - \1\, The symbolic link is the last pathname component of
+  #       the pathname, 
+  #       - \2\, The pathname does not have any trailing slashes, and
+  #       - \3\, The function is required to or allowed to return as
+  #       output the symbolic link itself. (ie, an \-L\, or \logical\
+  #       resolution). ??
+  #     - All other cases:
+  #       - If the symlink is empty, 
+  #         - Then either
+  #           - The process fails and errors out with a message, or
+  #           - The pathname of the directory containing the symbolic
+  #           link Shall be used in place of the contents of the 
+  #           symbolic link.
+  #       - If the symlink is non-empty:
+  #         - If the symlink consists solely of slash characters,
+  #           - Then all leading slash characters of the remaining
+  #           pathname Shall be omitted from the resulting combined
+  #           pathname, leaving only the leading slash characters
+  #           from the symbolic link contents.
+  #         - If the symlink does not consist solely of slash
+  #         characters, 
+  #           - Then prefix remaining pathname, if any, with the
+  #           contents of the symbolic link.
+  #       - If prefixing occurrs, 
+  #         - If the combined length exceeds PATH_MAX, and
+  #           - If the implementation considers this, exceeding
+  #           PATH_MAX, to be an error,
+  #             - Then the process Shall fail, and error out with a
+  #             message.
+  #           - \\Otherwise, the resolved pathname Shall be the
+  #           resolution of the pathname just created.\\ I'm reading
+  #           this ambiguous sentence as, \if the implementation does
+  #           not consider this, exceeding PATH_MAX, to be an error,
+  #           then the resolved pathname Shall be the resolution of
+  #           the pathname just created.\
+  #       - If the pathname does not begin with a slash \/\,
+  #         - then the predecessor of 1st filename in the pathname
+  #         is \\taken to be the directory containing the symbolic
+  #         link.\\
+  #       - If the system detects a loop,
+  #         - The process Shall fail, and error out with a message.
+  #       - If the resolution process follows more than SYMLOOP_MAX
+  #       symbolic links, 
+  #         - Then the process May fail, and error out with a
+  #         message.
+  #       - The special filename dot, \.\, \\Shall refer to the
+  #       directory specified by its predecessor.\\
+  #       - The special filename dot-dot, \..\, \\Shall refer to the
+  #       parent directory of its predecessor directory.
+  #         - If \.\ is \/root\, then \..\ May also be \/root\.
+  #         Note, this is c.2008 -- look for changes since then!
+  #         - ...
+  #
+  #       
+  #
+  # Implementation:
+  #  - put the entire thing in a true loop
+  #    - handle a double forward slash at the far left of the string
+  #      - how?
+  #    - check for leading forward slash
+  #      - if missing, then prepend output of \pwd -P\
+  #    - using \awk -F/\, separate the pathname out into separate
+  #    elements
+  #    - load the elements into the positional array
+  #    - start with a \symlink_detected\ canary variable, set to \no\
+  #      - loop through the array; the idea is to use concatenation to
+  #      build up a new pathname; loop on \$# and \$1; use \shift\
+  #        - for each element, add one leading forward slash to the
+  #        current element
+  #        - if there was an existing \canpath\ string from a previous
+  #        loop, then prepend that on
+  #        - use both \file\ and \test\ to determine the filetype of
+  #        the basename of the \canpath\ string
+  #        - if both utilities agree, then
+  #          - if element is a symlink, then switch \symlink_detected\
+  #          to \yes\
+  #            - get the value of the symlink from \file\
+  #            - test for whether the of value from \file\ has a
+  #            leading forward slash
+  #              - if yes, then use the symlink\s value as the total
+  #              pathname thus far and continue
+  #              - if no, then append the symlink\s value to the
+  #              existing value of \canpath\ ...and continue?
+  #          - if element is a directory, then continue
+  #          - if element is neither a symlink nor a directory, then
+  #            - if there are no more elements in the loop, then
+  #            \break 1\
+  #            - if there are elements remaining, then error
+  #              ...and figure out what that means. is it a dangling
+  #              symlink?
+  #        - if the two utilities disagree, then error
+  #      end element loop
+  #      - if \symlink_detected\ is \yes\, then remain in the true
+  #      loop; otherwise \break 2\
+  #  - end true loop
+  #  - how do you detect data loops? tmp file of pathnames at top of
+  #  each true loop - duplicates mean data loop and error?
+  #
+  #
   #: "output_verbose_on: ${output_verbose_on}" #>
   #exit "${LINENO}" #>
 
