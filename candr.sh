@@ -1525,7 +1525,8 @@ done
   #         Note, this is c.2008 -- look for changes since then!
   #         - ...
   #
-  #       
+  #
+  # INCORRECT:
   #
   # Implementation:
   #  - put the entire thing in a true loop
