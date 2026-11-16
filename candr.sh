@@ -28,7 +28,6 @@
 #_      https://unix.stackexchange.com/questions/322035/\
 #_        are-there-still-systems-around-with-a-bin-sh-binary
 #_  - Reportedly, in Busybox \awk\ is optional.
-#_    - \awk\s been removed from this script.
 #_  - When called from a restricted interactive shell, the script
 #_  does not inherit the restricted setting.
 #_  - Both \realpath\ and \readlink\ weren\t specified in Posix until
