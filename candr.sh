@@ -1,6 +1,6 @@
 #!/bin/env sh
 # candr.xtrace / canonicalize-dir.sh
-# shellcheck disable=SC2028,SC2268,SC2310
+# shellcheck disable=SC2028,SC2268,SC2310,SC2329
 #
 #   Script is unfinished - 16 Nov 2026 WY
 #
@@ -24,6 +24,7 @@
 
 #_
 #_  Notes:
+#_  - BusyBox \grep\ does have \-q\ as of v.1.37.0. 
 #_  - Variable \cmd_str\ is defined as a particular invocation so
 #_  that (a) command execution and (b) the various related messages
 #_  can all use or reference the precise same command string.
@@ -107,7 +108,7 @@
 
   #> Debug.
   #reset; clear; grep -v -F -e '#>' -e '#_' ./candr.xtrace 2>&1 | less -RNS
-  #\set -x #>
+  \set -x #>
   \set -e #>
   \set -f #> Disable pathame expansion.
   #\: #>
@@ -168,15 +169,19 @@ set -C
 :;: "Bootstrap Variables"
 LC_ALL=C
 global_return_code=0
-special_var_zero=${0#./}
-special_var_zero=${0##*/}
-usage_msg="${special_var_zero}:
+special_variable_zero=${0#./}
+special_variable_zero=${0##*/}
+usage_msg="${special_variable_zero}:
 
-    Usage: The first argument may be an option flag.
-        candr.xtrace [-b|-h|-v] [FILE] ...
-          --brief     -b
-          --help      -h
-          --verbose   -v
+  Usage: The first argument may be an option flag. If both -b and
+  -v are present, the last one shall apply.
+    
+  "${special_variable_zero}" [-b|-h|-v|-V] [FILES] ...
+    --brief     -b    Default format: '%s\n' [output]
+    --help      -h    Print this message and exit. 
+    --verbose   -v    Format: '%s: \"%s\" -> %s\n' \$0 [input] [output]
+    --version   -V    Print version information and exit.
+    --                End of options; let hyphens begin strings.
 "
 # These variables are in use locally.
 unset -v \
@@ -290,7 +295,7 @@ __print_stderr_message__ ()
   fi
 
   printf '%s%s%s%s\n' 1>&2 \
-    "${special_var_zero}" \
+    "${special_variable_zero}" \
     "${local_posparm_one}" \
     "${local_posparm_two}" \
     "${local_posparm_three}"
@@ -365,7 +370,7 @@ __print_results__ ()
     yes | y )
       : "\\case\\ branch: \\yes\\" #>
       printf '%s: %b%s%b -> %s\n' \
-        "${special_var_zero}" "\x27" "$1" "\x27" "$2"
+        "${special_variable_zero}" "\x27" "$1" "\x27" "$2"
       ;;
     no | n )
       : "\\case\\ branch: \\no\\" #>
@@ -433,29 +438,63 @@ __xtrace_off__ ()
 
 __input_required__ "$@"
 
-: "\\case\\ on posparm 1"
-case "$1" in
-  --verbose | -v* | --v* )
-    : "\\case\\ branch: \\--verbose\\" #>
-    output_verbose_on=yes
-    shift
-    ;;
-  --brief   | -b* | --b* )
-    : "\\case\\ branch: \\--brief\\" #>
-    output_verbose_on=no
-    shift
-    ;;
-  --help    | -h* | --h* | -? )
-    : "\\case\\ branch: \\--help\\" #>
-    printf '%s\n' "${usage_msg:?}" 1>&2
-    # __print_stderr_notice__ "Exiting"
-    exit 1
-    ;;
-  * )
-    : "\\case\\ branch: no options: use default: \\--brief\\" #>
-    output_verbose_on=no
-    ;;
-esac
+: "\\case\\ on positional paramters of the script"
+if test 0 -lt $#
+then
+  : "t:$?:${LINENO}"
+  while true
+  do
+    case "$1" in
+      --brief   | -b* | --b* )
+        : "\\case\\ branch: \\--brief\\" #>
+        output_verbose_on=no
+        if shift 2>/dev/null
+        then
+          : "t:$?:${LINENO}"
+          continue
+        else
+          : "f:$?:${LINENO}"
+          break
+        fi
+        ;;
+      --help    | -h* | --h* | -? )
+        : "\\case\\ branch: \\--help\\" #>
+        printf '%s\n' "${usage_msg:?}" 1>&2
+        exit 1
+        ;;
+      --verbose | -v* | --verb* )
+        : "\\case\\ branch: \\--verbose\\" #>
+        output_verbose_on=yes
+        if shift 2>/dev/null
+        then
+          : "t:$?:${LINENO}"
+          continue
+        else
+          : "f:$?:${LINENO}"
+          break
+        fi
+        ;;
+      --version | -V* | --vers* )
+        : "\\case\\ branch: \\--version\\" #>
+        printf '%s\n' "${usage_msg:?}" 1>&2
+        exit 1
+        ;;
+      -- )
+        : "\\case\\ branch: \\--\\: let strings begin with hypens" #>
+        output_verbose_on=no
+        shift
+        break
+        ;;
+      * )
+        : "\\case\\ branch: no options: use default: \\--brief\\" #>
+        output_verbose_on=no
+        break
+        ;;
+    esac
+  done
+else
+  : "f:$?:${LINENO}"
+fi
   #>
   #exit "${LINENO}" #>
 
@@ -802,7 +841,8 @@ then #>
   done #>
   unset dD #>
   __reset_xtrace__ #>
-else : "f:$?:${LINENO}" "Section on \\getconf\\: xtrace is off" #>
+else
+  echo "f:$?:${LINENO}" "Section on \\getconf\\: xtrace is off" #>
 fi #>
 unset -v stdout_03_getconf_a #>
   #>
@@ -848,11 +888,12 @@ do
         : "t:$?:${LINENO}" #>
         __print_stderr_error__ "${eE} is defined"
         exit 1
-      else : "f:$?:${LINENO}" "${eE} is undefined or of zero length";: #>
+      else : "f:$?:${LINENO}" "${eE} is undefined / zero length";: #>
       fi
     else
       : "f:$?:${LINENO}" #>
-      __print_stderr_notice__ "Command failed" "\\${cmd_str}\\"
+      __print_stderr_notice__ \
+        "Command \\unset\\ failed" "\\${cmd_str}\\"
     fi
     unset cmd_str
   else : "f:$?:${LINENO}" "${eE} is undefined or of zero length";: #>
@@ -886,14 +927,18 @@ unset eE
 
 :;: "Make sure HOME is defined, for \\cd\\"
 #_
-#_ Notes,
-#_   - Assigning PWD depends on HOME having a valid value.
-#_   - From Posix 2008:
-#_     - Shell Command Language 2.6.1: \\If HOME is unset, the results
-#_     are unspecified.\\
-#_   - The \id\ utility has no knowledge of \sudo\ or means of
-#_   differentiating regular vs. elevated permissions.
-#_   - If the name of /etc/passwd is changed, \id\ throws an error.
+#_  Notes,
+#_    - Assigning PWD depends on HOME having a valid value. 
+#_      ^^^ Is this statement accurate??
+#_      - \PWD\: \\An absolute pathname of the current working
+#_      directory. If an application sets or unsets the value of PWD,
+#_      the behavior of \pwd\ is unspecified.\\ - spec. on \pwd\.
+#_    - From Posix 2008:
+#_      - Shell Command Language 2.6.1: \\If HOME is unset, the results
+#_      are unspecified.\\
+#_    - The \id\ utility has no knowledge of \sudo\ or means of
+#_    differentiating regular vs. elevated permissions.
+#_    - If the name of /etc/passwd is changed, \id\ throws an error.
   #>
   #set -x #>
 
