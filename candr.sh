@@ -25,7 +25,7 @@
 #_
 #_  Notes:
 #_  - In Posix 2008 \awk\, \split()\ is indeed specified.
-#_  - BusyBox \grep\ does have \-q\ as of v.1.37.0. 
+#_  - BusyBox \grep\ does have \-q\ as of v.1.37.0.
 #_  - Variable \cmd_str\ is defined as a particular invocation so
 #_  that (a) command execution and (b) the various related messages
 #_  can all use or reference the precise same command string.
@@ -176,10 +176,10 @@ usage_msg="${special_variable_zero}:
 
   Usage: The first argument may be an option flag. If both -b and
   -v are present, the last one shall apply.
-    
+
   "${special_variable_zero}" [-b|-h|-v|-V] [FILES] ...
     --brief     -b    Default format: '%s\n' [output]
-    --help      -h    Print this message and exit. 
+    --help      -h    Print this message and exit.
     --verbose   -v    Format: '%s: \"%s\" -> %s\n' \$0 [input] [output]
     --version   -V    Print version information and exit.
     --                End of options; let hyphens begin strings.
@@ -746,7 +746,7 @@ do
   if pathchk -- "${cC}"
   then
     : "t:$?:${LINENO}" #>
-  else 
+  else
     : "f:${ec4:=$?}:${LINENO}" #>
     global_return_code=${ec4:=$?}
     __print_stderr_error__ \
@@ -929,7 +929,7 @@ unset eE
 :;: "Make sure HOME is defined, for \\cd\\"
 #_
 #_  Notes,
-#_    - Assigning PWD depends on HOME having a valid value. 
+#_    - Assigning PWD depends on HOME having a valid value.
 #_      ^^^ Is this statement accurate??
 #_      - \PWD\: \\An absolute pathname of the current working
 #_      directory. If an application sets or unsets the value of PWD,
@@ -971,7 +971,7 @@ else
   #          [Unexpanded variable name] [affirmative|negative|yes]
   #
   #>  If any of the tests fail, then \assign_variable\ should have
-  #>  a value of \yes__*\. If all of the tests succeed then 
+  #>  a value of \yes__*\. If all of the tests succeed then
   #>  \assign_variable\ should have a value of either
   #>  \affirmative__*\ or \negative__*\.
   #>
@@ -1050,9 +1050,7 @@ else
   #_   could produce erroneous results.\\
   #_   - Therefore, use \logname\.
   #_
-  #_ Question, These commands produce different results. Why?
-  #_       sudo sh -c 'eval echo ~"$( logname )"' sh
-  #_       sudo sh -c 'eval echo ~"${LOGNAME}"' sh
+  #_ Question, These commands produce different results. Why? `sudo sh -c 'eval echo ~"$( logname )"' sh` `sudo sh -c 'eval echo ~"${LOGNAME}"' sh`
 
   :;: "Confirm the value of HOME in two different ways, if possible"
   #
@@ -1449,6 +1447,7 @@ else
   #_        on the -L option and the CDPATH and PWD environment
   #_        variables. If directory is an empty string, the results
   #_        are unspecified.\\
+  #_        -- disallow empty strings as operands.
   #_
   #_  - Posix 2008 \pwd\:
   #_    - \\The pwd utility Shall write to standard output an
@@ -1527,9 +1526,9 @@ unset fF
   # Requirements:
   # - \\existing directory entry\\
   # - ID predecessor directory.
-  #   - If ID is inconclusive, 
+  #   - If ID is inconclusive,
   #     - then the process fails and errors out.
-  #   - if pathname begins with a (forward-)slash \/\, 
+  #   - if pathname begins with a (forward-)slash \/\,
   #     - then the predecessor of 1st filename in the pathname is
   #     taken to be FS root: \/\.
   #   - if pathname does not begin with a slash \/\,
@@ -1538,33 +1537,33 @@ unset fF
   #       - \A\, the current working directory, or
   #       - \B\, for \\certain processes\\ ...??... the directory
   #       identified by a file descriptor. ???
-  #   - if any pathname component, ie filename, is longer than 
-  #   NAME_MAX, 
+  #   - if any pathname component, ie filename, is longer than
+  #   NAME_MAX,
   #     - then the process fails and errors out.
   #   - if pathname contains at least one non-slash character, and
   #   ends with one or more trailing slash characters, then the last
   #   pathname component before the trailing slash character(s) must
   #   be an existing directory.
   #     - or the process fails and errors out.
-  #   - If a symbolic link is encountered during pathname resolution, 
-  #     - then behavior Shall depend on: 
+  #   - If a symbolic link is encountered during pathname resolution,
+  #     - then behavior Shall depend on:
   #       - \A\, whether the pathname component is at the end of the
   #       component, and
-  #       - \B\, on the function being performed. 
+  #       - \B\, on the function being performed.
   #     - If all three of these are true, then pathname resolution
   #     succeeds:
   #       - \1\, The symbolic link is the last pathname component of
-  #       the pathname, 
+  #       the pathname,
   #       - \2\, The pathname does not have any trailing slashes, and
   #       - \3\, The function is required to or allowed to return as
   #       output the symbolic link itself. (ie, an \-L\, or \logical\
   #       resolution). ??
   #     - All other cases:
-  #       - If the symlink is empty, 
+  #       - If the symlink is empty,
   #         - Then either
   #           - The process fails and errors out with a message, or
   #           - The pathname of the directory containing the symbolic
-  #           link Shall be used in place of the contents of the 
+  #           link Shall be used in place of the contents of the
   #           symbolic link.
   #       - If the symlink is non-empty:
   #         - If the symlink consists solely of slash characters,
@@ -1573,10 +1572,10 @@ unset fF
   #           pathname, leaving only the leading slash characters
   #           from the symbolic link contents.
   #         - If the symlink does not consist solely of slash
-  #         characters, 
+  #         characters,
   #           - Then prefix remaining pathname, if any, with the
   #           contents of the symbolic link.
-  #       - If prefixing occurrs, 
+  #       - If prefixing occurrs,
   #         - If the combined length exceeds PATH_MAX, and
   #           - If the implementation considers this, exceeding
   #           PATH_MAX, to be an error,
@@ -1595,7 +1594,7 @@ unset fF
   #       - If the system detects a loop,
   #         - The process Shall fail, and error out with a message.
   #       - If the resolution process follows more than SYMLOOP_MAX
-  #       symbolic links, 
+  #       symbolic links,
   #         - Then the process May fail, and error out with a
   #         message.
   #       - The special filename dot, \.\, \\Shall refer to the
@@ -1606,7 +1605,7 @@ unset fF
   #         Note, this is c.2008 -- look for changes since then!
   #         - ...
   #
-  #       
+  #
   #
   # Implementation:
   #  - put the entire thing in a true loop
@@ -1657,4 +1656,1097 @@ unset fF
 
 
 exit 00
+
+
+#######  URL\s  #######
+#
+# POSIX
+#
+#   # Main Index
+#     # 2008
+#     https://pubs.opengroup.org/onlinepubs/9699919799.2008edition/
+#
+#     # 2024
+#     https://pubs.opengroup.org/onlinepubs/9799919799/
+#
+#   # Base Definitions
+#     # 2008
+#     https://pubs.opengroup.org/onlinepubs/9699919799.2008edition/idx/xbd.html
+#
+#     # 2024
+#     https://pubs.opengroup.org/onlinepubs/9799919799/idx/xbd.html
+#
+#   # Base Definitions: General Concepts
+#     # 2008
+#     https://pubs.opengroup.org/onlinepubs/9699919799.2008edition/basedefs/V1_chap04.html
+#
+#     # 2024
+#     https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/V1_chap04.html
+#
+#   # Base Definitions: Environment Variables
+#     # 2008
+#     https://pubs.opengroup.org/onlinepubs/9699919799.2008edition/basedefs/V1_chap08.html
+#
+#     # 2024
+#     https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/V1_chap08.html
+#
+#   # Base Definitions: Regular Expressions
+#     # 2008
+#     https://pubs.opengroup.org/onlinepubs/9699919799.2008edition/basedefs/V1_chap09.html
+#
+#     # 2024
+#     https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/V1_chap09.html
+#
+#   # Shell & Utilities
+#     # 2008
+#     https://pubs.opengroup.org/onlinepubs/9699919799.2008edition/idx/xcu.html
+#
+#     # 2024
+#     https://pubs.opengroup.org/onlinepubs/9799919799/idx/xcu.html
+#
+#   # Shell & Utilities: Introduction
+#     # 2008
+#     https://pubs.opengroup.org/onlinepubs/9699919799.2008edition/utilities/V3_chap01.html
+#
+#     # 2024
+#     https://pubs.opengroup.org/onlinepubs/9799919799/utilities/V3_chap01.html#tag_18
+#
+#   # Shell & Utilities: Shell Command Language
+#     # 2008
+#     https://pubs.opengroup.org/onlinepubs/9699919799.2008edition/idx/shell.html
+#
+#     # 2024
+#     https://pubs.opengroup.org/onlinepubs/9799919799/idx/shell.html
+#
+#   # Shell & Utilities: Utilities
+#     # 2008
+#     https://pubs.opengroup.org/onlinepubs/9699919799.2008edition/idx/utilities.html
+#
+#     # 2024
+#     https://pubs.opengroup.org/onlinepubs/9799919799/idx/utilities.html
+#
+#
+# 
+# Special considerations
+#   https://www.gnu.org/software/coreutils/manual/coreutils.html#Trailing-slashes-1
+#   https://www.pixelbeat.org/docs/coreutils-gotchas.html
+#
+#
+#
+# Utilities: multiple man pages for each.
+#     # POSIX 2008
+#     # POSIX 2024
+#     # GNU
+#     # IBM (AIX)
+#     # Oracle (Solaris)
+#     # Mac
+#     # FreeBSD
+#     # NetBSD
+#     # OpenBSD
+#     # BusyBox
+#
+#
+#   # awk
+#     # POSIX 2008
+#     https://pubs.opengroup.org/onlinepubs/9699919799.2008edition/utilities/awk.html
+#
+#     # POSIX 2024
+#     https://pubs.opengroup.org/onlinepubs/9699919799.2008edition/utilities/awk.html
+#
+#     # GNU
+#     https://www.gnu.org/software/gawk/manual/gawk.html
+#
+#     # IBM (AIX)
+#
+#     # Oracle (Solaris)
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/awk-1.html#scrolltoc
+#
+#     # Mac
+#
+#     # FreeBSD
+#
+#     # NetBSD
+#
+#     # OpenBSD
+#
+#     # BusyBox
+#     http://www.busybox.net/downloads/BusyBox.html#awk
+#
+#
+#
+#   # basename
+#     # POSIX 2008
+#     https://pubs.opengroup.org/onlinepubs/9699919799.2008edition/utilities/basename.html
+#
+#     # POSIX 2024
+#     https://pubs.opengroup.org/onlinepubs/9799919799/utilities/basename.html
+#
+#     # GNU
+#     https://www.gnu.org/software/coreutils/manual/html_node/basename-invocation.html
+#
+#     # IBM (AIX)
+#
+#     # Oracle (Solaris)
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/basename-1.html#scrolltoc
+#
+#     # Mac
+#
+#     # FreeBSD
+#
+#     # NetBSD
+#
+#     # OpenBSD
+#
+#     # BusyBox
+#     http://www.busybox.net/downloads/BusyBox.html#basename
+#
+#
+#
+#   # cd
+#     # POSIX 2008
+#     https://pubs.opengroup.org/onlinepubs/9699919799.2008edition/utilities/cd.html
+#
+#     # POSIX 2024
+#     https://pubs.opengroup.org/onlinepubs/9799919799/utilities/cd.html
+#
+#     # GNU -- NA in rpm coreutils
+#     https://www.gnu.org/software/bash/manual/html_node/Bourne-Shell-Builtins.html#index-cd
+#
+#     # IBM (AIX)
+#
+#     # Oracle (Solaris)
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/cd-1.html#scrolltoc
+#
+#     # Mac
+#
+#     # FreeBSD
+#
+#     # NetBSD
+#
+#     # OpenBSD
+#
+#     # BusyBox - Not directly available - try BusyBox sh or ash
+#
+#
+#
+#   # command
+#     # POSIX 2008
+#     https://pubs.opengroup.org/onlinepubs/9699919799.2008edition/utilities/command.html
+#
+#     # POSIX 2024
+#     https://pubs.opengroup.org/onlinepubs/9799919799/utilities/command.html
+#
+#     # GNU -- NA in coreutils
+#     https://www.gnu.org/software/bash/manual/html_node/Bash-Builtins.html#index-command
+#
+#     # IBM (AIX)
+#
+#     # Oracle (Solaris)
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/command-1.html#scrolltoc
+#
+#     # Mac
+#
+#     # FreeBSD
+#
+#     # NetBSD
+#
+#     # OpenBSD
+#
+#     # BusyBox - Not directly available - try BusyBox sh or ash
+#
+#
+#
+#   # dirname
+#     # POSIX 2008
+#     https://pubs.opengroup.org/onlinepubs/9699919799.2008edition/utilities/dirname.html
+#
+#     # POSIX 2024
+#     https://pubs.opengroup.org/onlinepubs/9799919799/utilities/dirname.html
+#
+#     # GNU
+#     https://www.gnu.org/software/coreutils/manual/html_node/dirname-invocation.html
+#
+#     # IBM (AIX)
+#
+#     # Oracle (Solaris)
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/dirname-1.html#scrolltoc
+#
+#     # Mac
+#
+#     # FreeBSD
+#
+#     # NetBSD
+#
+#     # OpenBSD
+#
+#     # BusyBox
+#     http://www.busybox.net/downloads/BusyBox.html#dirname
+#
+#
+#
+#   # echo
+#     # POSIX 2008
+#     https://pubs.opengroup.org/onlinepubs/9699919799.2008edition/utilities/echo.html
+#
+#     # POSIX 2024
+#     https://pubs.opengroup.org/onlinepubs/9799919799/utilities/echo.html
+#
+#     # GNU
+#     https://www.gnu.org/software/coreutils/manual/html_node/echo-invocation.html
+#
+#       # Also, Bash:
+#       https://www.gnu.org/software/bash/manual/html_node/Bash-Builtins.html#index-echo
+#
+#     # IBM (AIX)
+#
+#     # Oracle (Solaris)
+#
+#     # Mac
+#
+#     # FreeBSD
+#
+#     # NetBSD
+#
+#     # OpenBSD
+#
+#     # BusyBox
+#     http://www.busybox.net/downloads/BusyBox.html#echo
+#
+#
+#
+#   # env
+#     # POSIX 2008
+#     https://pubs.opengroup.org/onlinepubs/9699919799.2008edition/utilities/env.html
+#
+#     # POSIX 2024
+#     https://pubs.opengroup.org/onlinepubs/9799919799/utilities/env.html
+#
+#     # GNU -- NA in Bash
+#     https://www.gnu.org/software/coreutils/manual/html_node/env-invocation.html
+#
+#     # IBM (AIX)
+#
+#     # Oracle (Solaris)
+#
+#     # Mac
+#
+#     # FreeBSD
+#
+#     # NetBSD
+#
+#     # OpenBSD
+#
+#     # BusyBox
+#     http://www.busybox.net/downloads/BusyBox.html#env
+#
+#
+#
+#   # file
+#     # POSIX 2008
+#     https://pubs.opengroup.org/onlinepubs/9699919799.2008edition/utilities/file.html
+#
+#     # POSIX 2024
+#     https://pubs.opengroup.org/onlinepubs/9799919799/utilities/file.html
+#
+#     # GNU -- rpm: file
+#         NA
+#
+#         # Developers -- No current documentation
+#         https://www.darwinsys.com/file/
+#
+#         # Die.net
+#         https://linux.die.net/man/1/file
+#
+#         # Man7.org
+#         https://www.man7.org/linux/man-pages/man1/file.1.html
+#
+#     # IBM (AIX)
+#
+#     # Oracle (Solaris)
+#
+#     # Mac
+#
+#     # FreeBSD
+#
+#     # NetBSD
+#
+#     # OpenBSD
+#
+#     # BusyBox
+#       NA
+#
+#
+#
+#   # find
+#     # POSIX 2008
+#     https://pubs.opengroup.org/onlinepubs/9699919799.2008edition/utilities/find.html
+#
+#     # POSIX 2024
+#     https://pubs.opengroup.org/onlinepubs/9799919799/utilities/find.html
+#
+#     # GNU -- NA in coreutils
+#     https://www.gnu.org/software/findutils/manual/find.html
+#
+#     # IBM (AIX)
+#
+#     # Oracle (Solaris)
+#
+#     # Mac
+#
+#     # FreeBSD
+#
+#     # NetBSD
+#
+#     # OpenBSD
+#
+#     # BusyBox
+#     http://www.busybox.net/downloads/BusyBox.html#find
+#
+#
+#
+#   # getconf
+#     # POSIX 2008
+#     https://pubs.opengroup.org/onlinepubs/9699919799.2008edition/utilities/getconf.html
+#
+#     # POSIX 2024
+#     https://pubs.opengroup.org/onlinepubs/9799919799/utilities/getconf.html
+#
+#     # GNU -- binary is from rpm glibc-common, however, documentation is NA on gnu.org
+#       NA
+#
+#       # Die.net
+#       https://linux.die.net/man/1/getconf
+#
+#       # Man7.org
+#       https://www.man7.org/linux/man-pages/man1/getconf.1p.html
+#
+#     # IBM (AIX)
+#
+#     # Oracle (Solaris)
+#
+#     # Mac
+#
+#     # FreeBSD
+#
+#     # NetBSD
+#
+#     # OpenBSD
+#
+#     # BusyBox
+#       NA
+#
+#
+#
+#   # grep
+#     # POSIX 2008
+#     https://pubs.opengroup.org/onlinepubs/9699919799.2008edition/utilities/grep.html
+#
+#     # POSIX 2024
+#     https://pubs.opengroup.org/onlinepubs/9799919799/utilities/grep.html
+#
+#     # GNU
+#     https://www.gnu.org/software/grep/manual/grep.html
+#
+#     # IBM (AIX)
+#
+#     # Oracle (Solaris)
+#
+#     # Mac
+#
+#     # FreeBSD
+#
+#     # NetBSD
+#
+#     # OpenBSD
+#
+#     # BusyBox
+#     http://www.busybox.net/downloads/BusyBox.html#grep
+#
+#
+#
+#   # hash
+#     # POSIX 2008
+#     https://pubs.opengroup.org/onlinepubs/9699919799.2008edition/utilities/hash.html
+#
+#     # POSIX 2024
+#     https://pubs.opengroup.org/onlinepubs/9799919799/utilities/hash.html
+#
+#     # GNU -- NA in coreutils
+#     https://www.gnu.org/software/bash/manual/html_node/Bourne-Shell-Builtins.html#index-hash
+#
+#     # IBM (AIX)
+#
+#     # Oracle (Solaris)
+#
+#     # Mac
+#
+#     # FreeBSD
+#
+#     # NetBSD
+#
+#     # OpenBSD
+#
+#     # BusyBox - Not directly available - try BusyBox sh or ash
+#
+#
+#
+#   # id
+#     # POSIX 2008
+#     https://pubs.opengroup.org/onlinepubs/9699919799.2008edition/utilities/id.html
+#
+#     # POSIX 2024
+#     https://pubs.opengroup.org/onlinepubs/9799919799/utilities/id.html
+#
+#     # GNU -- NA in Bash
+#     https://www.gnu.org/software/coreutils/manual/html_node/id-invocation.html
+#
+#     # IBM (AIX)
+#
+#     # Oracle (Solaris)
+#
+#     # Mac
+#
+#     # FreeBSD
+#
+#     # NetBSD
+#
+#     # OpenBSD
+#
+#     # BusyBox
+#     http://www.busybox.net/downloads/BusyBox.html#id
+#
+#
+#
+#   # ln
+#     # POSIX 2008
+#     https://pubs.opengroup.org/onlinepubs/9699919799.2008edition/utilities/ln.html
+#
+#     # POSIX 2024
+#     https://pubs.opengroup.org/onlinepubs/9799919799/utilities/ln.html
+#
+#     # GNU
+#     https://www.gnu.org/software/coreutils/manual/html_node/ln-invocation.html
+#
+#     # IBM (AIX)
+#     https://www.ibm.com/docs/en/aix/7.3.0?topic=l-ln-command
+#
+#     # Oracle (Solaris)
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/ln-1.html#scrolltoc
+#
+#     # Mac
+#     https://ss64.com/mac/ln.html
+#
+#     # FreeBSD
+#     https://man.freebsd.org/cgi/man.cgi?query=ln&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
+#
+#     # NetBSD
+#     https://man.netbsd.org/ln.1
+#
+#     # OpenBSD
+#     https://man.openbsd.org/ln.1
+#
+#     # BusyBox
+#     http://www.busybox.net/downloads/BusyBox.html#ln
+#
+#
+#
+#   # logname
+#     # POSIX 2008
+#     https://pubs.opengroup.org/onlinepubs/9699919799.2008edition/utilities/logname.html
+#
+#     # POSIX 2024
+#     https://pubs.opengroup.org/onlinepubs/9799919799/utilities/logname.html
+#
+#     # GNU -- NA in Bash
+#     https://www.gnu.org/software/coreutils/manual/html_node/logname-invocation.html
+#
+#     # IBM (AIX)
+#
+#     # Oracle (Solaris)
+#
+#     # Mac
+#
+#     # FreeBSD
+#
+#     # NetBSD
+#
+#     # OpenBSD
+#
+#     # BusyBox
+#     http://www.busybox.net/downloads/BusyBox.html#logname
+#
+#
+#
+#   # pathchk
+#     # POSIX 2008
+#     https://pubs.opengroup.org/onlinepubs/9699919799.2008edition/utilities/pathchk.html
+#
+#     # POSIX 2024
+#     https://pubs.opengroup.org/onlinepubs/9799919799/utilities/pathchk.html
+#
+#     # GNU
+#     https://www.gnu.org/software/coreutils/manual/html_node/pathchk-invocation.html
+#
+#     # IBM (AIX)
+#
+#     # Oracle (Solaris)
+#
+#     # Mac
+#
+#     # FreeBSD
+#
+#     # NetBSD
+#
+#     # OpenBSD
+#
+#     # BusyBox
+#       NA
+#
+#
+#
+#   # printf
+#     # POSIX 2008
+#     https://pubs.opengroup.org/onlinepubs/9699919799.2008edition/utilities/printf.html
+#
+#     # POSIX 2024
+#     https://pubs.opengroup.org/onlinepubs/9799919799/utilities/printf.html
+#
+#     # GNU
+#     https://www.gnu.org/software/coreutils/manual/html_node/printf-invocation.html
+#
+#       # Also, Bash:
+#       https://www.gnu.org/software/bash/manual/html_node/Bash-Builtins.html#index-printf
+#
+#     # IBM (AIX)
+#
+#     # Oracle (Solaris)
+#
+#     # Mac
+#
+#     # FreeBSD
+#
+#     # NetBSD
+#
+#     # OpenBSD
+#
+#     # BusyBox
+#     http://www.busybox.net/downloads/BusyBox.html#printf
+#
+#
+#
+#   # pwd
+#     # POSIX 2008
+#     https://pubs.opengroup.org/onlinepubs/9699919799.2008edition/utilities/pwd.html
+#
+#     # POSIX 2024
+#     https://pubs.opengroup.org/onlinepubs/9799919799/utilities/pwd.html
+#
+#     # GNU
+#     https://www.gnu.org/software/coreutils/manual/html_node/pwd-invocation.html
+#
+#       # Also, Bash:
+#       https://www.gnu.org/software/bash/manual/html_node/Bourne-Shell-Builtins.html#index-pwd
+#
+#     # IBM (AIX)
+#
+#     # Oracle (Solaris)
+#
+#     # Mac
+#
+#     # FreeBSD
+#
+#     # NetBSD
+#
+#     # OpenBSD
+#
+#     # BusyBox
+#     http://www.busybox.net/downloads/BusyBox.html#pwd
+#
+#
+#
+#   # readlink
+#     # POSIX 2008
+#     NA
+#
+#     # POSIX 2024
+#     https://pubs.opengroup.org/onlinepubs/9799919799/utilities/readlink.html
+#
+#     # GNU
+#     https://www.gnu.org/software/coreutils/manual/html_node/readlink-invocation.html
+#
+#     # IBM (AIX)
+#
+#     # Oracle (Solaris)
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/readlink-1.html
+#
+#     # Mac
+#     https://ss64.com/mac/stat.html
+#
+#     # FreeBSD
+#     https://man.freebsd.org/cgi/man.cgi?query=readlink&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
+#
+#     # NetBSD
+#     https://man.netbsd.org/readlink.1
+#
+#     # OpenBSD
+#     https://man.openbsd.org/readlink.1
+#
+#     # BusyBox
+#     http://www.busybox.net/downloads/BusyBox.html#readlink
+#
+#
+#
+#   # realpath
+#     # POSIX 2008
+#     NA
+#
+#     # POSIX 2024
+#     https://pubs.opengroup.org/onlinepubs/9799919799/utilities/realpath.html
+#
+#     # GNU
+#     https://www.gnu.org/software/coreutils/manual/html_node/realpath-invocation.html
+#     https://www.gnu.org/savannah-checkouts/gnu/coreutils/manual/html_node/Realpath-usage-examples.html
+#
+#     # IBM (AIX)
+#
+#     # Oracle (Solaris)
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/realpath-1.html#scrolltoc
+#
+#     # Mac
+#     https://ss64.com/mac/realpath.html
+#
+#     # FreeBSD
+#     https://man.freebsd.org/cgi/man.cgi?query=realpath&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
+#
+#     # NetBSD
+#     https://man.netbsd.org/realpath.1
+#
+#     # OpenBSD
+#     https://man.openbsd.org/realpath.1
+#
+#     # BusyBox
+#     http://www.busybox.net/downloads/BusyBox.html#realpath
+#
+#
+#
+#   # sed
+#     # POSIX 2008
+#     https://pubs.opengroup.org/onlinepubs/9699919799.2008edition/utilities/sed.html
+#
+#     # POSIX 2024
+#     https://pubs.opengroup.org/onlinepubs/9799919799/utilities/sed.html
+#
+#     # GNU
+#     https://www.gnu.org/software/sed/manual/sed.html
+#
+#     # IBM (AIX)
+#
+#     # Oracle (Solaris)
+#
+#     # Mac
+#
+#     # FreeBSD
+#
+#     # NetBSD
+#
+#     # OpenBSD
+#
+#     # BusyBox
+#     http://www.busybox.net/downloads/BusyBox.html#sed
+#
+#
+#
+#   # sh
+#     # POSIX 2008
+#     https://pubs.opengroup.org/onlinepubs/9699919799.2008edition/utilities/sh.html
+#
+#     # POSIX 2024
+#     https://pubs.opengroup.org/onlinepubs/9799919799/utilities/sh.html
+#
+#     # GNU
+#     https://www.gnu.org/software/bash/manual/bash.html
+#
+#     # IBM (AIX)
+#
+#     # Oracle (Solaris)
+#
+#     # Mac
+#
+#     # FreeBSD
+#
+#     # NetBSD
+#
+#     # OpenBSD
+#
+#     # BusyBox -- exists in BusyBox, but the documentations is where??
+#     http://www.busybox.net/downloads/BusyBox.html#sh
+#     
+#       # See also, BusyBox ash
+#       http://www.busybox.net/downloads/BusyBox.html#ash
+#
+#
+#
+#   # strings
+#     # POSIX 2008
+#     https://pubs.opengroup.org/onlinepubs/9699919799.2008edition/utilities/strings.html
+#
+#     # POSIX 2024
+#     https://pubs.opengroup.org/onlinepubs/9799919799/utilities/strings.html
+#
+#     # GNU -- rpm: binutils
+#     https://sourceware.org/binutils/docs/binutils/strings.html
+#
+#     # IBM (AIX)
+#
+#     # Oracle (Solaris)
+#
+#     # Mac
+#
+#     # FreeBSD
+#
+#     # NetBSD
+#
+#     # OpenBSD
+#
+#     # BusyBox
+#     http://www.busybox.net/downloads/BusyBox.html#strings
+#
+#
+#
+#   # test
+#     # POSIX 2008
+#     https://pubs.opengroup.org/onlinepubs/9699919799.2008edition/utilities/test.html
+#
+#     # POSIX 2024
+#     https://pubs.opengroup.org/onlinepubs/9799919799/utilities/test.html
+#
+#     # GNU
+#     https://www.gnu.org/software/coreutils/manual/html_node/test-invocation.html
+#
+#       # Also, Bash:
+#       https://www.gnu.org/software/bash/manual/html_node/Bourne-Shell-Builtins.html#index-test
+#
+#     # IBM (AIX)
+#
+#     # Oracle (Solaris)
+#
+#     # Mac
+#
+#     # FreeBSD
+#
+#     # NetBSD
+#
+#     # OpenBSD
+#
+#     # BusyBox
+#     http://www.busybox.net/downloads/BusyBox.html#test
+#
+#
+#
+#   # true
+#     # POSIX 2008
+#     https://pubs.opengroup.org/onlinepubs/9699919799.2008edition/utilities/true.html
+#
+#     # POSIX 2024
+#     https://pubs.opengroup.org/onlinepubs/9799919799/utilities/true.html
+#
+#     # GNU
+#     https://www.gnu.org/software/coreutils/manual/html_node/true-invocation.html
+#
+#       # Also, Bash:
+#       https://www.gnu.org/software/bash/manual/html_node/Bourne-Shell-Builtins.html#index-true
+#
+#     # IBM (AIX)
+#
+#     # Oracle (Solaris)
+#
+#     # Mac
+#
+#     # FreeBSD
+#
+#     # NetBSD
+#
+#     # OpenBSD
+#
+#     # BusyBox
+#     http://www.busybox.net/downloads/BusyBox.html#true
+#
+#
+#
+#   # unalias
+#     # POSIX 2008
+#     https://pubs.opengroup.org/onlinepubs/9699919799.2008edition/utilities/unalias.html
+#
+#     # POSIX 2024
+#     https://pubs.opengroup.org/onlinepubs/9799919799/utilities/unalias.html
+#
+#     # GNU -- NA in coreutils
+#     https://www.gnu.org/software/bash/manual/html_node/Bash-Builtins.html#index-unalias
+#
+#     # IBM (AIX)
+#
+#     # Oracle (Solaris)
+#
+#     # Mac
+#
+#     # FreeBSD
+#
+#     # NetBSD
+#
+#     # OpenBSD
+#
+#     # BusyBox - Not directly available - try BusyBox sh or ash
+#
+#
+#
+#   # break -- POSIX 2024 Special Builtin
+#     # POSIX 2008
+#     https://pubs.opengroup.org/onlinepubs/9699919799.2008edition/utilities/V3_chap02.html#break
+#
+#     # POSIX 2024
+#
+#     # GNU -- NA in coreutils
+#     https://www.gnu.org/software/bash/manual/html_node/Bourne-Shell-Builtins.html#index-break
+#
+#     # IBM (AIX)
+#
+#     # Oracle (Solaris)
+#
+#     # Mac
+#
+#     # FreeBSD
+#
+#     # NetBSD
+#
+#     # OpenBSD
+#
+#     # BusyBox - Not directly available - try BusyBox sh or ash
+#
+#
+#
+#   # colon -- POSIX 2024 Special Builtin
+#     # POSIX 2008
+#     https://pubs.opengroup.org/onlinepubs/9699919799.2008edition/utilities/V3_chap02.html#colon
+#
+#     # POSIX 2024
+#
+#     # GNU -- NA in coreutils
+#     https://www.gnu.org/software/bash/manual/html_node/Bourne-Shell-Builtins.html#index-_003a
+#
+#     # IBM (AIX)
+#
+#     # Oracle (Solaris)
+#
+#     # Mac
+#
+#     # FreeBSD
+#
+#     # NetBSD
+#
+#     # OpenBSD
+#
+#     # BusyBox - Not directly available - try BusyBox sh or ash
+#
+#
+#
+#   # continue -- POSIX 2024 Special Builtin
+#     # POSIX 2008
+#     https://pubs.opengroup.org/onlinepubs/9699919799.2008edition/utilities/V3_chap02.html#continue
+#
+#     # POSIX 2024
+#
+#     # GNU -- NA in coreutils
+#     https://www.gnu.org/software/bash/manual/html_node/Bourne-Shell-Builtins.html#index-continue
+#
+#     # IBM (AIX)
+#
+#     # Oracle (Solaris)
+#
+#     # Mac
+#
+#     # FreeBSD
+#
+#     # NetBSD
+#
+#     # OpenBSD
+#
+#     # BusyBox - Not directly available - try BusyBox sh or ash
+#
+#
+#
+#   # eval -- POSIX 2024 Special Builtin
+#     # POSIX 2008
+#     https://pubs.opengroup.org/onlinepubs/9699919799.2008edition/utilities/V3_chap02.html#eval
+#
+#     # POSIX 2024
+#
+#     # GNU -- NA in coreutils
+#     https://www.gnu.org/software/bash/manual/html_node/Bourne-Shell-Builtins.html#index-eval
+#
+#     # IBM (AIX)
+#
+#     # Oracle (Solaris)
+#
+#     # Mac
+#
+#     # FreeBSD
+#
+#     # NetBSD
+#
+#     # OpenBSD
+#
+#     # BusyBox - Not directly available - try BusyBox sh or ash
+#
+#
+#
+#   # exit -- POSIX 2024 Special Builtin
+#     # POSIX 2008
+#     https://pubs.opengroup.org/onlinepubs/9699919799.2008edition/utilities/V3_chap02.html#exit
+#
+#     # POSIX 2024
+#
+#     # GNU -- NA in coreutils
+#     https://www.gnu.org/software/bash/manual/html_node/Bourne-Shell-Builtins.html#index-exit
+#
+#     # IBM (AIX)
+#
+#     # Oracle (Solaris)
+#
+#     # Mac
+#
+#     # FreeBSD
+#
+#     # NetBSD
+#
+#     # OpenBSD
+#
+#     # BusyBox - Not directly available - try BusyBox sh or ash
+#
+#
+#
+#   # readonly -- POSIX 2024 Special Builtin
+#     # POSIX 2008
+#     https://pubs.opengroup.org/onlinepubs/9699919799.2008edition/utilities/V3_chap02.html#readonly
+#
+#     # POSIX 2024
+#
+#     # GNU -- NA in coreutils
+#     https://www.gnu.org/software/bash/manual/html_node/Bourne-Shell-Builtins.html#index-readonly
+#
+#     # IBM (AIX)
+#
+#     # Oracle (Solaris)
+#
+#     # Mac
+#
+#     # FreeBSD
+#
+#     # NetBSD
+#
+#     # OpenBSD
+#
+#     # BusyBox - Not directly available - try BusyBox sh or ash
+#
+#
+#
+#   # return -- POSIX 2024 Special Builtin
+#     # POSIX 2008
+#     https://pubs.opengroup.org/onlinepubs/9699919799.2008edition/utilities/V3_chap02.html#return
+#
+#     # POSIX 2024
+#
+#     # GNU -- NA in coreutils
+#     https://www.gnu.org/software/bash/manual/html_node/Bourne-Shell-Builtins.html#index-return
+#
+#     # IBM (AIX)
+#
+#     # Oracle (Solaris)
+#
+#     # Mac
+#
+#     # FreeBSD
+#
+#     # NetBSD
+#
+#     # OpenBSD
+#
+#     # BusyBox - Not directly available - try BusyBox sh or ash
+#
+#
+#
+#   # set -- POSIX 2024 Special Builtin
+#     # POSIX 2008
+#     https://pubs.opengroup.org/onlinepubs/9699919799.2008edition/utilities/V3_chap02.html#set
+#
+#     # POSIX 2024
+#
+#     # GNU -- NA in coreutils
+#     https://www.gnu.org/software/bash/manual/html_node/The-Set-Builtin.html#index-set
+#
+#     # IBM (AIX)
+#
+#     # Oracle (Solaris)
+#
+#     # Mac
+#
+#     # FreeBSD
+#
+#     # NetBSD
+#
+#     # OpenBSD
+#
+#     # BusyBox - Not directly available - try BusyBox sh or ash
+#
+#
+#
+#   # shift -- POSIX 2024 Special Builtin
+#     # POSIX 2008
+#     https://pubs.opengroup.org/onlinepubs/9699919799.2008edition/utilities/V3_chap02.html#shift
+#
+#     # POSIX 2024
+#
+#     # GNU -- NA in coreutils
+#     https://www.gnu.org/software/bash/manual/html_node/Bourne-Shell-Builtins.html#index-shift
+#
+#     # IBM (AIX)
+#
+#     # Oracle (Solaris)
+#
+#     # Mac
+#
+#     # FreeBSD
+#
+#     # NetBSD
+#
+#     # OpenBSD
+#
+#     # BusyBox - Not directly available - try BusyBox sh or ash
+#
+#
+#
+#   # unset -- POSIX 2024 Special Builtin
+#     # POSIX 2008
+#     https://pubs.opengroup.org/onlinepubs/9699919799.2008edition/utilities/V3_chap02.html#unset
+#
+#     # POSIX 2024
+#
+#     # GNU -- NA in coreutils
+#     https://www.gnu.org/software/bash/manual/html_node/Bourne-Shell-Builtins.html#index-unset
+#
+#     # IBM (AIX)
+#
+#     # Oracle (Solaris)
+#
+#     # Mac
+#
+#     # FreeBSD
+#
+#     # NetBSD
+#
+#     # OpenBSD
+#
+#     # BusyBox - Not directly available - try BusyBox sh or ash
+#
+
+
 
