@@ -2,7 +2,7 @@
 # candr.xtrace / canonicalize-dir.sh
 # shellcheck disable=SC2028,SC2268,SC2310
 #
-#   Script is unfinished - 15 Nov 2026 WY
+#   Script is unfinished - 16 Nov 2026 WY
 #
 #
 #   Manual canonicalization of directories. Output can be in brief or
@@ -18,8 +18,33 @@
 #   - Fedora 44: bash-5.3.9
 #   - Fedora 45: bash-5.3.15, dash-0.5.13.2, ksh-1.0.10,
 #       mksh-59c-16, oksh-7.9-2, yash-2.61, zsh-5.9.2.
+
+
+
+
 #_
-#_ Notes:
+#_  Notes:
+#_  - Variable \cmd_str\ is defined as a particular invocation so
+#_  that (a) command execution and (b) the various related messages
+#_  can all use or reference the precise same command string.
+#_  - Re variables \local_posparm_one\ and similar: the variables
+#_  are named \\local_\\, but the variables themselves are of global
+#_  scope. Bug?
+#_  - Re how filenames beginning with a hyphen are disallowed, see
+#_  Posix 2008, General Concepts 4.7.
+#_  - On Fedora 45, the default values according to \getconf\:
+#_  NAME_MAX = 255; PATH_MAX = 4096
+#_  - At 11/12, all non-builtins are located in /usr/bin on
+#_  Fedora 45.
+#_  - Variables of the form \ec1\ are used for transmitting the
+#_  value of the exit code from the if list to \:\ into
+#_  \global_return_code\.
+#_  - Special Builtins per Posix 2008: break : continue . eval exec
+#_  exit export readonly return set shift times trap unset
+#_  - \codeblocks\ is not Posix at all, 2008-2024, and not installed.
+#_  - Commands which are not Posix at all: \enable\ and \which\.
+#_  - In Bash on Fedoras 44 & 45, \PATH=${PATH}\ removes the hash
+#_  table as expected even if PATH is set as RO.
 #_  - Redirections are applied before any expansions occur.
 #_  - \#!/bin/env -i sh\ fails.
 #_  - LINENO does exist in Posix 2008.
@@ -68,8 +93,17 @@
 #_  - Some shells exit an an attempted assignment to a RO variable:
 #_    - Bash, ...
 #_  - The POSIXLY_CORRECT environment variable is from Bash; it is
-#   not specified by Posix.
-#
+#_   not specified by Posix.
+#_  - Per testing, the Special Variable zero is of global scope.
+#_  - Re __check_for_variable_assignment__
+#_  This particular function is used in \if...fi\ tests, so the
+#_  fact that it ends with a pipeline which could return false is
+#_  intended. However, as a standalone function, if the variable at
+#_  \$1\ has no assigned value, or if the variable in question is not
+#_  included in the output of \set\, then errexit causes the script to
+#_  halt. To have halted would have been an error. Yet, it\s Posix
+#_  2008, so the least confusing workaround has been applied.
+#_
 
   #> Debug.
   #reset; clear; grep -v -F -e '#>' -e '#_' ./candr.xtrace 2>&1 | less -RNS
@@ -99,23 +133,25 @@ IFS='
 '
 \unalias -a
 #+ Workaround for errexit.
-if ! unset -f command \
+if unset -f command \
   grep hash set 2>/dev/null
 then
+  : "t:$?:${LINENO}" #>
+else
   : "f:$?:${LINENO}" #>
   : "Command \\unset\\ returned non-zero"
-else : "t:0:${LINENO}" #>
 fi
 
 # PATH could be set as RO.
-if ! PATH="$( command -p getconf PATH ):${PATH}"
+if PATH="$( command -p getconf PATH ):${PATH}"
 then
+  : "t:$?:${LINENO}" #>
+else
   : "f:$?:${LINENO}" #>
   printf '%s: Notice: Assignment to variable failed: %s\n' \
     "$0" "PATH"
   printf '%s: Notice: Value of variable %s: <%s>\n' \
     "$0" "PATH" "${PATH}"
-else : "t:0:${LINENO}" #>
 fi
   #>
   #exit "${LINENO}" #>
@@ -132,7 +168,6 @@ set -C
 :;: "Bootstrap Variables"
 LC_ALL=C
 global_return_code=0
-#_ Note, the Special Variable zero is of global scope.
 special_var_zero=${0#./}
 special_var_zero=${0##*/}
 usage_msg="${special_var_zero}:
@@ -143,6 +178,7 @@ usage_msg="${special_var_zero}:
           --help      -h
           --verbose   -v
 "
+# These variables are in use locally.
 unset -v \
   aA bB cC dD eE fF \
   ec0 ec1 ec2 ec3 ec4 ec5 ec6
@@ -152,74 +188,66 @@ unset -v \
 :;: "Functions"
 
 : "Define function:    __check_for_variable_assignment__" #>
-#_
-#_ Usage:
-#_     __check_for_variable_assignment__ [Unexpanded variable name]
-#_     __check_for_variable_assignment__ HOME
-#_
-#_ Note, this particular function is used in \if...fi\ tests, so the
-#_ fact that it ends with a pipeline which could return false is
-#_ intended. However, as a standalone function, errexit, if the
-#_ variable at \$1\ has no assigned value, causes the script to
-#_ halt. To have halted would have been an error. Yet, it\s Posix
-#_ 2008, so the least confusing workaround has been applied.
-#_
+# Usage:
+#     __check_for_variable_assignment__ [Unexpanded variable name]
+#     __check_for_variable_assignment__ HOME
+#
 __check_for_variable_assignment__ ()
 {
-  if ! set | grep -q -E -e "^${1}=.+" 2>/dev/null
+  #+ This particular if..fi handles errexit.
+  if set | grep -q -E -e "^${1}=.+" 2>/dev/null
   then
+    : "t:$?:${LINENO}" #>
+  else
     : "f:$?:${LINENO}" #>
     : "Leaving __check_for_variable_assignment__" #>
     return 1
-  else : "t:0:${LINENO}" #>
   fi
   : "Leaving __check_for_variable_assignment__";: #>
 }
 
 : "Define function:    __exit_per_global_return_code__" #>
-#_
-#_ If the value of variable \global_return_code\ is non-zero, then
-#_ exit.
-#_
-#_ Usage:
-#_       __exit_per_global_return_code__ [no arguments]
-#_
+# If the value of variable \global_return_code\ is non-zero, then
+# exit.
+#   Usage:
+#       __exit_per_global_return_code__ [no arguments]
+#
 __exit_per_global_return_code__ ()
 {
-  if ! test 0 -eq "${global_return_code}"
+  if test 0 -eq "${global_return_code}"
   then
+    : "t:$?:${LINENO}" #>
+  else
     : "f:$?:${LINENO}" #>
     __print_stderr_notice__ "Exiting"
     exit "${global_return_code}"
-  else : "t:0:${LINENO}" #>
   fi
   : "Leaving __exit_per_global_return_code__";: #>
 }
 
 : "Define function:    __input_required__" #>
-#_
-#_ Usage:    __input_required__ "$@"
-#_
+# Usage:    __input_required__ "$@"
+#
 __input_required__ ()
 {
-  if ! test 0 -lt "$#"
+  if test 0 -lt "$#"
   then
+    : "t:$?:${LINENO}" #>
+  else
     : "f:$?:${LINENO}" #>
     __print_stderr_error__ "Input required"
     printf '%s\n' "${usage_msg:?}" 1>&2
     exit 1
-  else : "t:0:${LINENO}" #>
   fi
   : "Leaving __input_required__";: #>
 }
 
 : "Define functions:   __print_stderr_error__" #>
-#_
-#_ Usage:
-#_        __print_stderr_error__   [Description]         [Data]
-#_        __print_stderr_error__   "Zero length input" \
-#_                                    (Latter inputs can be omitted)
-#_
+# Usage:
+#        __print_stderr_error__   [Description]         [Data]
+#        __print_stderr_error__   "Zero length input" \
+#                                    (Latter inputs can be omitted)
+#
 __print_stderr_error__   ()
 {
   __xtrace_off__
@@ -229,12 +257,11 @@ __print_stderr_error__   ()
 }
 
 : "Define function:    __print_stderr_message__" #>
-#_
-#_ Usage:
-#_         __print_stderr_message__ [Message type] [Description] [Data]
-#_         __print_stderr_message__ "Warning"      "$1"          "${2:-}"
-#_         __print_stderr_message__ "Exiting" (Latter inputs can be omitted)
-#_
+# Usage:
+#         __print_stderr_message__ [Message type] [Description] [Data]
+#         __print_stderr_message__ "Warning"      "$1"          "${2:-}"
+#         __print_stderr_message__ "Exiting" (Latter inputs can be omitted)
+#
 __print_stderr_message__ ()
 {
   local_posparm_one=${1:-}
@@ -243,21 +270,21 @@ __print_stderr_message__ ()
 
   if test -n "${local_posparm_one}"
   then
-    : "t:0:${LINENO}" #>
+    : "t:$?:${LINENO}" #>
     local_posparm_one=": ${local_posparm_one}"
   else : "f:$?:${LINENO}" #>
   fi
 
   if test -n "${local_posparm_two}"
   then
-    : "t:0:${LINENO}" #>
+    : "t:$?:${LINENO}" #>
     local_posparm_two=": ${local_posparm_two}"
   else : "f:$?:${LINENO}" #>
   fi
 
   if test -n "${local_posparm_three}"
   then
-    : "t:0:${LINENO}" #>
+    : "t:$?:${LINENO}" #>
     local_posparm_three=": <${local_posparm_three}>"
   else : "f:$?:${LINENO}" #>
   fi
@@ -268,6 +295,9 @@ __print_stderr_message__ ()
     "${local_posparm_two}" \
     "${local_posparm_three}"
 
+  # If the script is sourced, or \dot\ted in, then it might be
+  # more useful if the script avoided having any side-effects on
+  # the local execution environment.
   unset -v \
     local_posparm_one \
     local_posparm_two \
@@ -276,11 +306,10 @@ __print_stderr_message__ ()
 }
 
 : "Define functions:   __print_stderr_notice__" #>
-#_
-#_ Usage:
-#_        __print_stderr_notice__  [Description]   [Data]
-#_        __print_stderr_notice__  "Value of PATH" "${PATH}"
-#_
+# Usage:
+#        __print_stderr_notice__  [Description]   [Data]
+#        __print_stderr_notice__  "Value of PATH" "${PATH}"
+#
 __print_stderr_notice__  ()
 {
   __xtrace_off__
@@ -290,11 +319,10 @@ __print_stderr_notice__  ()
 }
 
 : "Define functions:   __print_stderr_warning__" #>
-#_
-#_ Usage:
-#_         __print_stderr_warning__  [Description]     [Data]
-#_         __print_stderr_warning__  "Command failed"  "hash -r"
-#_
+# Usage:
+#         __print_stderr_warning__  [Description]     [Data]
+#         __print_stderr_warning__  "Command failed"  "hash -r"
+#
 __print_stderr_warning__ ()
 {
   __xtrace_off__
@@ -304,13 +332,11 @@ __print_stderr_warning__ ()
 }
 
 : "Define function:    __print_results__" #>
-#_
-#_ Usage:    __print_results__ [Script input] [canpth|nsfod] [redirection]
-#_ Usage:    __print_results__ "${fF}" "${canpth}"
-#_                                         # ^normal output to STDOUT
-#_ Usage:    __print_results__ "${fF}" "${nsfod}" >&2
-#_                                         # ^redirect output to STDERR
-#_
+# Usage:    __print_results__ [Script input] [canpth|nsfod] [redirection]
+# Usage:    __print_results__ "${fF}" "${canpth}"
+#                                         # ^normal output to STDOUT
+# Usage:    __print_results__ "${fF}" "${nsfod}" >&2
+#                                         # ^redirect output to STDERR
 # shellcheck disable=SC2329
 __print_results__ ()
 {
@@ -326,11 +352,12 @@ __print_results__ ()
     #exit "${LINENO}" #>
 
   :;: "If error, then switch verbose on"
-  if ! test 0 -eq "${global_return_code}"
+  if test 0 -eq "${global_return_code}"
   then
+    : "t:$?:${LINENO}" #>
+  else
     : "f:$?:${LINENO}" #>
     output_verbose_on=yes
-  else : "t:0:${LINENO}" #>
   fi
 
   :;: "\\case\\ on \\output_verbose_on\\"
@@ -354,22 +381,19 @@ __print_results__ ()
 }
 
 : "Define functions:   __reset_xtrace__" #>
-#_
-#_ Usage:
-#_     __reset_xtrace__  [No arguments]
-#_
+# Usage:
+#     __reset_xtrace__  [No arguments]
+#
 __reset_xtrace__ ()
 {
   :
 }
 
 : "Define functions:   __xtrace_off__" #>
-#_ Unset xtrace and prepare to restore state at the end of this
-#_ section.
-#_
-#_ Usage:
-#_     __xtrace_off__ [No arguments]
-#_
+# Unset xtrace and prepare to restore state.
+#   Usage:
+#     __xtrace_off__ [No arguments]
+#
 __xtrace_off__ ()
 {
   case $- in
@@ -379,15 +403,15 @@ __xtrace_off__ ()
   : "Leaving __xtrace_off__";: #>
 }
   #> Debug
-  #__print_stderr_notice__ "Exiting"
-  #__print_stderr_error__ "Input contains one or more non-printable strings"
-  #__print_stderr_warning__ "Command failed" "hash -r"
-  #__print_stderr_notice__ "Value of PATH" "${PATH}"
+  # __print_stderr_notice__ "Exiting"
+  # __print_stderr_error__ "Input contains one or more non-printable strings"
+  # __print_stderr_warning__ "Command failed" "hash -r"
+  # __print_stderr_notice__ "Value of PATH" "${PATH}"
   #exit "${LINENO}" #>
   #>
   #> Script Testing:
-  #__check_for_variable_assignment__ PATH #>
-  #__check_for_variable_assignment__ TTY #>
+  # __check_for_variable_assignment__ PATH #>
+  # __check_for_variable_assignment__ TTY #>
   #exit "${LINENO}" #>
   #>
   #> Script Testing
@@ -395,7 +419,7 @@ __xtrace_off__ ()
   #set -- a b c #>
   #set -- a b c; shift 4 #> Error: "shift count out of range"
   #set -- a b c; shift 3 #>
-  #__input_required__ "$@" #>
+  # __input_required__ "$@" #>
   #exit "${LINENO}" #>
 
 
@@ -424,13 +448,12 @@ case "$1" in
   --help    | -h* | --h* | -? )
     : "\\case\\ branch: \\--help\\" #>
     printf '%s\n' "${usage_msg:?}" 1>&2
-    #__print_stderr_notice__ "Exiting"
+    # __print_stderr_notice__ "Exiting"
     exit 1
     ;;
   * )
     : "\\case\\ branch: no options: use default: \\--brief\\" #>
     output_verbose_on=no
-    #_ Note, No \shift\ command.
     ;;
 esac
   #>
@@ -447,16 +470,9 @@ __input_required__ "$@"
 :;: "Commands"
 print_value_of_path=no
 
-#_ Utilities
-#_
-#_   Script Test string: \codeblocks\ #>
-#_
 # Remove the hash table, so that PATH lookups are forced and
-# therefore current. Posix recommends \PATH=${PATH}\ in spec. on
-# \hash\.
-#_
-#_ Note, In Bash on Fedoras 44 & 45, this recommendation works as
-#_ expected even if PATH is set as RO.
+# therefore current. Posix 2008 recommends \PATH=${PATH}\ in spec.
+# on \hash\.
   #>
   #> Script Testing:
   #readonly PATH #>
@@ -465,42 +481,43 @@ print_value_of_path=no
   #if ! PATH=${PATH} #>
 
 # shellcheck disable=SC2269
-if ! PATH=${PATH}
+if PATH=${PATH}
 then
+  : "t:$?:${LINENO}" #>
+else
   : "f:$?:${LINENO}" #>
   if command -v hash >/dev/null 2>&1
   then
-    : "t:0:${LINENO}" #>
+    : "t:$?:${LINENO}" #>
     cmd_str="hash -r"
+
     if eval "${cmd_str}" 2>/dev/null
     then
       : "f:$?:${LINENO}" #>
       __print_stderr_warning__ "Command failed" "${cmd_str}"
-    else : "t:0:${LINENO}" #>
+    else : "t:$?:${LINENO}" #>
     fi
     unset cmd_str
   else
     : "f:$?:${LINENO}" #>
-    #_ Note, If \hash\ is NA on the system, then this condition will
-    #_ be caught in the next section.
-    __print_stderr_notice__ "Command is not in PATH" "hash"
     print_value_of_path=yes
+    __print_stderr_notice__ "Command is not in PATH" "hash"
   fi
-else : "t:0:${LINENO}" #>
 fi
 
-#_ If xtrace is on, turn it off.
-#__xtrace_off__
+# If xtrace is on, turn it off.
+__xtrace_off__
   #>
   #> Script Testing:
   #enable -n break #>
+  #aA=codeblocks #>
 
 
   # Bug, these two loops are nearly the same: convert to a function.
 
 
-#_ Tests for each command
-#_ Note, Commands which are not Posix at all: \enable\ and \which\.
+# Utilities
+#
 for aA in \
   "awk" \
   "cd" \
@@ -526,41 +543,32 @@ for aA in \
   #>
   #> count is ?
   #>
-  #"codeblocks" #> Not Posix at all, 2008-2024, and not installed.
-  #>
-  #> Special Builtins per Posix 2008:
-  #>    break : continue . eval exec exit export readonly
-  #>    return set shift times trap unset
-  #>
 do
     #> Just to see in which directory each utility is located.
     #which "${aA}" 2>/dev/null || command -v "${aA}" #>
     #continue #>
-    #>
-    #> Note
-    #>   - At 11/12, all non-builtins are located in
-    #>     /usr/bin on Fedora 45.
-    #>
-  #_ Determine whether command \aA\ is in PATH.
-  if ! command -pv -- "${aA}" >/dev/null
+  if command -pv -- "${aA}" >/dev/null
   then
+    : "t:$?:${LINENO}" #>
+  else
     : "f:${ec0:=$?}" #>
       #>
       #command -v -- "${aA}" ||: #>
+      #>
     global_return_code=${ec0:=$?}
     print_value_of_path=yes
     __print_stderr_notice__ "Command is not in PATH" "${aA}"
-  else : "t:0:${LINENO}" #>
   fi
 
   # Unset user functions
   #+ Workaround for errexit.
   cmd_str="unset -f"
-  if ! eval "${cmd_str}" -- "${aA}" 2>/dev/null
+  if eval "${cmd_str}" -- "${aA}" 2>/dev/null
   then
+    : "t:$?:${LINENO}" #>
+  else
     : "f:$?:${LINENO}" #>
     : "Command \\${cmd_str}\\ returned non-zero"
-  else : "t:0:${LINENO}" #>
   fi
   unset cmd_str
 done
@@ -568,18 +576,19 @@ unset aA #>
   #>
   #exit "${LINENO}" #>
 
-#_ If xtrace was on, restore it.
+# If xtrace was on, restore it.
 __reset_xtrace__
 
-#_ Print the value of PATH if necessary.
+# Print the value of PATH if necessary.
 if test "yes" = "${print_value_of_path}"
 then
-  : "t:0:${LINENO}" #>
+  : "t:$?:${LINENO}" #>
   __print_stderr_notice__ "Value of PATH" "${PATH}"
 else : "f:$?${LINENO}" #>
 fi
 
-#_ Built-ins: Special and Regular
+# Built-ins: Special and Regular
+#
 for bB in \
   "break" \
   ":" \
@@ -592,25 +601,24 @@ for bB in \
   "shift" \
   "unset"
 do
-  #_ Determine whether Built-in \bB\ is in PATH.
-  if ! command -v -- "${bB}" >/dev/null
+  if command -v -- "${bB}" >/dev/null
   then
-    #_ Note, \ec1\ is used for transmitting the exit code from
-    #_ \:\ into \global_return_code\.
+    : "t:$?:${LINENO}" #>
+  else
     : "f:${ec1:=$?}" #>
     global_return_code=${ec1:=$?}
     __print_stderr_notice__ "Built-in is not available" "${bB}"
-  else : "t:0:${LINENO}" #>
   fi
 
   # Unset user functions
   #+ Workaround for errexit.
   cmd_str="unset -f"
-  if ! eval "${cmd_str}" -- "${bB}" 2>/dev/null
+  if eval "${cmd_str}" -- "${bB}" 2>/dev/null
   then
+    : "t:$?:${LINENO}" #>
+  else
     : "f:$?:${LINENO}" #>
     : "Command \\${cmd_str}\\ returned non-zero"
-  else : "t:0:${LINENO}" #>
   fi
   unset cmd_str
 done
@@ -619,7 +627,7 @@ unset bB #>
   #exit "${LINENO}" #>
 
 
-#_ If any of the commands were missing, then exit.
+# If any of the commands were missing, then exit.
 __exit_per_global_return_code__
   #>
   #set -x #>
@@ -629,6 +637,27 @@ __exit_per_global_return_code__
 
 :;: "Input validation: \\tr\\, \\strings\\ and \\pathchk\\"
 #
+    #>
+    #> Script Testing:
+    #reset;clear #>
+    #./candr.xtrace "$(dd if=/dev/urandom bs=32b count=1 2>/dev/null)" #>
+    #>
+    #>
+    #> Script Testing:
+    #reset; clear; ./candr.xtrace -v "" #>
+    #>
+    #>
+    # Script Testing: #>
+    #reset; clear; ./candr.xtrace -v -foo #>
+    #>
+    #>
+    #> Script Testing:
+    #reset; clear; ./candr.xtrace -v foooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo #>
+    #>
+    #>
+    # Script Testing: #>
+    #reset; clear; ./candr.xtrace -v /-foo #>
+    #>
 for cC in "$@"
 do
     :;: "Top of loop";: #>
@@ -636,106 +665,85 @@ do
   __xtrace_off__
 
   # Remove NULs and nonprintable bytes.
-    #>
-    #> Script Testing:
-    #reset;clear #>
-    #./candr.xtrace "$(dd if=/dev/urandom bs=32b count=1 2>/dev/null)" #>
-    #>
   stdout_00_tr_d=$( printf '%s' "${cC}" | tr -d '\0' )
   stdout_01_strings_n1=$(
     printf '%s' "${stdout_00_tr_d}" | strings -n 1
   )
 
-  if ! test "X${cC}" = "X${stdout_01_strings_n1}"
+  if test "X${cC}" = "X${stdout_01_strings_n1}"
   then
+    : "t:$?:${LINENO}" #>
+  else
     : "f:${ec2:=$?}:${LINENO}" #>
     global_return_code=${ec2:=$?}
     __print_stderr_error__ \
         "Input contains one or more non-printable strings"
     break 1
-  else : "t:0:${LINENO}" #>
   fi
 
   __reset_xtrace__
 
   # Zero length input is disallowed.
-    #>
-    #> Script Testing:
-    #reset; clear; ./candr.xtrace -v "" #>
-    #>
-  if ! test -n "${cC}"
+  if test -n "${cC}"
   then
+    : "t:$?:${LINENO}" #>
+  else
     : "f:${ec3:=$?}:${LINENO}" #>
     global_return_code=${ec3:=$?}
     __print_stderr_error__ "Zero length input"
     break 1
-  else : "t:0:${LINENO}" #>
   fi
-
+    #>
     #set -x #>
 
-  # Filenames beginning with a hyphen are disallowed, part 1\2.
-  #_
-  #_ Note, see Posix 2008, General Concepts 4.7.
-    #>
-    # Script Testing: #>
-    #reset; clear; ./candr.xtrace -v -foo #>
-    #>
-  stdout_02_cut=$( printf '%s' "${cC}" | cut -c 1 )
-
-  if ! test "-" != "${stdout_02_cut}"
+  # Tests on filename length.
+  #
+  # \pathchk [no arguments]\ checks \\each component of each pathname
+  # of the underlying file system\\ using PATH_MAX and NAME_MAX, for any
+  # non-searchable directory, and for any character that is invalid in
+  # its containing directory, under Posix 2008.
+  #
+  if pathchk -- "${cC}"
   then
+    : "t:$?:${LINENO}" #>
+  else 
     : "f:${ec4:=$?}:${LINENO}" #>
     global_return_code=${ec4:=$?}
     __print_stderr_error__ \
-      "Filenames beginning with a hyphen are disallowed" "${cC}"
-    break 1
-  else : "t:0:${LINENO}" #>
-  fi
-
-  # Tests on filename length.
-  #_
-  #_ \pathchk [no arguments]\ checks \\each component of each pathname
-  #_ of the underlying file system\\ using PATH_MAX and NAME_MAX, for any
-  #_ non-searchable directory, and for any character that is invalid in
-  #_ its containing directory.
-  #_
-  #_ On Fedora 45, the default values according to \getconf\:
-  #_   NAME_MAX                            255
-  #_   PATH_MAX                            4096
-    #>
-    #> Script Testing:
-    #reset; clear; ./candr.xtrace -v foooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo #>
-    #>
-  if ! pathchk -- "${cC}"
-  then
-    : "f:${ec5:=$?}:${LINENO}" #>
-    global_return_code=${ec5:=$?}
-    __print_stderr_error__ \
       "Error received from \\pathchk [no args]\\" "${cC}"
 
-    #_ Print out the values of the relevant variables.
+    # Print the values of the relevant variables.
     __print_stderr_notice__ "Values of relevant system parameters"
     getconf -a | grep -E -e ^"PATH_MAX" -e ^"NAME_MAX"
     break 1
-  else : "t:0:${LINENO}" #>
+  fi
+
+  # Filenames beginning with a hyphen are disallowed, part 1\2.
+  stdout_02_cut=$( printf '%s' "${cC}" | cut -c 1 )
+
+  if test "-" != "${stdout_02_cut}"
+  then
+    : "t:$?:${LINENO}" #>
+  else
+    : "f:${ec5:=$?}:${LINENO}" #>
+    global_return_code=${ec5:=$?}
+    __print_stderr_error__ \
+      "Filenames beginning with a hyphen are disallowed" "${cC}"
+    break 1
   fi
 
   # Filenames beginning with a hyphen are disallowed, part 2\2.
-  #_
-  #_ Note, see Posix 2008, General Concepts 4.7.
-    #>
-    # Script Testing: #>
-    #reset; clear; ./candr.xtrace -v /-foo #>
-    #>
-  if ! pathchk -P -- "${cC}"
+  if pathchk -P -- "${cC}"
   then
+    : "t:$?:${LINENO}" #>
+  else
     : "f:${ec6:=$?}:${LINENO}" #>
     global_return_code=${ec6:=$?}
     __print_stderr_error__ \
       "Error received from \\pathchk -P\\" "${cC}"
+    __print_stderr_error__ \
+      "Filenames beginning with a hyphen are disallowed" "${cC}"
     break 1
-  else : "t:0:${LINENO}" #>
   fi
 done
 unset -v \
@@ -745,15 +753,19 @@ unset -v \
   stdout_02_cut
 :;: "End of loop" #>
 
-#_ If any input validation problems occurred, then exit.
+# If any input validation problems occurred, then exit.
 __exit_per_global_return_code__
   #>
   #set -x #>
   #: exit "${LINENO}" #>
 
-#> DEBUG BLOCK
+
+  # Bug, this list of environment variables is incomplete.
+
+
+#> DEBUG BLOCK -- To be run only if xtrace is enabled.
 #>
-:;: "IF XTRACE IS ON -- Section on \\getconf\\" #>
+:;: "Section on \\getconf\\" #>
 #>  _POSIX_NO_TRUNC   # for Pathname Resolution
 #>  BASH_ENV          # for \bash\
 #>  BLOCK_SIZE        # for GNU Coreutils
@@ -774,16 +786,17 @@ __exit_per_global_return_code__
 #>
 if printf '%s' "$-" | grep -q -e "x" #>
 then #>
-  : "t:0:${LINENO}" "Parameter values per \\getconf\\" #>
+  : "t:$?:${LINENO}" "Parameter values per \\getconf\\" #>
   __xtrace_off__; set +x #>
   stdout_03_getconf_a=$( getconf -a ) #>
+  #>
   for dD in _POSIX_NO_TRUNC BASH_ENV CDPATH ENV HOME LC_ALL LD_PRELOAD NAME_MAX PATH_MAX OLDPWD PATH PWD SYMLOOP_MAX #>
   do #>
       #echo "dD: ${dD}" #>
     #+ Note, this particular \if..fi\ is a workaround for errexit
     #+ and xtrace visibility.
     if printf '%s\n' "${stdout_03_getconf_a}" | grep -E -e "^${dD} " #>
-    then : "t:0:${LINENO}" #>
+    then : "t:$?:${LINENO}" #>
     else : "f:$?:${LINENO}" #>
     fi #>
   done #>
@@ -798,8 +811,6 @@ unset -v stdout_03_getconf_a #>
   #>
 
 :;: "Unset Environment Variables"
-#_ Unset certain env. vars. if possible and if they\re defined. See
-#_ specification pages under Posix 2008.
   #>
   #> Script Testing:
   #POSIXLY_CORRECT=yes #>
@@ -809,7 +820,7 @@ unset -v stdout_03_getconf_a #>
   #unset LD_PRELOAD; echo $? #>
   #set | grep -E "^${eE}=.+"; echo $? #>
   #LD_PRELOAD=x #>
-
+  #>
 for eE in \
   BASH_ENV \
   CDPATH \
@@ -819,27 +830,23 @@ for eE in \
 do
     #: "eE: ${eE}" #>
     #>
-  #_ Note, using \test -n\ and a loop at the same time is problematic
-  #_ due to multiple layers of expansion. \set | grep\ is an okay
-  #_ solution.
+  # It would seem obvious to use \test -n\ and a loop, but doing
+  # so would be problematic under Posix 2008 due to there being
+  # multiple layers of expansion. Using a function allows the
+  # regular expression to be defined in just one place.
   if __check_for_variable_assignment__ "${eE}"
   then
-    : "t:0:${LINENO}" "${eE} is defined" #>
-    #_ Note, define \cmd_str\ as a particular invocation so that (a)
-    #_ the command can be executed and so that (b) the various related
-    #_ messages can cite the precise command string which was
-    #_ executed.
+    : "t:$?:${LINENO}" "${eE} is defined" #>
     # shellcheck disable=SC2016
     cmd_str='unset -v -- "${eE}"'
 
     if eval "${cmd_str}"
     then
-      : "t:0:${LINENO}" "\\${cmd_str}\\ returned zero" #>
+      : "t:$?:${LINENO}" "\\${cmd_str}\\ returned zero" #>
       if __check_for_variable_assignment__ "${eE}"
       then
-        : "t:0:${LINENO}" #>
+        : "t:$?:${LINENO}" #>
         __print_stderr_error__ "${eE} is defined"
-        #__print_stderr_notice__ "Exiting"
         exit 1
       else : "f:$?:${LINENO}" "${eE} is undefined or of zero length";: #>
       fi
@@ -903,8 +910,10 @@ stdout_04_readonly_awk=$(
         }
       }'
     )
-if ! test -n "${stdout_04_readonly_awk:-}"
+if test -n "${stdout_04_readonly_awk:-}"
 then
+  : "t:$?:${LINENO}" #>
+else
   : "f:0:${LINENO}" #>
   assign_variable=no
 
@@ -950,19 +959,19 @@ then
   {
     if __check_for_variable_assignment__ "$1"
     then
-      : "t:0:${LINENO}" "Parameter $1 is defined" #>
+      : "t:$?:${LINENO}" "Parameter $1 is defined" #>
       if test -n "$1" # Confirmation test
       then
-        : "t:0:${LINENO}" "Result confirmed" #>
+        : "t:$?:${LINENO}" "Result confirmed" #>
         if eval test -e '$'"$1"
         then
-          : "t:0:${LINENO}" "Filesystem object exists" #>
+          : "t:$?:${LINENO}" "Filesystem object exists" #>
           if eval test -d '$'"$1"
           then
-            : "t:0:${LINENO}" "Filesystem object is a directory" #>
+            : "t:$?:${LINENO}" "Filesystem object is a directory" #>
             if eval test -x '$'"$1"
             then
-              : "t:0:${LINENO}" "Directory is searchable" #>
+              : "t:$?:${LINENO}" "Directory is searchable" #>
               assign_variable="$2__$1"
             else
               : "f:0:${LINENO}" "Directory is not searchable" #>
@@ -980,7 +989,7 @@ then
         : "f:0:${LINENO}" #>
         assign_variable="yes__$1"
         __print_stderr_error__ "Conflicting data" "Line:${LINENO}"
-        #__print_stderr_notice__ "Exiting"
+        # __print_stderr_notice__ "Exiting"
         exit 2
       fi
     else
@@ -1021,7 +1030,7 @@ then
   #+  throughout.
   if stdout_05_tilde_exp=$( eval echo ~"$( logname )" )
   then
-    : "t:0:${LINENO}" #>
+    : "t:$?:${LINENO}" #>
     : "Tilde expansion succeeded"
   else
     : "f:$?:${LINENO}" #>
@@ -1031,19 +1040,19 @@ then
   # Get the HOME directory from /etc/passwd.
   if test -f /etc/passwd
   then
-    : "t:0:${LINENO}" #>
+    : "t:$?:${LINENO}" #>
     stdout_06_id_un=$( id -un )
 
     if grep -q "${stdout_06_id_un}" /etc/passwd
     then
-      : "t:0:${LINENO}" #>
+      : "t:$?:${LINENO}" #>
       #+ Workaround for errexit and xtrace visibility.
       if stdout_07_awk_etc_passwd=$(
            awk -F: -v usrnm="${stdout_06_id_un}" \
              '$1 == usrnm { print $6 }' /etc/passwd
            )
       then
-        : "t:0:${LINENO}" #>
+        : "t:$?:${LINENO}" #>
         : "\\awk\\ succeeded"
       else
         : "f:$?:${LINENO}" #>
@@ -1053,7 +1062,7 @@ then
       : "f:$?:${LINENO}" #>
       __print_stderr_error__ \
         "Username is not present in /etc/passwd " "${stdout_06_id_un}"
-      #__print_stderr_notice__ "Exiting"
+      # __print_stderr_notice__ "Exiting"
       exit 1
     fi
   else
@@ -1070,7 +1079,7 @@ then
   #_ Note, in theory, both variables could be of zero length.
   if test "X${stdout_05_tilde_exp}" = "X${stdout_07_awk_etc_passwd}"
   then
-    : "t:0:${LINENO}" "Result confirmed" #>
+    : "t:$?:${LINENO}" "Result confirmed" #>
     confirmed_home=${stdout_05_tilde_exp}
     found_home=NA
   else
@@ -1091,13 +1100,13 @@ then
     #_
     if test -n "${stdout_05_tilde_exp}"
     then
-      : "t:0:${LINENO}" #>
+      : "t:$?:${LINENO}" #>
       found_home=${stdout_05_tilde_exp}
     else
       : "f:$?:${LINENO}" #>
       if test -n "${stdout_07_awk_etc_passwd}"
       then
-        : "t:0:${LINENO}" #>
+        : "t:$?:${LINENO}" #>
         found_home=${stdout_07_awk_etc_passwd}
       else
         : "f:$?:${LINENO}" #>
@@ -1111,7 +1120,7 @@ then
   # Check the new data for validity.
   if test -n "${confirmed_home}"
   then
-    : "t:0:${LINENO}" #>
+    : "t:$?:${LINENO}" #>
     __make_sure_variable_is_defined_properly__ \
         "confirmed_home" "affirmative"
     #_
@@ -1128,7 +1137,7 @@ then
     alter_found_home_value=""
     if test -n "${found_home}"
     then
-      : "t:0:${LINENO}" #>
+      : "t:$?:${LINENO}" #>
       __make_sure_variable_is_defined_properly__ \
           "found_home" "affirmative"
       #_ Note,
@@ -1162,12 +1171,17 @@ then
   #_ Do HOME and \confirmed_home\ have the same value?
   if test "${HOME:=}" = "${confirmed_home}"
   then
-    : "t:0:${LINENO}" #>
+    : "t:$?:${LINENO}" #>
     #_ Yes, HOME and \confirmed_home\ have the same value.
     #_
     #_ Did HOME pass all of the tests?
-    if ! test "negative__HOME" = "${alter_original_home_value}"
+    if test "negative__HOME" = "${alter_original_home_value}"
     then
+      : "t:$?:${LINENO}" #>
+      #_ Yes, HOME passed all of the tests.
+      #if HOME=${HOME}; then : "t:$?:${LINENO}"; else : "f:$?:${LINENO}"; fi #>
+      #_ Done
+    else
       : "f:$?:${LINENO}" #>
       #_ No, HOME failed some of the tests.
       #_
@@ -1177,10 +1191,10 @@ then
       #_ Did the third variable, \found_home\, pass all of the tests?
       if test "affirmative__found_home" = "${alter_found_home_value}"
       then
-        : "t:0:${LINENO}" #>
+        : "t:$?:${LINENO}" #>
         #_ Yes, \found_home\ passed all of the tests.
         if HOME=${found_home}
-        then : "t:0:${LINENO}"
+        then : "t:$?:${LINENO}"
         else : "f:$?:${LINENO}"
         fi
         #_ Done
@@ -1193,15 +1207,11 @@ then
         #_
         #_ So use the filesystem root directory. Rationale below.
         if HOME="/"
-        then : "t:0:${LINENO}"
+        then : "t:$?:${LINENO}"
         else : "f:$?:${LINENO}"
         fi
         #_ Done
       fi
-    else : "t:0:${LINENO}" #>
-      #_ Yes, HOME passed all of the tests.
-      #if HOME=${HOME}; then : "t:0:${LINENO}"; else : "f:$?:${LINENO}"; fi #>
-      #_ Done
     fi
   else
     : "f:$?:${LINENO}" #>
@@ -1210,7 +1220,7 @@ then
     #_ Did HOME pass all of the tests?
     if test "negative__HOME" = "${alter_original_home_value}"
     then
-      : "t:0:${LINENO}" #>
+      : "t:$?:${LINENO}" #>
       #_ Yes, HOME passed all of the tests.
       #_
       #_ But, HOME and \confirmed_home\ do not have the same value.
@@ -1218,22 +1228,22 @@ then
       #_ So, did \confirmed_home\ pass all of the tests?
       if test "affirmative__confirmed_home" = "${alter_confirmed_home_value}"
       then
-        : "t:0:${LINENO}" #>
+        : "t:$?:${LINENO}" #>
         #_ Yes, \confirmed_home\ passed all of the tests.
         #_
         #_ So both values passed all of the tests.
         #_
-        #__print_stderr_warning__ "Conflicting data" "Line:${LINENO}"
+        # __print_stderr_warning__ "Conflicting data" "Line:${LINENO}"
         #_ If \found_home\ also passed all of the tests, then use that
         #_ one because \found_home\ is based on /etc/passwd.
         #_
         #_ Did \found_home\ pass all of the tests?
         if test "affirmative__found_home" = "${alter_found_home_value}"
         then
-          : "t:0:${LINENO}" #>
+          : "t:$?:${LINENO}" #>
           #_ Yes, \found_home\ passed all of the tests.
           if HOME=${found_home}
-          then : "t:0:${LINENO}"
+          then : "t:$?:${LINENO}"
           else : "f:$?:${LINENO}"
           fi
           #_ Done
@@ -1248,7 +1258,7 @@ then
           #_ The one set by the user could be malicious, so use the
           #_ one identified by Tilde Expansion: \confirmed_home\.
           if HOME=${confirmed_home}
-          then : "t:0:${LINENO}"
+          then : "t:$?:${LINENO}"
           else : "f:$?:${LINENO}"
           fi
           #_ Done
@@ -1259,7 +1269,7 @@ then
         #_ Since HOME passed all of the tests, and since HOME and
         #_ \confirmed_home\ do not have the same value, keep the
         #_ current value of HOME.
-        #if HOME=${HOME}; then : "t:0:${LINENO}"; else : "f:$?:${LINENO}"; fi #>
+        #if HOME=${HOME}; then : "t:$?:${LINENO}"; else : "f:$?:${LINENO}"; fi #>
         #_ Done
       fi
     else
@@ -1271,10 +1281,10 @@ then
       #_ Did \confirmed_home\ pass all of the tests?
       if test "affirmative__confirmed_home" = "${alter_confirmed_home_value}"
       then
-        : "t:0:${LINENO}" #>
+        : "t:$?:${LINENO}" #>
         #_ Yes, \confirmed_home\ passed all of the tests.
         if HOME=${confirmed_home}
-        then : "t:0:${LINENO}"
+        then : "t:$?:${LINENO}"
         else : "f:$?:${LINENO}"
         fi
         #_ Done.
@@ -1287,10 +1297,10 @@ then
         #_ Did \found_home\ pass all of the tests?
         if test "affirmative__found_home" = "${alter_found_home_value}"
         then
-          : "t:0:${LINENO}" #>
+          : "t:$?:${LINENO}" #>
           #_ Yes, \found_home\ passed all of the tests.
           if HOME=${found_home}
-          then : "t:0:${LINENO}"
+          then : "t:$?:${LINENO}"
           else : "f:$?:${LINENO}"
           fi
           #_ Done.
@@ -1322,7 +1332,7 @@ then
           #_ At least it\s guaranteed to always exist, as far as I
           #_ know.
           if HOME="/"
-          then : "t:0:${LINENO}"
+          then : "t:$?:${LINENO}"
           else : "f:$?:${LINENO}"
           fi
         fi
@@ -1334,7 +1344,6 @@ then
     : "HOME: ${HOME}" #>
     #exit 101 #"${LINENO}" #>
     #>
-else : "t:0:${LINENO}" #>
 fi
 unset -v \
   stdout_04_readonly_awk \
@@ -1346,7 +1355,6 @@ unset -v \
 
 
 :;: "PWD aught to be defined, for \\cd\\ and \\pwd\\"
-#_
 #_ Notes,
 #_   - In Posix-2008 effects of assignments to PWD are unspecified.
 #_   - In Bash 5.3.9+,
@@ -1354,9 +1362,10 @@ unset -v \
 #_     \cd\ will not assign a value to PWD.
 #_     - Values of HOME and PWD are inherited from the calling
 #_     interactive shell.
-#_
-if ! __check_for_variable_assignment__ "PWD"
+if __check_for_variable_assignment__ "PWD"
 then
+  : "t:$?:${LINENO}" #>
+else
   : "f:$?:${LINENO}" #>
 
   #_ A call to \cd\ is supposed to assign a value to PWD.
@@ -1422,29 +1431,26 @@ then
   #_    the behavior of pwd is unspecified.\\
   #+  - This \if..fi\ structure is a workaround for errexit and
   #+  xtrace visibility
-  #_
-  if ! stderr_cd_P=$(
-    cd -- "${HOME}"
-    cd -P -- . 2>&1 >/dev/null
-  ) # Subshell
+  if stderr_cd_P=$( cd -- "${HOME}"; cd -P -- . 2>&1 >/dev/null )
   then
+    : "t:$?:${LINENO}" #>
+  else
     : "f:$?:${LINENO}" #>
-    __print_stderr_error__ "Subshell failed" "cd; cd -P ."
-    #__print_stderr_notice__ "Exiting"
+    __print_stderr_error__ "Command \\cd\\ failed" "cd; cd -P ."
+    # __print_stderr_notice__ "Exiting"
     exit 1
-  else : "t:0:${LINENO}" #>
   fi
 
-  if ! __check_for_variable_assignment__ "PWD"
+  if __check_for_variable_assignment__ "PWD"
   then
+    : "t:$?:${LINENO}" #>
+  else
     : "f:$?:${LINENO}" #>
 
     # Bug, try also \pwd -P\
 
     __print_stderr_warning__ "Parameter is undefined" "PWD"
-  else : "t:0:${LINENO}" #>
   fi
-else : "t:0:${LINENO}" #>
 fi
 
 
@@ -1470,13 +1476,14 @@ nsfod="(No such file or directory)"
 #> Script Test input: /dev/qwertyuiop
 for fF
 do
-  if ! test -e "${fF}"
+  if test -e "${fF}"
   then
+    : "t:$?:${LINENO}" "Path exists" #>
+  else
     : "f:$?:${LINENO}" #>
     global_return_code=1
     __print_results__ "${fF}" "${nsfod}" >&2
     continue 1
-  else : "t:0:${LINENO}" "Path exists" #>
   fi
 done
 unset fF
