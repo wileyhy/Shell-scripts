@@ -24,6 +24,7 @@
 
 #_
 #_  Notes:
+#_  - In Posix 2008 \awk\, \split()\ is indeed specified.
 #_  - BusyBox \grep\ does have \-q\ as of v.1.37.0. 
 #_  - Variable \cmd_str\ is defined as a particular invocation so
 #_  that (a) command execution and (b) the various related messages
@@ -963,60 +964,47 @@ else
   assign_variable=no
 
   : "Define function:  __make_sure_variable_is_defined_properly__"
+  # Test possible values of HOME.
+  #
+  # Usage:
+  #  __make_sure_variable_is_defined_properly__ \
+  #          [Unexpanded variable name] [affirmative|negative|yes]
+  #
+  #>  If any of the tests fail, then \assign_variable\ should have
+  #>  a value of \yes__*\. If all of the tests succeed then 
+  #>  \assign_variable\ should have a value of either
+  #>  \affirmative__*\ or \negative__*\.
   #>
-  #> If any of the tests fail, then \assign_variable\ should be \yes\.
+  #>  \yes\ and \affirmative\ indicate that the value of the
+  #>  unexpanded variable name at $1 should be changed; \negative\
+  #>  indicates that the value of the value of $1 should not be
+  #>  changed.
   #>
-  #> If all of the tests succeed, and the variable is a searchable
-  #> directory, then operand number two contains the value which should
-  #> be assigned to the variable \assign_variable\. See
-  #> \eval test -x\.
+  #>  Valid values for $2 and their meanings are:
   #>
-  #> Usage:
-  #>  __make_sure_variable_is_defined_properly__ \
-  #>          [Unexpanded variable name] [affirmative|negative|yes]
-  #>
-  #>  Valid values for $2 are:
-  #>                            tests       change var
-  #>                          ##########################
-  #>              affirmative # passed      do change
-  #>              negative    # passed      do not change
-  #>              yes         # failed      do change
-  #>
-  #>
-  #> Existing commandlines:
-  #>
-  #>   __make_sure_variable_is_defined_properly__ \
-  #>       "HOME" "negative"
-  #>
-  #>           Var HOME could have values of yes or negative
-  #>
-  #>   __make_sure_variable_is_defined_properly__ \
-  #>       "confirmed_home" "affirmative"
-  #>
-  #>           Var confirmed_home could have values of yes or affirmative
-  #>
-  #>   __make_sure_variable_is_defined_properly__ \
-  #>       "found_home" "affirmative"
-  #>
-  #>           Var found_home could have values of yes or affirmative
+  #>    values            # tests       change variable?
+  #>    ####################################################
+  #>    yes               # failed      do change
+  #>    affirmative       # passed      do change
+  #>    negative          # passed      do not change
   #>
   __make_sure_variable_is_defined_properly__ ()
   {
     if __check_for_variable_assignment__ "$1"
     then
-      : "t:$?:${LINENO}" "Parameter $1 is defined" #>
+      : "t:$?:${LINENO}" #>
       if test -n "$1" # Confirmation test
       then
-        : "t:$?:${LINENO}" "Result confirmed" #>
+        : "t:$?:${LINENO}" #>
         if eval test -e '$'"$1"
         then
-          : "t:$?:${LINENO}" "Filesystem object exists" #>
+          : "t:$?:${LINENO}" #>
           if eval test -d '$'"$1"
           then
-            : "t:$?:${LINENO}" "Filesystem object is a directory" #>
+            : "t:$?:${LINENO}" #>
             if eval test -x '$'"$1"
             then
-              : "t:$?:${LINENO}" "Directory is searchable" #>
+              : "t:$?:${LINENO}" #>
               assign_variable="$2__$1"
             else
               : "f:0:${LINENO}" "Directory is not searchable" #>
@@ -1034,7 +1022,6 @@ else
         : "f:0:${LINENO}" #>
         assign_variable="yes__$1"
         __print_stderr_error__ "Conflicting data" "Line:${LINENO}"
-        # __print_stderr_notice__ "Exiting"
         exit 2
       fi
     else
@@ -1046,12 +1033,12 @@ else
 
   __make_sure_variable_is_defined_properly__ \
       "HOME" "negative"
+  alter_original_home_value="${assign_variable}"
   #_ Note,
   #_   Possible values for \alter_original_home_value\ are:
   #_   - negative__HOME, or
   #_   - yes__HOME
   #_
-  alter_original_home_value="${assign_variable}"
   unset assign_variable
     #>
     #set -x #>
@@ -1107,7 +1094,6 @@ else
       : "f:$?:${LINENO}" #>
       __print_stderr_error__ \
         "Username is not present in /etc/passwd " "${stdout_06_id_un}"
-      # __print_stderr_notice__ "Exiting"
       exit 1
     fi
   else
@@ -1168,13 +1154,13 @@ else
     : "t:$?:${LINENO}" #>
     __make_sure_variable_is_defined_properly__ \
         "confirmed_home" "affirmative"
+    alter_confirmed_home_value="${assign_variable}"
+    alter_found_home_value="no"
     #_
     #_ Note, possible values for \alter_confirmed_home_value\ are:
     #_   - affirmative__confirmed_home, or
     #_   - yes__confirmed_home
     #_
-    alter_confirmed_home_value="${assign_variable}"
-    alter_found_home_value="no"
     unset assign_variable
   else
     : "f:$?:${LINENO}" #>
@@ -1185,12 +1171,12 @@ else
       : "t:$?:${LINENO}" #>
       __make_sure_variable_is_defined_properly__ \
           "found_home" "affirmative"
+      alter_found_home_value="${assign_variable}"
       #_ Note,
       #_   Possible values for \alter_found_home_value\, are:
       #_   - affirmative__found_home, or
       #_   - yes__found_home
       #_
-      alter_found_home_value="${assign_variable}"
       unset assign_variable
     else
       : "f:$?:${LINENO}" #>
@@ -1482,7 +1468,6 @@ else
   else
     : "f:$?:${LINENO}" #>
     __print_stderr_error__ "Command \\cd\\ failed" "cd; cd -P ."
-    # __print_stderr_notice__ "Exiting"
     exit 1
   fi
 
