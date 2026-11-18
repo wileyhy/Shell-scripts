@@ -1835,7 +1835,8 @@ exit 00
 #     https://man.freebsd.org/cgi/man.cgi?query=cd&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
 #     # NetBSD
-#     https://man.netbsd.org/cd.1
+#     https://man.netbsd.org/cd.1 -- binary?
+#     https://man.netbsd.org/sh.1 -- builtin
 #
 #     # OpenBSD
 #     https://man.openbsd.org/sh -- shell builtin
@@ -1867,7 +1868,7 @@ exit 00
 #     https://man.freebsd.org/cgi/man.cgi?query=command&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
 #     # NetBSD
-#       NA
+#     https://man.netbsd.org/sh.1 -- shell builtin
 #
 #     # OpenBSD
 #     https://man.openbsd.org/sh -- shell builtin
@@ -1935,7 +1936,8 @@ exit 00
 #     https://man.freebsd.org/cgi/man.cgi?query=echo&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
 #     # NetBSD
-#     https://man.netbsd.org/echo.1
+#     https://man.netbsd.org/echo.1 -- binary
+#     # No shell builtin
 #
 #     # OpenBSD
 #     https://man.openbsd.org/echo -- echo
@@ -2143,7 +2145,7 @@ exit 00
 #     https://man.freebsd.org/cgi/man.cgi?query=hash&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
 #     # NetBSD
-#       NA
+#     https://man.netbsd.org/sh.1 -- shell builtin
 #
 #     # OpenBSD
 #     https://man.openbsd.org/sh -- shell builtin
@@ -2307,7 +2309,8 @@ exit 00
 #     https://man.freebsd.org/cgi/man.cgi?query=printf&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
 #     # NetBSD
-#     https://man.netbsd.org/printf.1
+#     https://man.netbsd.org/printf.1 -- binary
+#     # No shell builtin
 #
 #     # OpenBSD
 #     https://man.openbsd.org/printf -- binary
@@ -2342,7 +2345,8 @@ exit 00
 #     https://man.freebsd.org/cgi/man.cgi?query=pwd&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html 
 #
 #     # NetBSD
-#     https://man.netbsd.org/pwd.1
+#     https://man.netbsd.org/pwd.1 -- binary?
+#     https://man.netbsd.org/sh.1 -- shell builtin
 #
 #     # OpenBSD
 #     https://man.openbsd.org/pwd
@@ -2546,7 +2550,8 @@ exit 00
 #     https://man.freebsd.org/cgi/man.cgi?query=test&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
 #     # NetBSD
-#     https://man.netbsd.org/test.1
+#     https://man.netbsd.org/test.1 -- binary
+#     # No shell builtin
 #
 #     # OpenBSD
 #     https://man.openbsd.org/test -- binary
@@ -2582,7 +2587,8 @@ exit 00
 #     https://man.freebsd.org/cgi/man.cgi?query=true&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
 #     # NetBSD
-#     https://man.netbsd.org/true.1
+#     https://man.netbsd.org/true.1 -- binary
+#     # No shell builtin
 #
 #     # OpenBSD
 #     https://man.openbsd.org/true -- binary
@@ -2616,7 +2622,8 @@ exit 00
 #     # FreeBSD
 #     https://man.freebsd.org/cgi/man.cgi?query=unalias&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD - Not directly available - try sh
+#     # NetBSD
+#     https://man.netbsd.org/sh.1 -- shell builtin
 #
 #     # OpenBSD 
 #     https://man.openbsd.org/sh -- shell builtin
@@ -2646,7 +2653,8 @@ exit 00
 #     # FreeBSD
 #     https://man.freebsd.org/cgi/man.cgi?query=break&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD - Not directly available - try sh
+#     # NetBSD
+#     https://man.netbsd.org/sh.1 -- shell keyword
 #
 #     # OpenBSD
 #     https://man.openbsd.org/sh -- shell builtin
@@ -2675,7 +2683,8 @@ exit 00
 #     # FreeBSD
 #     https://man.freebsd.org/cgi/man.cgi?query=continue&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD - Not directly available - try sh
+#     # NetBSD
+#     https://man.netbsd.org/sh.1 -- shell builtin
 #
 #     # OpenBSD
 #     https://man.openbsd.org/sh -- shell builtin
@@ -2705,7 +2714,8 @@ exit 00
 #     # FreeBSD
 #     https://man.freebsd.org/cgi/man.cgi?query=continue&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD - Not directly available - try sh
+#     # NetBSD
+#     https://man.netbsd.org/sh.1 -- shell keyword
 #
 #     # OpenBSD
 #     https://man.openbsd.org/sh -- shell builtin
@@ -2735,7 +2745,8 @@ exit 00
 #     # FreeBSD
 #     https://man.freebsd.org/cgi/man.cgi?query=eval&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD - Not directly available - try sh
+#     # NetBSD
+#     https://man.netbsd.org/sh.1 -- shell builtin
 #
 #     # OpenBSD
 #     https://man.openbsd.org/sh -- shell builtin
@@ -2765,7 +2776,8 @@ exit 00
 #     # FreeBSD
 #     https://man.freebsd.org/cgi/man.cgi?query=exit&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD - Not directly available - try sh
+#     # NetBSD
+#     https://man.netbsd.org/sh.1 -- shell builtin
 #
 #     # OpenBSD
 #     https://man.openbsd.org/sh -- shell builtin
@@ -2795,7 +2807,8 @@ exit 00
 #     # FreeBSD
 #     https://man.freebsd.org/cgi/man.cgi?query=readonly&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD - Not directly available - try sh
+#     # NetBSD
+#     https://man.netbsd.org/sh.1 -- shell builtin
 #
 #     # OpenBSD
 #     https://man.openbsd.org/sh -- shell builtin
@@ -2825,7 +2838,8 @@ exit 00
 #     # FreeBSD
 #     https://man.freebsd.org/cgi/man.cgi?query=return&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD - Not directly available - try sh
+#     # NetBSD
+#     https://man.netbsd.org/sh.1 -- shell builtin
 #
 #     # OpenBSD
 #     https://man.openbsd.org/sh -- shell builtin
@@ -2855,7 +2869,8 @@ exit 00
 #     # FreeBSD
 #     https://man.freebsd.org/cgi/man.cgi?query=set&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD - Not directly available - try sh
+#     # NetBSD
+#     https://man.netbsd.org/sh.1 -- shell builtin
 #
 #     # OpenBSD
 #     https://man.openbsd.org/sh -- shell builtin
@@ -2885,7 +2900,8 @@ exit 00
 #     # FreeBSD
 #     https://man.freebsd.org/cgi/man.cgi?query=shift&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD - Not directly available - try sh
+#     # NetBSD
+#     https://man.netbsd.org/sh.1 -- shell builtin
 #
 #     # OpenBSD
 #     https://man.openbsd.org/sh -- shell builtin
@@ -2915,10 +2931,14 @@ exit 00
 #     # FreeBSD
 #     https://man.freebsd.org/cgi/man.cgi?query=unset&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD - Not directly available - try sh
+#     # NetBSD
+#     https://man.netbsd.org/sh.1 -- shell builtin
 #
 #     # OpenBSD
 #     https://man.openbsd.org/sh -- shell builtin
 #
 #     # BusyBox - Not directly available - try BusyBox sh or ash
 #
+
+
+
