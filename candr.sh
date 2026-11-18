@@ -1841,7 +1841,10 @@ exit 00
 #     # OpenBSD
 #     https://man.openbsd.org/sh -- shell builtin
 #
-#     # BusyBox - Not directly available - try BusyBox sh or ash
+#     # BusyBox
+#     https://man.archlinux.org/man/busybox.1.en#sh
+#     https://man.archlinux.org/man/busybox.1.en#ash
+#     # Per commandline: \cd\ is a shell builtin in both busybox sh and ash
 #
 #
 #
@@ -1874,6 +1877,9 @@ exit 00
 #     https://man.openbsd.org/sh -- shell builtin
 #
 #     # BusyBox - Not directly available - try BusyBox sh or ash
+#     https://man.archlinux.org/man/busybox.1.en#sh
+#     https://man.archlinux.org/man/busybox.1.en#ash
+#     # Per commandline: shell builtin in both busybox sh and ash
 #
 #
 #
@@ -1944,6 +1950,9 @@ exit 00
 #
 #     # BusyBox
 #     http://www.busybox.net/downloads/BusyBox.html#echo
+#     https://man.archlinux.org/man/busybox.1.en#sh
+#     https://man.archlinux.org/man/busybox.1.en#ash
+#     # Per commandline: also shell builtin in both busybox sh and ash
 #
 #
 #
@@ -2151,6 +2160,9 @@ exit 00
 #     https://man.openbsd.org/sh -- shell builtin
 #
 #     # BusyBox - Not directly available - try BusyBox sh or ash
+#     https://man.archlinux.org/man/busybox.1.en#sh
+#     https://man.archlinux.org/man/busybox.1.en#ash
+#     # Per commandline: shell builtin in both busybox sh and ash
 #
 #
 #
@@ -2318,6 +2330,9 @@ exit 00
 #
 #     # BusyBox
 #     http://www.busybox.net/downloads/BusyBox.html#printf
+#     https://man.archlinux.org/man/busybox.1.en#sh
+#     https://man.archlinux.org/man/busybox.1.en#ash
+#     # Per commandline: also shell builtin in both busybox sh and ash
 #
 #
 #
@@ -2353,6 +2368,9 @@ exit 00
 #
 #     # BusyBox
 #     http://www.busybox.net/downloads/BusyBox.html#pwd
+#     https://man.archlinux.org/man/busybox.1.en#sh
+#     https://man.archlinux.org/man/busybox.1.en#ash
+#     # Per commandline: also a shell builtin in both busybox sh and ash
 #
 #
 #
@@ -2484,11 +2502,13 @@ exit 00
 #     # OpenBSD
 #     https://man.openbsd.org/sh
 #
-#     # BusyBox -- exists in BusyBox, but the documentations is where??
+#     # BusyBox -- exists in BusyBox, but the full documentations is where??
 #     http://www.busybox.net/downloads/BusyBox.html#sh
+#     https://man.archlinux.org/man/busybox.1.en#sh
 #     
 #       # See also, BusyBox ash
 #       http://www.busybox.net/downloads/BusyBox.html#ash
+#       https://man.archlinux.org/man/busybox.1.en#ash
 #
 #
 #
@@ -2558,6 +2578,9 @@ exit 00
 #
 #     # BusyBox
 #     http://www.busybox.net/downloads/BusyBox.html#test
+#     https://man.archlinux.org/man/busybox.1.en#sh
+#     https://man.archlinux.org/man/busybox.1.en#ash
+#     # Per commandline: also a shell builtin in both busybox sh and ash
 #
 #
 #
@@ -2596,6 +2619,9 @@ exit 00
 #
 #     # BusyBox
 #     http://www.busybox.net/downloads/BusyBox.html#true
+#     https://man.archlinux.org/man/busybox.1.en#sh
+#     https://man.archlinux.org/man/busybox.1.en#ash
+#     # Per commandline: also a shell builtin in both busybox sh and ash
 #
 #
 #
@@ -2628,7 +2654,10 @@ exit 00
 #     # OpenBSD 
 #     https://man.openbsd.org/sh -- shell builtin
 #
-#     # BusyBox - Not directly available - try BusyBox sh or ash
+#     # BusyBox
+#     https://man.archlinux.org/man/busybox.1.en#sh
+#     https://man.archlinux.org/man/busybox.1.en#ash
+#     # Per commandline: shell builtin in both busybox sh and ash
 #
 #
 #
@@ -2659,7 +2688,10 @@ exit 00
 #     # OpenBSD
 #     https://man.openbsd.org/sh -- shell builtin
 #
-#     # BusyBox - Not directly available - try BusyBox sh or ash
+#     # BusyBox
+#     https://man.archlinux.org/man/busybox.1.en#sh
+#     https://man.archlinux.org/man/busybox.1.en#ash
+#     # Per commandline: shell builtin in both busybox sh and ash
 #
 #
 #
@@ -2689,7 +2721,10 @@ exit 00
 #     # OpenBSD
 #     https://man.openbsd.org/sh -- shell builtin
 #
-#     # BusyBox - Not directly available - try BusyBox sh or ash
+#     # BusyBox
+#     https://man.archlinux.org/man/busybox.1.en#sh
+#     https://man.archlinux.org/man/busybox.1.en#ash
+#     # Per commandline: shell builtin in both busybox sh and ash
 #
 #
 #
@@ -2720,7 +2755,10 @@ exit 00
 #     # OpenBSD
 #     https://man.openbsd.org/sh -- shell builtin
 #
-#     # BusyBox - Not directly available - try BusyBox sh or ash
+#     # BusyBox
+#     https://man.archlinux.org/man/busybox.1.en#sh
+#     https://man.archlinux.org/man/busybox.1.en#ash
+#     # Per commandline: shell builtin in both busybox sh and ash
 #
 #
 #
@@ -2751,7 +2789,10 @@ exit 00
 #     # OpenBSD
 #     https://man.openbsd.org/sh -- shell builtin
 #
-#     # BusyBox - Not directly available - try BusyBox sh or ash
+#     # BusyBox
+#     https://man.archlinux.org/man/busybox.1.en#sh
+#     https://man.archlinux.org/man/busybox.1.en#ash
+#     # Per commandline: shell builtin in both busybox sh and ash
 #
 #
 #
@@ -2782,7 +2823,10 @@ exit 00
 #     # OpenBSD
 #     https://man.openbsd.org/sh -- shell builtin
 #
-#     # BusyBox - Not directly available - try BusyBox sh or ash
+#     # BusyBox
+#     https://man.archlinux.org/man/busybox.1.en#sh
+#     https://man.archlinux.org/man/busybox.1.en#ash
+#     # Per commandline: shell builtin in both busybox sh and ash
 #
 #
 #
@@ -2813,7 +2857,10 @@ exit 00
 #     # OpenBSD
 #     https://man.openbsd.org/sh -- shell builtin
 #
-#     # BusyBox - Not directly available - try BusyBox sh or ash
+#     # BusyBox
+#     https://man.archlinux.org/man/busybox.1.en#sh
+#     https://man.archlinux.org/man/busybox.1.en#ash
+#     # Per commandline: shell builtin in both busybox sh and ash
 #
 #
 #
@@ -2844,7 +2891,10 @@ exit 00
 #     # OpenBSD
 #     https://man.openbsd.org/sh -- shell builtin
 #
-#     # BusyBox - Not directly available - try BusyBox sh or ash
+#     # BusyBox
+#     https://man.archlinux.org/man/busybox.1.en#sh
+#     https://man.archlinux.org/man/busybox.1.en#ash
+#     # Per commandline: shell builtin in both busybox sh and ash
 #
 #
 #
@@ -2875,7 +2925,10 @@ exit 00
 #     # OpenBSD
 #     https://man.openbsd.org/sh -- shell builtin
 #
-#     # BusyBox - Not directly available - try BusyBox sh or ash
+#     # BusyBox
+#     https://man.archlinux.org/man/busybox.1.en#sh
+#     https://man.archlinux.org/man/busybox.1.en#ash
+#     # Per commandline: shell builtin in both busybox sh and ash
 #
 #
 #
@@ -2906,7 +2959,10 @@ exit 00
 #     # OpenBSD
 #     https://man.openbsd.org/sh -- shell builtin
 #
-#     # BusyBox - Not directly available - try BusyBox sh or ash
+#     # BusyBox
+#     https://man.archlinux.org/man/busybox.1.en#sh
+#     https://man.archlinux.org/man/busybox.1.en#ash
+#     # Per commandline: shell builtin in both busybox sh and ash
 #
 #
 #
@@ -2937,8 +2993,10 @@ exit 00
 #     # OpenBSD
 #     https://man.openbsd.org/sh -- shell builtin
 #
-#     # BusyBox - Not directly available - try BusyBox sh or ash
+#     # BusyBox
+#     https://man.archlinux.org/man/busybox.1.en#sh
+#     https://man.archlinux.org/man/busybox.1.en#ash
+#     # Per commandline: shell builtin in both busybox sh and ash
 #
-
 
 
