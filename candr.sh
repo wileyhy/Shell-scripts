@@ -2,7 +2,7 @@
 # candr.xtrace / canonicalize-dir.sh
 # shellcheck disable=SC2028,SC2268,SC2310,SC2329
 #
-#   Script is unfinished - 16 Nov 2026 WY
+#   Script is unfinished - 17 Nov 2026 WY
 #
 #
 #   Manual canonicalization of directories. Output can be in brief or
@@ -1759,15 +1759,20 @@ exit 00
 #     # IBM (AIX)
 #
 #     # Oracle (Solaris)
-#     https://docs.oracle.com/cd/E36784_01/html/E36870/awk-1.html#scrolltoc
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/awk-1.html#scrolltoc -- AWK
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/nawk-1.html#scrolltoc -- nAWK
 #
 #     # Mac
+#     https://ss64.com/mac/awk.html
 #
 #     # FreeBSD
+#     https://man.freebsd.org/cgi/man.cgi?query=awk&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
 #     # NetBSD
+#     https://man.netbsd.org/awk.1
 #
 #     # OpenBSD
+#     https://man.openbsd.org/awk.1
 #
 #     # BusyBox
 #     http://www.busybox.net/downloads/BusyBox.html#awk
@@ -1790,12 +1795,16 @@ exit 00
 #     https://docs.oracle.com/cd/E36784_01/html/E36870/basename-1.html#scrolltoc
 #
 #     # Mac
+#     https://ss64.com/mac/basename.html
 #
 #     # FreeBSD
+#     https://man.freebsd.org/cgi/man.cgi?query=basename&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
 #     # NetBSD
+#     https://man.netbsd.org/basename.1
 #
 #     # OpenBSD
+#     https://man.openbsd.org/basename.1
 #
 #     # BusyBox
 #     http://www.busybox.net/downloads/BusyBox.html#basename
@@ -1815,15 +1824,21 @@ exit 00
 #     # IBM (AIX)
 #
 #     # Oracle (Solaris)
-#     https://docs.oracle.com/cd/E36784_01/html/E36870/cd-1.html#scrolltoc
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/cd-1.html#scrolltoc -- binary!
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/sh-1.html#scrolltoc -- shell builtin
 #
 #     # Mac
+#     https://ss64.com/mac/cd.html -- bash builtin
+#     https://ss64.com/mac/cd-zsh.html -- zsh builtin
 #
 #     # FreeBSD
+#     https://man.freebsd.org/cgi/man.cgi?query=cd&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
 #     # NetBSD
+#     https://man.netbsd.org/cd.1
 #
 #     # OpenBSD
+#     https://man.openbsd.org/sh -- shell builtin
 #
 #     # BusyBox - Not directly available - try BusyBox sh or ash
 #
@@ -1842,15 +1857,20 @@ exit 00
 #     # IBM (AIX)
 #
 #     # Oracle (Solaris)
-#     https://docs.oracle.com/cd/E36784_01/html/E36870/command-1.html#scrolltoc
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/command-1.html#scrolltoc -- binary!
+#     # No shell builtin
 #
 #     # Mac
+#     https://ss64.com/mac/command.html -- bash and zsh builtins; just one man page, though
 #
 #     # FreeBSD
+#     https://man.freebsd.org/cgi/man.cgi?query=command&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
 #     # NetBSD
+#       NA
 #
 #     # OpenBSD
+#     https://man.openbsd.org/sh -- shell builtin
 #
 #     # BusyBox - Not directly available - try BusyBox sh or ash
 #
@@ -1872,12 +1892,16 @@ exit 00
 #     https://docs.oracle.com/cd/E36784_01/html/E36870/dirname-1.html#scrolltoc
 #
 #     # Mac
+#     https://ss64.com/mac/dirname.html
 #
 #     # FreeBSD
+#     https://man.freebsd.org/cgi/man.cgi?query=dirname&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
 #     # NetBSD
+#     https://man.netbsd.org/dirname.1
 #
 #     # OpenBSD
+#     https://man.openbsd.org/dirname
 #
 #     # BusyBox
 #     http://www.busybox.net/downloads/BusyBox.html#dirname
@@ -1900,14 +1924,21 @@ exit 00
 #     # IBM (AIX)
 #
 #     # Oracle (Solaris)
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/echo-1.html#scrolltoc -- binary!
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/sh-1.html#scrolltoc -- shell builtin
 #
 #     # Mac
+#     https://ss64.com/mac/echo.html -- bash builtin
+#     # Apparently there\s a zsh builtin echo, but the man page link points to \alias\
 #
 #     # FreeBSD
+#     https://man.freebsd.org/cgi/man.cgi?query=echo&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
 #     # NetBSD
+#     https://man.netbsd.org/echo.1
 #
 #     # OpenBSD
+#     https://man.openbsd.org/echo -- echo
 #
 #     # BusyBox
 #     http://www.busybox.net/downloads/BusyBox.html#echo
@@ -1927,14 +1958,19 @@ exit 00
 #     # IBM (AIX)
 #
 #     # Oracle (Solaris)
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/env-1.html#scrolltoc
 #
 #     # Mac
+#     https://ss64.com/mac/env.html
 #
 #     # FreeBSD
+#     https://man.freebsd.org/cgi/man.cgi?query=env&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
 #     # NetBSD
+#     https://man.netbsd.org/env.1
 #
 #     # OpenBSD
+#     https://man.openbsd.org/env
 #
 #     # BusyBox
 #     http://www.busybox.net/downloads/BusyBox.html#env
@@ -1963,14 +1999,19 @@ exit 00
 #     # IBM (AIX)
 #
 #     # Oracle (Solaris)
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/file-1.html#scrolltoc
 #
 #     # Mac
+#     https://ss64.com/mac/file.html
 #
 #     # FreeBSD
+#     https://man.freebsd.org/cgi/man.cgi?query=file&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
 #     # NetBSD
+#     https://man.netbsd.org/file.1
 #
 #     # OpenBSD
+#     https://man.openbsd.org/file
 #
 #     # BusyBox
 #       NA
@@ -1990,14 +2031,19 @@ exit 00
 #     # IBM (AIX)
 #
 #     # Oracle (Solaris)
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/find-1.html#scrolltoc
 #
 #     # Mac
+#     https://ss64.com/mac/find.html
 #
 #     # FreeBSD
+#     https://man.freebsd.org/cgi/man.cgi?query=find&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
 #     # NetBSD
+#     https://man.netbsd.org/find.1
 #
 #     # OpenBSD
+#     https://man.openbsd.org/find
 #
 #     # BusyBox
 #     http://www.busybox.net/downloads/BusyBox.html#find
@@ -2023,14 +2069,19 @@ exit 00
 #     # IBM (AIX)
 #
 #     # Oracle (Solaris)
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/getconf-1.html#scrolltoc
 #
 #     # Mac
+#       NA
 #
 #     # FreeBSD
+#     https://man.freebsd.org/cgi/man.cgi?query=getconf&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
 #     # NetBSD
+#     https://man.netbsd.org/getconf.1
 #
 #     # OpenBSD
+#     https://man.openbsd.org/getconf
 #
 #     # BusyBox
 #       NA
@@ -2050,14 +2101,19 @@ exit 00
 #     # IBM (AIX)
 #
 #     # Oracle (Solaris)
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/grep-1.html#scrolltoc
 #
 #     # Mac
+#     https://ss64.com/mac/grep.html
 #
 #     # FreeBSD
+#     https://man.freebsd.org/cgi/man.cgi?query=grep&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
 #     # NetBSD
+#     https://man.netbsd.org/grep.1
 #
 #     # OpenBSD
+#     https://man.openbsd.org/grep
 #
 #     # BusyBox
 #     http://www.busybox.net/downloads/BusyBox.html#grep
@@ -2077,14 +2133,20 @@ exit 00
 #     # IBM (AIX)
 #
 #     # Oracle (Solaris)
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/hash-1.html#scrolltoc -- binary!
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/sh-1.html#scrolltoc -- shell builtin
 #
 #     # Mac
+#     https://ss64.com/mac/hash.html -- bash builtin
 #
 #     # FreeBSD
+#     https://man.freebsd.org/cgi/man.cgi?query=hash&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
 #     # NetBSD
+#       NA
 #
 #     # OpenBSD
+#     https://man.openbsd.org/sh -- shell builtin
 #
 #     # BusyBox - Not directly available - try BusyBox sh or ash
 #
@@ -2103,14 +2165,19 @@ exit 00
 #     # IBM (AIX)
 #
 #     # Oracle (Solaris)
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/id-1g.html#scrolltoc
 #
 #     # Mac
+#     https://ss64.com/mac/id.html
 #
 #     # FreeBSD
+#     https://man.freebsd.org/cgi/man.cgi?query=id&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
 #     # NetBSD
+#     https://man.netbsd.org/id.1
 #
 #     # OpenBSD
+#     https://man.openbsd.org/id
 #
 #     # BusyBox
 #     http://www.busybox.net/downloads/BusyBox.html#id
@@ -2163,14 +2230,19 @@ exit 00
 #     # IBM (AIX)
 #
 #     # Oracle (Solaris)
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/logname-1.html#scrolltoc
 #
 #     # Mac
+#     https://ss64.com/mac/logname.html
 #
 #     # FreeBSD
+#     https://man.freebsd.org/cgi/man.cgi?query=logname&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
 #     # NetBSD
+#     https://man.netbsd.org/logname.1
 #
 #     # OpenBSD
+#     https://man.openbsd.org/logname
 #
 #     # BusyBox
 #     http://www.busybox.net/downloads/BusyBox.html#logname
@@ -2190,14 +2262,19 @@ exit 00
 #     # IBM (AIX)
 #
 #     # Oracle (Solaris)
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/pathchk-1.html#scrolltoc
 #
 #     # Mac
+#       NA
 #
 #     # FreeBSD
+#     https://man.freebsd.org/cgi/man.cgi?query=pathchk&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
 #     # NetBSD
+#     https://man.netbsd.org/pathchk.1
 #
 #     # OpenBSD
+#       NA
 #
 #     # BusyBox
 #       NA
@@ -2220,14 +2297,21 @@ exit 00
 #     # IBM (AIX)
 #
 #     # Oracle (Solaris)
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/printf-1.html#scrolltoc
+#     # No shell builtin
 #
 #     # Mac
+#     https://ss64.com/mac/printf.html -- bash builtin
 #
 #     # FreeBSD
+#     https://man.freebsd.org/cgi/man.cgi?query=printf&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
 #     # NetBSD
+#     https://man.netbsd.org/printf.1
 #
 #     # OpenBSD
+#     https://man.openbsd.org/printf -- binary
+#     https://man.openbsd.org/sh -- shell builtin
 #
 #     # BusyBox
 #     http://www.busybox.net/downloads/BusyBox.html#printf
@@ -2242,22 +2326,26 @@ exit 00
 #     https://pubs.opengroup.org/onlinepubs/9799919799/utilities/pwd.html
 #
 #     # GNU
-#     https://www.gnu.org/software/coreutils/manual/html_node/pwd-invocation.html
-#
-#       # Also, Bash:
-#       https://www.gnu.org/software/bash/manual/html_node/Bourne-Shell-Builtins.html#index-pwd
+#     https://www.gnu.org/software/coreutils/manual/html_node/pwd-invocation.html -- binary
+#     https://www.gnu.org/software/bash/manual/html_node/Bourne-Shell-Builtins.html#index-pwd -- shell builtin
 #
 #     # IBM (AIX)
 #
 #     # Oracle (Solaris)
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/pwd-1.html#scrolltoc -- binary!
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/sh-1.html#scrolltoc -- shell builtin
 #
 #     # Mac
+#     https://ss64.com/mac/pwd.html -- binary? man page is silent re builtins
 #
 #     # FreeBSD
+#     https://man.freebsd.org/cgi/man.cgi?query=pwd&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html 
 #
 #     # NetBSD
+#     https://man.netbsd.org/pwd.1
 #
 #     # OpenBSD
+#     https://man.openbsd.org/pwd
 #
 #     # BusyBox
 #     http://www.busybox.net/downloads/BusyBox.html#pwd
@@ -2342,14 +2430,19 @@ exit 00
 #     # IBM (AIX)
 #
 #     # Oracle (Solaris)
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/sed-1.html#scrolltoc
 #
 #     # Mac
+#     https://ss64.com/mac/sed.html
 #
 #     # FreeBSD
+#     https://man.freebsd.org/cgi/man.cgi?query=sed&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
 #     # NetBSD
+#     https://man.netbsd.org/sed.1
 #
 #     # OpenBSD
+#     https://man.openbsd.org/sed
 #
 #     # BusyBox
 #     http://www.busybox.net/downloads/BusyBox.html#sed
@@ -2369,14 +2462,23 @@ exit 00
 #     # IBM (AIX)
 #
 #     # Oracle (Solaris)
-#
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/sh-1.html#scrolltoc
+#       #_ Note, Oracle has separate man pages for each of the shells:
+#       #     bash, beansh, csh, git-sh, jsh, ksh, ksh88, ksh93, sh, tcsh, zsh.
+#       https://docs.oracle.com/cd/E36784_01/html/E36870/shell-builtins-1.html#scrolltoc
+#   
 #     # Mac
+#     https://ss64.com/mac/bash.html -- has --posix mode
+#     https://ss64.com/mac/zsh.html -- Zsh builtins on MacOS
 #
 #     # FreeBSD
+#     https://man.freebsd.org/cgi/man.cgi?query=sed&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
 #     # NetBSD
+#     https://man.netbsd.org/sh.1
 #
 #     # OpenBSD
+#     https://man.openbsd.org/sh
 #
 #     # BusyBox -- exists in BusyBox, but the documentations is where??
 #     http://www.busybox.net/downloads/BusyBox.html#sh
@@ -2399,14 +2501,19 @@ exit 00
 #     # IBM (AIX)
 #
 #     # Oracle (Solaris)
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/strings-1.html#scrolltoc
 #
 #     # Mac
+#       NA
 #
 #     # FreeBSD
+#     https://man.freebsd.org/cgi/man.cgi?query=strings&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
 #     # NetBSD
+#     https://man.netbsd.org/strings.1
 #
 #     # OpenBSD
+#     https://man.openbsd.org/strings
 #
 #     # BusyBox
 #     http://www.busybox.net/downloads/BusyBox.html#strings
@@ -2429,14 +2536,20 @@ exit 00
 #     # IBM (AIX)
 #
 #     # Oracle (Solaris)
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/test-1.html#scrolltoc -- binary!
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/sh-1.html#scrolltoc -- shell builtin
 #
 #     # Mac
+#     https://ss64.com/mac/test.html -- bash utility and zsh builtin; one man page
 #
 #     # FreeBSD
+#     https://man.freebsd.org/cgi/man.cgi?query=test&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
 #     # NetBSD
+#     https://man.netbsd.org/test.1
 #
 #     # OpenBSD
+#     https://man.openbsd.org/test -- binary
 #
 #     # BusyBox
 #     http://www.busybox.net/downloads/BusyBox.html#test
@@ -2459,14 +2572,21 @@ exit 00
 #     # IBM (AIX)
 #
 #     # Oracle (Solaris)
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/true-1.html#scrolltoc
+#     # No shell builtin
 #
 #     # Mac
+#     https://ss64.com/mac/true.html -- binary?
 #
 #     # FreeBSD
+#     https://man.freebsd.org/cgi/man.cgi?query=true&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
 #     # NetBSD
+#     https://man.netbsd.org/true.1
 #
 #     # OpenBSD
+#     https://man.openbsd.org/true -- binary
+#     https://man.openbsd.org/sh -- shell builtin
 #
 #     # BusyBox
 #     http://www.busybox.net/downloads/BusyBox.html#true
@@ -2486,14 +2606,20 @@ exit 00
 #     # IBM (AIX)
 #
 #     # Oracle (Solaris)
-#
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/unalias-1.html#scrolltoc
+#     # No shell builtin
+#     
 #     # Mac
+#     https://ss64.com/mac/alias.html -- bash builtin
+#     https://ss64.com/mac/alias-zsh.html -- zsh builtin
 #
 #     # FreeBSD
+#     https://man.freebsd.org/cgi/man.cgi?query=unalias&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD
+#     # NetBSD - Not directly available - try sh
 #
-#     # OpenBSD
+#     # OpenBSD 
+#     https://man.openbsd.org/sh -- shell builtin
 #
 #     # BusyBox - Not directly available - try BusyBox sh or ash
 #
@@ -2511,14 +2637,19 @@ exit 00
 #     # IBM (AIX)
 #
 #     # Oracle (Solaris)
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/break-1.html#scrolltoc -- binary
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/sh-1.html#scrolltoc -- shell builtin
 #
 #     # Mac
+#     https://ss64.com/mac/break.html -- bash and zsdh builtins; one man page
 #
 #     # FreeBSD
+#     https://man.freebsd.org/cgi/man.cgi?query=break&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD
+#     # NetBSD - Not directly available - try sh
 #
 #     # OpenBSD
+#     https://man.openbsd.org/sh -- shell builtin
 #
 #     # BusyBox - Not directly available - try BusyBox sh or ash
 #
@@ -2536,14 +2667,18 @@ exit 00
 #     # IBM (AIX)
 #
 #     # Oracle (Solaris)
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/sh-1.html#scrolltoc -- shell builtin
 #
 #     # Mac
+#       NA?
 #
 #     # FreeBSD
+#     https://man.freebsd.org/cgi/man.cgi?query=continue&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD
+#     # NetBSD - Not directly available - try sh
 #
 #     # OpenBSD
+#     https://man.openbsd.org/sh -- shell builtin
 #
 #     # BusyBox - Not directly available - try BusyBox sh or ash
 #
@@ -2561,14 +2696,19 @@ exit 00
 #     # IBM (AIX)
 #
 #     # Oracle (Solaris)
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/continue-1.html#scrolltoc -- binary?
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/sh-1.html#scrolltoc -- shell builtin
 #
 #     # Mac
+#     https://ss64.com/mac/continue.html -- bash and zsh builtins; one man page
 #
 #     # FreeBSD
+#     https://man.freebsd.org/cgi/man.cgi?query=continue&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD
+#     # NetBSD - Not directly available - try sh
 #
 #     # OpenBSD
+#     https://man.openbsd.org/sh -- shell builtin
 #
 #     # BusyBox - Not directly available - try BusyBox sh or ash
 #
@@ -2586,14 +2726,19 @@ exit 00
 #     # IBM (AIX)
 #
 #     # Oracle (Solaris)
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/eval-1.html#scrolltoc -- binary?
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/sh-1.html#scrolltoc -- shell builtin
 #
 #     # Mac
+#     https://ss64.com/mac/eval.html -- bash and zsh builtin; one man page
 #
 #     # FreeBSD
+#     https://man.freebsd.org/cgi/man.cgi?query=eval&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD
+#     # NetBSD - Not directly available - try sh
 #
 #     # OpenBSD
+#     https://man.openbsd.org/sh -- shell builtin
 #
 #     # BusyBox - Not directly available - try BusyBox sh or ash
 #
@@ -2611,14 +2756,19 @@ exit 00
 #     # IBM (AIX)
 #
 #     # Oracle (Solaris)
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/exit-1.html#scrolltoc -- binary?
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/sh-1.html#scrolltoc -- shell builtin
 #
 #     # Mac
+#     https://ss64.com/mac/exit.html -- bash and zsh builtin; one man page
 #
 #     # FreeBSD
+#     https://man.freebsd.org/cgi/man.cgi?query=exit&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD
+#     # NetBSD - Not directly available - try sh
 #
 #     # OpenBSD
+#     https://man.openbsd.org/sh -- shell builtin
 #
 #     # BusyBox - Not directly available - try BusyBox sh or ash
 #
@@ -2636,14 +2786,19 @@ exit 00
 #     # IBM (AIX)
 #
 #     # Oracle (Solaris)
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/readonly-1.html#scrolltoc -- binary?
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/sh-1.html#scrolltoc -- shell builtin
 #
 #     # Mac
+#     https://ss64.com/mac/readonly.html -- bash utility
 #
 #     # FreeBSD
+#     https://man.freebsd.org/cgi/man.cgi?query=readonly&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD
+#     # NetBSD - Not directly available - try sh
 #
 #     # OpenBSD
+#     https://man.openbsd.org/sh -- shell builtin
 #
 #     # BusyBox - Not directly available - try BusyBox sh or ash
 #
@@ -2661,14 +2816,19 @@ exit 00
 #     # IBM (AIX)
 #
 #     # Oracle (Solaris)
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/return-1.html#scrolltoc -- binary?
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/sh-1.html#scrolltoc -- shell builtin
 #
 #     # Mac
+#     https://ss64.com/mac/return.html -- bash builtin
 #
 #     # FreeBSD
+#     https://man.freebsd.org/cgi/man.cgi?query=return&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD
+#     # NetBSD - Not directly available - try sh
 #
 #     # OpenBSD
+#     https://man.openbsd.org/sh -- shell builtin
 #
 #     # BusyBox - Not directly available - try BusyBox sh or ash
 #
@@ -2686,14 +2846,19 @@ exit 00
 #     # IBM (AIX)
 #
 #     # Oracle (Solaris)
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/set-1.html#scrolltoc -- binary?
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/sh-1.html#scrolltoc -- shell builtin
 #
 #     # Mac
+#     https://ss64.com/mac/set.html -- bash builtin
 #
 #     # FreeBSD
+#     https://man.freebsd.org/cgi/man.cgi?query=set&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD
+#     # NetBSD - Not directly available - try sh
 #
 #     # OpenBSD
+#     https://man.openbsd.org/sh -- shell builtin
 #
 #     # BusyBox - Not directly available - try BusyBox sh or ash
 #
@@ -2711,14 +2876,19 @@ exit 00
 #     # IBM (AIX)
 #
 #     # Oracle (Solaris)
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/shift-1.html#scrolltoc -- binary?
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/sh-1.html#scrolltoc -- shell builtin
 #
 #     # Mac
+#     https://ss64.com/mac/shift.html -- bash builtin
 #
 #     # FreeBSD
+#     https://man.freebsd.org/cgi/man.cgi?query=shift&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD
+#     # NetBSD - Not directly available - try sh
 #
 #     # OpenBSD
+#     https://man.openbsd.org/sh -- shell builtin
 #
 #     # BusyBox - Not directly available - try BusyBox sh or ash
 #
@@ -2736,17 +2906,19 @@ exit 00
 #     # IBM (AIX)
 #
 #     # Oracle (Solaris)
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/unset-1.html#scrolltoc -- binary?
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/sh-1.html#scrolltoc -- shell builtin
 #
 #     # Mac
+#     https://ss64.com/mac/unset.html -- bash builtin
 #
 #     # FreeBSD
+#     https://man.freebsd.org/cgi/man.cgi?query=unset&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD
+#     # NetBSD - Not directly available - try sh
 #
 #     # OpenBSD
+#     https://man.openbsd.org/sh -- shell builtin
 #
 #     # BusyBox - Not directly available - try BusyBox sh or ash
 #
-
-
-
