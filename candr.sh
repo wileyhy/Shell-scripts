@@ -11,6 +11,7 @@
 #
 #   Goals: that this script...
 #     - Is written for any Posix-2008 compliant shell.
+#     - Avoid any local side-effects.
 #
 #   (c) Wiley Young 2026
 #
@@ -22,8 +23,14 @@
 
 
 
-#_
 #_  Notes:
+#_  - In Posix 2008 \sh\, the ENV parameter is not expanded in a non-
+#_  interactive shell. So any value of ENV won\t have any effect.
+#_  - In Bash 5.3, the BASH_ENV parameter is sourced by non-
+#_  interactive shells. When bash is invoked as \sh\, it enters posix
+#_  mode after reading the startup files. So a value of BASH_ENV
+#_  could have an effect, but only before the script is executed, so
+#_  unsetting BASH_ENV would not have any effect.
 #_  - In Posix 2008 \awk\, \split()\ is indeed specified.
 #_  - BusyBox \grep\ does have \-q\ as of v.1.37.0.
 #_  - Variable \cmd_str\ is defined as a particular invocation so
@@ -109,7 +116,7 @@
 
   #> Debug.
   #reset; clear; grep -v -F -e '#>' -e '#_' ./candr.xtrace 2>&1 | less -RNS
-  \set -x #>
+  #\set -x #>
   \set -e #>
   \set -f #> Disable pathame expansion.
   #\: #>
@@ -131,6 +138,7 @@
 # its spec. for \command\.
 #
 # Value of IFS should include one tabstop.
+old_ifs=${IFS}
 IFS=' 	
 '
 \unalias -a
@@ -145,15 +153,16 @@ else
 fi
 
 # PATH could be set as RO.
+old_path=${PATH}
 if PATH="$( command -p getconf PATH ):${PATH}"
 then
   : "t:$?:${LINENO}" #>
 else
   : "f:$?:${LINENO}" #>
   printf '%s: Notice: Assignment to variable failed: %s\n' \
-    "$0" "PATH"
+    "$0" "PATH" 1>&2
   printf '%s: Notice: Value of variable %s: <%s>\n' \
-    "$0" "PATH" "${PATH}"
+    "$0" "PATH" "${PATH}" 1>&2
 fi
   #>
   #exit "${LINENO}" #>
@@ -161,28 +170,32 @@ fi
 
 
 :;: "Settings"
-POSIXLY_CORRECT=yes
 set -a
 set -u
 set -C
 
 
 :;: "Bootstrap Variables"
+POSIXLY_CORRECT=yes
+old_lc_all=${LC_ALL:-}
 LC_ALL=C
+old_ld_preload=${LD_PRELOAD:-}
+unset LD_PRELOAD
+allow_input_to_begin_with_hyphens=no
 global_return_code=0
 special_variable_zero=${0#./}
 special_variable_zero=${0##*/}
-usage_msg="${special_variable_zero}:
+usage_msg="
 
-  Usage: The first argument may be an option flag. If both -b and
-  -v are present, the last one shall apply.
+  Usage: The first argument may be an option flag. If both \\-b\\
+  and \\-v\\ are present, the last one shall apply.
 
   "${special_variable_zero}" [-b|-h|-v|-V] [FILES] ...
     --brief     -b    Default format: '%s\n' [output]
     --help      -h    Print this message and exit.
     --verbose   -v    Format: '%s: \"%s\" -> %s\n' \$0 [input] [output]
     --version   -V    Print version information and exit.
-    --                End of options; let hyphens begin strings.
+    --                End of options / hyphen strings allowed.
 "
 # These variables are in use locally.
 unset -v \
@@ -225,7 +238,7 @@ __exit_per_global_return_code__ ()
     : "t:$?:${LINENO}" #>
   else
     : "f:$?:${LINENO}" #>
-    __print_stderr_notice__ "Exiting"
+    __print_notice_stderr__ "Exiting"
     exit "${global_return_code}"
   fi
   : "Leaving __exit_per_global_return_code__";: #>
@@ -241,100 +254,175 @@ __input_required__ ()
     : "t:$?:${LINENO}" #>
   else
     : "f:$?:${LINENO}" #>
-    __print_stderr_error__ "Input required"
-    printf '%s\n' "${usage_msg:?}" 1>&2
+    __print_error_stderr__ "Input required"
+    __print_message_stderr__ "${usage_msg:?}"
     exit 1
   fi
   : "Leaving __input_required__";: #>
 }
 
-: "Define functions:   __print_stderr_error__" #>
-# Usage:
-#        __print_stderr_error__   [Description]         [Data]
-#        __print_stderr_error__   "Zero length input" \
-#                                    (Latter inputs can be omitted)
+: "Define function:    __make_sure_variable_is_defined_properly__" #>
+# Test possible values of HOME.
 #
-__print_stderr_error__   ()
+# Usage:
+#  __make_sure_variable_is_defined_properly__ \
+#          [Unexpanded variable name] [affirmative|negative|yes]
+#
+#>  If any of the tests fail, then \assign_variable\ should have
+#>  a value of \yes__*\. If all of the tests succeed then
+#>  \assign_variable\ should have a value of either
+#>  \affirmative__*\ or \negative__*\.
+#>
+#>  \yes\ and \affirmative\ indicate that the value of the
+#>  unexpanded variable name at $1 should be changed; \negative\
+#>  indicates that the value of the value of $1 should not be
+#>  changed.
+#>
+#>  Valid values for $2 and their meanings are:
+#>
+#>    values            # tests       change variable?
+#>    ####################################################
+#>    yes               # failed      do change
+#>    affirmative       # passed      do change
+#>    negative          # passed      do not change
+#>
+__make_sure_variable_is_defined_properly__ ()
 {
-  __xtrace_off__
-  __print_stderr_message__ "Error"   "$1" "${2:-}"
-  __reset_xtrace__
-  : "Leaving __print_stderr_error__";: #>
+  if __check_for_variable_assignment__ "$1"
+  then
+    : "t:$?:${LINENO}" #>
+    if test -n "$1" # Confirmation test
+    then
+      : "t:$?:${LINENO}" #>
+      if eval test -e '$'"$1"
+      then
+        : "t:$?:${LINENO}" #>
+        if eval test -d '$'"$1"
+        then
+          : "t:$?:${LINENO}" #>
+          if eval test -x '$'"$1"
+          then
+            : "t:$?:${LINENO}" #>
+            assign_variable="$2__$1"
+          else
+            : "f:0:${LINENO}" "Directory is not searchable" #>
+            assign_variable="yes__$1"
+          fi
+        else
+          : "f:0:${LINENO}" "Filesystem object is not a directory" #>
+          assign_variable="yes__$1"
+        fi
+      else
+        : "f:0:${LINENO}" "Filesystem object DNE" #>
+        assign_variable="yes__$1"
+      fi
+    else
+      : "f:0:${LINENO}" #>
+      assign_variable="yes__$1"
+      __print_error_stderr__ "Conflicting data" "Line:${LINENO}"
+      exit 2
+    fi
+  else
+    : "f:0:${LINENO}" "Parameter $1 is undefined" #>
+    assign_variable="yes__$1"
+  fi
+  : "Leaving __make_sure_variable_is_defined_properly__'";: #>
 }
 
-: "Define function:    __print_stderr_message__" #>
+: "Define function:    __print_error_stderr__" #>
 # Usage:
-#         __print_stderr_message__ [Message type] [Description] [Data]
-#         __print_stderr_message__ "Warning"      "$1"          "${2:-}"
-#         __print_stderr_message__ "Exiting" (Latter inputs can be omitted)
+#        __print_error_stderr__   [Description]         [Data]
+#        __print_error_stderr__   "Zero length input" \
+#                                    (Latter inputs can be omitted)
 #
-__print_stderr_message__ ()
+__print_error_stderr__   ()
 {
-  local_posparm_one=${1:-}
-  local_posparm_two=${2:-}
-  local_posparm_three=${3:-}
+  __xtrace_off__ "${LINENO}"
+  __print_message_stderr__ \
+    "${special_variable_zero}" "Error"   "$1" "${2:-}"
+  __reset_xtrace__
+  : "Leaving __print_error_stderr__";: #>
+}
 
-  if test -n "${local_posparm_one}"
-  then
-    : "t:$?:${LINENO}" #>
-    local_posparm_one=": ${local_posparm_one}"
-  else : "f:$?:${LINENO}" #>
-  fi
+: "Define function:    __print_message_stderr__" #>
+# Usage:
+#         __print_message_stderr__ [Message type] [Description] [Data]
+#         __print_message_stderr__ "Warning"      "$1"          "${2:-}"
+#         __print_message_stderr__ "Exiting" (Latter inputs can be omitted)
+#
+__print_message_stderr__ ()
+{
+  # Format
+  #   Just execute as many if..fi\s as there are assigned positional
+  # parameters.
+  while true
+  do 
+    if test -n "${1:-}"
+    then
+      : "t:$?:${LINENO}" #>
+      local_posparm_one=${1}
+    else
+      : "f:$?:${LINENO}" #>
+      break
+    fi
 
-  if test -n "${local_posparm_two}"
-  then
-    : "t:$?:${LINENO}" #>
-    local_posparm_two=": ${local_posparm_two}"
-  else : "f:$?:${LINENO}" #>
-  fi
+    if test -n "${2:-}"
+    then
+      : "t:$?:${LINENO}" #>
+      local_posparm_two=": $2"
+    else
+      : "f:$?:${LINENO}" #>
+      break
+    fi
 
-  if test -n "${local_posparm_three}"
-  then
-    : "t:$?:${LINENO}" #>
-    local_posparm_three=": <${local_posparm_three}>"
-  else : "f:$?:${LINENO}" #>
-  fi
+    if test -n "${3:-}"
+    then
+      : "t:$?:${LINENO}" #>
+      local_posparm_three=": $3"
+    else
+      : "f:$?:${LINENO}" #>
+      break
+    fi
 
+    if test -n "${4:-}"
+    then
+      : "t:$?:${LINENO}"
+      local_posparm_four=$( printf ': %b%s%b' '\x27' "$4" '\x27' )
+    else
+      : "f:$?:${LINENO}"
+      break
+    fi
+
+    break
+  done
+
+  # Print
   printf '%s%s%s%s\n' 1>&2 \
-    "${special_variable_zero}" \
-    "${local_posparm_one}" \
-    "${local_posparm_two}" \
-    "${local_posparm_three}"
+    "${local_posparm_one:-}" \
+    "${local_posparm_two:-}" \
+    "${local_posparm_three:-}" \
+    "${local_posparm_four:-}"
 
-  # If the script is sourced, or \dot\ted in, then it might be
-  # more useful if the script avoided having any side-effects on
-  # the local execution environment.
   unset -v \
     local_posparm_one \
     local_posparm_two \
-    local_posparm_three
-  : "Leaving __print_stderr_message__";: #>
+    local_posparm_three \
+    local_posparm_four
+  : "Leaving __print_message_stderr__";: #>
 }
 
-: "Define functions:   __print_stderr_notice__" #>
+: "Define function:    __print_notice_stderr__" #>
 # Usage:
-#        __print_stderr_notice__  [Description]   [Data]
-#        __print_stderr_notice__  "Value of PATH" "${PATH}"
+#        __print_notice_stderr__  [Description]   [Data]
+#        __print_notice_stderr__  "Value of PATH" "${PATH}"
 #
-__print_stderr_notice__  ()
+__print_notice_stderr__  ()
 {
-  __xtrace_off__
-  __print_stderr_message__ "Notice"  "$1" "${2:-}"
+  __xtrace_off__ "${LINENO}"
+  __print_message_stderr__ \
+    "${special_variable_zero}" "Notice"  "$1" "${2:-}"
   __reset_xtrace__
-  : "Leaving __print_stderr_notice__";: #>
-}
-
-: "Define functions:   __print_stderr_warning__" #>
-# Usage:
-#         __print_stderr_warning__  [Description]     [Data]
-#         __print_stderr_warning__  "Command failed"  "hash -r"
-#
-__print_stderr_warning__ ()
-{
-  __xtrace_off__
-  __print_stderr_message__ "Warning" "$1" "${2:-}"
-  __reset_xtrace__
-  : "Leaving __print_stderr_warning__";: #>
+  : "Leaving __print_notice_stderr__";: #>
 }
 
 : "Define function:    __print_results__" #>
@@ -378,7 +466,7 @@ __print_results__ ()
       printf '%s\n' "$2"
       ;;
     * )
-      __print_stderr_error__ "Unreachable code" "Line:${LINENO}"
+      __print_error_stderr__ "Unreachable code" "Line:${LINENO}"
       exit 2
       ;;
   esac
@@ -386,7 +474,21 @@ __print_results__ ()
     #exit "${LINENO}" #>
 }
 
-: "Define functions:   __reset_xtrace__" #>
+: "Define function:    __print_warning_stderr__" #>
+# Usage:
+#         __print_warning_stderr__  [Description]     [Data]
+#         __print_warning_stderr__  "Command failed"  "hash -r"
+#
+__print_warning_stderr__ ()
+{
+  __xtrace_off__ "${LINENO}"
+  __print_message_stderr__ \
+    "${special_variable_zero}" "Warning" "$1" "${2:-}"
+  __reset_xtrace__
+  : "Leaving __print_warning_stderr__";: #>
+}
+
+: "Define function:    __reset_xtrace__" #>
 # Usage:
 #     __reset_xtrace__  [No arguments]
 #
@@ -395,7 +497,7 @@ __reset_xtrace__ ()
   :
 }
 
-: "Define functions:   __xtrace_off__" #>
+: "Define function:    __xtrace_off__" #>
 # Unset xtrace and prepare to restore state.
 #   Usage:
 #     __xtrace_off__ [No arguments]
@@ -403,16 +505,24 @@ __reset_xtrace__ ()
 __xtrace_off__ ()
 {
   case $- in
-    *x*) set +x; __reset_xtrace__ () { printf '# __reset_xtrace__\n'; set -x; }; ;;
-    *) __reset_xtrace__ () { :; } ;;
+    *x*) set +x
+      __reset_xtrace__ ()
+      {
+        printf '# __reset_xtrace__\n' 1>&2
+        set -x
+      }
+      ;;
+    *) __reset_xtrace__ ()
+      { :;}
+      ;;
   esac
   : "Leaving __xtrace_off__";: #>
 }
   #> Debug
-  # __print_stderr_notice__ "Exiting"
-  # __print_stderr_error__ "Input contains one or more non-printable strings"
-  # __print_stderr_warning__ "Command failed" "hash -r"
-  # __print_stderr_notice__ "Value of PATH" "${PATH}"
+  # __print_notice_stderr__ "Exiting"
+  # __print_error_stderr__ "Input contains one or more non-printable strings"
+  # __print_warning_stderr__ "Command failed" "hash -r"
+  # __print_notice_stderr__ "Value of PATH" "${PATH}"
   #exit "${LINENO}" #>
   #>
   #> Script Testing:
@@ -466,6 +576,7 @@ then
       --verbose | -v* | --verb* )
         : "\\case\\ branch: \\--verbose\\" #>
         output_verbose_on=yes
+        allow_input_to_begin_with_hyphens=yes
         if shift 2>/dev/null
         then
           : "t:$?:${LINENO}"
@@ -483,12 +594,26 @@ then
       -- )
         : "\\case\\ branch: \\--\\: let strings begin with hypens" #>
         output_verbose_on=no
+        allow_input_to_begin_with_hyphens=yes
         shift
         break
         ;;
       * )
         : "\\case\\ branch: no options: use default: \\--brief\\" #>
         output_verbose_on=no
+        :;: "Is \\allow_input_to_begin_with_hyphens\\ set \\yes\\?"
+        if test "yes" = "${allow_input_to_begin_with_hyphens}"
+        then
+          : "t:$?:${LINENO}"
+        else
+          : "f:$?:${LINENO}"
+          __print_error_stderr__ "invalid option" "$1"
+          __print_message_stderr__ "$(
+            printf 'Try %b%s%b for more information.\n' \
+              '\x27' "${special_variable_zero} --help" '\x27'
+            )"
+          exit 1
+        fi
         break
         ;;
     esac
@@ -534,19 +659,19 @@ else
     if eval "${cmd_str}" 2>/dev/null
     then
       : "f:$?:${LINENO}" #>
-      __print_stderr_warning__ "Command failed" "${cmd_str}"
+      __print_warning_stderr__ "Command failed" "${cmd_str}"
     else : "t:$?:${LINENO}" #>
     fi
-    unset cmd_str
   else
     : "f:$?:${LINENO}" #>
     print_value_of_path=yes
-    __print_stderr_notice__ "Command is not in PATH" "hash"
+    __print_notice_stderr__ "Command is not in PATH" "hash"
   fi
 fi
+unset -v cmd_str
 
 # If xtrace is on, turn it off.
-__xtrace_off__
+__xtrace_off__ "${LINENO}"
   #>
   #> Script Testing:
   #enable -n break #>
@@ -597,7 +722,7 @@ do
       #>
     global_return_code=${ec0:=$?}
     print_value_of_path=yes
-    __print_stderr_notice__ "Command is not in PATH" "${aA}"
+    __print_notice_stderr__ "Command is not in PATH" "${aA}"
   fi
 
   # Unset user functions
@@ -610,22 +735,28 @@ do
     : "f:$?:${LINENO}" #>
     : "Command \\${cmd_str}\\ returned non-zero"
   fi
-  unset cmd_str
 done
-unset aA #>
+unset -v \
+  aA \
+  ec0 \
+  cmd_str
   #>
   #exit "${LINENO}" #>
 
+
 # If xtrace was on, restore it.
 __reset_xtrace__
+
 
 # Print the value of PATH if necessary.
 if test "yes" = "${print_value_of_path}"
 then
   : "t:$?:${LINENO}" #>
-  __print_stderr_notice__ "Value of PATH" "${PATH}"
+  __print_notice_stderr__ "Value of PATH" "${PATH}"
 else : "f:$?${LINENO}" #>
 fi
+unset -v print_value_of_path
+
 
 # Built-ins: Special and Regular
 #
@@ -647,7 +778,7 @@ do
   else
     : "f:${ec1:=$?}" #>
     global_return_code=${ec1:=$?}
-    __print_stderr_notice__ "Built-in is not available" "${bB}"
+    __print_notice_stderr__ "Built-in is not available" "${bB}"
   fi
 
   # Unset user functions
@@ -660,9 +791,11 @@ do
     : "f:$?:${LINENO}" #>
     : "Command \\${cmd_str}\\ returned non-zero"
   fi
-  unset cmd_str
 done
-unset bB #>
+unset -v \
+  bB \
+  ec1 \
+  cmd_str
   #>
   #exit "${LINENO}" #>
 
@@ -702,7 +835,7 @@ for cC in "$@"
 do
     :;: "Top of loop";: #>
     #>
-  __xtrace_off__
+  __xtrace_off__ "${LINENO}"
 
   # Remove NULs and nonprintable bytes.
   stdout_00_tr_d=$( printf '%s' "${cC}" | tr -d '\0' )
@@ -716,7 +849,7 @@ do
   else
     : "f:${ec2:=$?}:${LINENO}" #>
     global_return_code=${ec2:=$?}
-    __print_stderr_error__ \
+    __print_error_stderr__ \
         "Input contains one or more non-printable strings"
     break 1
   fi
@@ -730,7 +863,7 @@ do
   else
     : "f:${ec3:=$?}:${LINENO}" #>
     global_return_code=${ec3:=$?}
-    __print_stderr_error__ "Zero length input"
+    __print_error_stderr__ "Zero length input"
     break 1
   fi
     #>
@@ -743,17 +876,17 @@ do
   # non-searchable directory, and for any character that is invalid in
   # its containing directory, under Posix 2008.
   #
-  if pathchk -- "${cC}"
+  if pathchk -- "${cC}" 1>&2
   then
     : "t:$?:${LINENO}" #>
   else
     : "f:${ec4:=$?}:${LINENO}" #>
     global_return_code=${ec4:=$?}
-    __print_stderr_error__ \
+    __print_error_stderr__ \
       "Error received from \\pathchk [no args]\\" "${cC}"
 
     # Print the values of the relevant variables.
-    __print_stderr_notice__ "Values of relevant system parameters"
+    __print_notice_stderr__ "Values of relevant system parameters"
     getconf -a | grep -E -e ^"PATH_MAX" -e ^"NAME_MAX"
     break 1
   fi
@@ -767,27 +900,28 @@ do
   else
     : "f:${ec5:=$?}:${LINENO}" #>
     global_return_code=${ec5:=$?}
-    __print_stderr_error__ \
+    __print_error_stderr__ \
       "Filenames beginning with a hyphen are disallowed" "${cC}"
     break 1
   fi
 
   # Filenames beginning with a hyphen are disallowed, part 2\2.
-  if pathchk -P -- "${cC}"
+  if pathchk -P -- "${cC}" 1>&2
   then
     : "t:$?:${LINENO}" #>
   else
     : "f:${ec6:=$?}:${LINENO}" #>
     global_return_code=${ec6:=$?}
-    __print_stderr_error__ \
+    __print_error_stderr__ \
       "Error received from \\pathchk -P\\" "${cC}"
-    __print_stderr_error__ \
+    __print_error_stderr__ \
       "Filenames beginning with a hyphen are disallowed" "${cC}"
     break 1
   fi
 done
 unset -v \
   cC \
+  ec1 ec2 ec3 ec4 ec5 ec6 \
   stdout_00_tr_d \
   stdout_01_strings_n1 \
   stdout_02_cut
@@ -807,11 +941,9 @@ __exit_per_global_return_code__
 #>
 :;: "Section on \\getconf\\" #>
 #>  _POSIX_NO_TRUNC   # for Pathname Resolution
-#>  BASH_ENV          # for \bash\
 #>  BLOCK_SIZE        # for GNU Coreutils
 #>  BLOCKSIZE         # for GNU Coreutils
 #>  CDPATH            # for \cd\
-#>  ENV               # for \sh\
 #>  HOME              # for \cd\
 #>  LC_ALL            # Common
 #>  LD_PRELOAD        # for paranoia ;-P
@@ -827,10 +959,10 @@ __exit_per_global_return_code__
 if printf '%s' "$-" | grep -q -e "x" #>
 then #>
   : "t:$?:${LINENO}" "Parameter values per \\getconf\\" #>
-  __xtrace_off__; set +x #>
+  __xtrace_off__ "${LINENO}" #>
   stdout_03_getconf_a=$( getconf -a ) #>
   #>
-  for dD in _POSIX_NO_TRUNC BASH_ENV CDPATH ENV HOME LC_ALL LD_PRELOAD NAME_MAX PATH_MAX OLDPWD PATH PWD SYMLOOP_MAX #>
+  for dD in _POSIX_NO_TRUNC CDPATH HOME LC_ALL LD_PRELOAD NAME_MAX PATH_MAX OLDPWD PATH PWD SYMLOOP_MAX #>
   do #>
       #echo "dD: ${dD}" #>
     #+ Note, this particular \if..fi\ is a workaround for errexit
@@ -840,12 +972,12 @@ then #>
     else : "f:$?:${LINENO}" #>
     fi #>
   done #>
-  unset dD #>
   __reset_xtrace__ #>
-else
-  echo "f:$?:${LINENO}" "Section on \\getconf\\: xtrace is off" #>
+#else : #> xtrace is off, so this line doesn\t print.
 fi #>
-unset -v stdout_03_getconf_a #>
+unset -v \
+  dD \
+  stdout_03_getconf_a
   #>
   #set -x #>
   #: exit "${LINENO}" #>
@@ -858,15 +990,16 @@ unset -v stdout_03_getconf_a #>
   #LD_PRELOAD=foo #>
   #eE=LD_PRELOAD #>
   #set | grep -E "^${eE}=.+"; echo $? #>
-  #unset LD_PRELOAD; echo $? #>
+  #unset -v LD_PRELOAD; echo $? #>
   #set | grep -E "^${eE}=.+"; echo $? #>
   #LD_PRELOAD=x #>
   #>
+
+old_oldpwd=${OLDPWD:-}
+old_cdpath=${CDPATH:-}
+
 for eE in \
-  BASH_ENV \
   CDPATH \
-  ENV \
-  LD_PRELOAD \
   OLDPWD
 do
     #: "eE: ${eE}" #>
@@ -887,20 +1020,21 @@ do
       if __check_for_variable_assignment__ "${eE}"
       then
         : "t:$?:${LINENO}" #>
-        __print_stderr_error__ "${eE} is defined"
+        __print_error_stderr__ "${eE} is defined"
         exit 1
       else : "f:$?:${LINENO}" "${eE} is undefined / zero length";: #>
       fi
     else
       : "f:$?:${LINENO}" #>
-      __print_stderr_notice__ \
+      __print_notice_stderr__ \
         "Command \\unset\\ failed" "\\${cmd_str}\\"
     fi
-    unset cmd_str
   else : "f:$?:${LINENO}" "${eE} is undefined or of zero length";: #>
   fi
 done
-unset eE
+unset -v \
+  eE \
+  cmd_str
   #>
   #set -x #>
   : exit "${LINENO}" #>
@@ -963,73 +1097,7 @@ else
   : "f:0:${LINENO}" #>
   assign_variable=no
 
-  : "Define function:  __make_sure_variable_is_defined_properly__"
-  # Test possible values of HOME.
-  #
-  # Usage:
-  #  __make_sure_variable_is_defined_properly__ \
-  #          [Unexpanded variable name] [affirmative|negative|yes]
-  #
-  #>  If any of the tests fail, then \assign_variable\ should have
-  #>  a value of \yes__*\. If all of the tests succeed then
-  #>  \assign_variable\ should have a value of either
-  #>  \affirmative__*\ or \negative__*\.
-  #>
-  #>  \yes\ and \affirmative\ indicate that the value of the
-  #>  unexpanded variable name at $1 should be changed; \negative\
-  #>  indicates that the value of the value of $1 should not be
-  #>  changed.
-  #>
-  #>  Valid values for $2 and their meanings are:
-  #>
-  #>    values            # tests       change variable?
-  #>    ####################################################
-  #>    yes               # failed      do change
-  #>    affirmative       # passed      do change
-  #>    negative          # passed      do not change
-  #>
-  __make_sure_variable_is_defined_properly__ ()
-  {
-    if __check_for_variable_assignment__ "$1"
-    then
-      : "t:$?:${LINENO}" #>
-      if test -n "$1" # Confirmation test
-      then
-        : "t:$?:${LINENO}" #>
-        if eval test -e '$'"$1"
-        then
-          : "t:$?:${LINENO}" #>
-          if eval test -d '$'"$1"
-          then
-            : "t:$?:${LINENO}" #>
-            if eval test -x '$'"$1"
-            then
-              : "t:$?:${LINENO}" #>
-              assign_variable="$2__$1"
-            else
-              : "f:0:${LINENO}" "Directory is not searchable" #>
-              assign_variable="yes__$1"
-            fi
-          else
-            : "f:0:${LINENO}" "Filesystem object is not a directory" #>
-            assign_variable="yes__$1"
-          fi
-        else
-          : "f:0:${LINENO}" "Filesystem object DNE" #>
-          assign_variable="yes__$1"
-        fi
-      else
-        : "f:0:${LINENO}" #>
-        assign_variable="yes__$1"
-        __print_stderr_error__ "Conflicting data" "Line:${LINENO}"
-        exit 2
-      fi
-    else
-      : "f:0:${LINENO}" "Parameter $1 is undefined" #>
-      assign_variable="yes__$1"
-    fi
-    : "Leaving __make_sure_variable_is_defined_properly__'";: #>
-  }
+  # Bug, is \assign_variable\ extraneous?
 
   __make_sure_variable_is_defined_properly__ \
       "HOME" "negative"
@@ -1039,7 +1107,7 @@ else
   #_   - negative__HOME, or
   #_   - yes__HOME
   #_
-  unset assign_variable
+  unset -v assign_variable
     #>
     #set -x #>
     : exit "${LINENO}" #>
@@ -1090,14 +1158,14 @@ else
       fi
     else
       : "f:$?:${LINENO}" #>
-      __print_stderr_error__ \
+      __print_error_stderr__ \
         "Username is not present in /etc/passwd " "${stdout_06_id_un}"
       exit 1
     fi
   else
     : "f:$?:${LINENO}" #>
-    __print_stderr_error__ "...there are systems without \"/etc/passwd\"???"
-    __print_stderr_notice__ "Exiting"
+    __print_error_stderr__ "...there are systems without \"/etc/passwd\"???"
+    __print_notice_stderr__ "Exiting"
     exit 2
   fi
     #>
@@ -1113,7 +1181,7 @@ else
     found_home=NA
   else
     : "f:$?:${LINENO}" #>
-    __print_stderr_notice__ "Conflicting data" "Line:${LINENO}"
+    #__print_notice_stderr__ "Conflicting data" "Line:${LINENO}"
     confirmed_home="::Conflicting_data::"
     found_home=""
     #_
@@ -1140,7 +1208,7 @@ else
       else
         : "f:$?:${LINENO}" #>
         found_home="::No_valid_values_were_found::"
-        __print_stderr_warning__ "Value not found" "HOME"
+        __print_warning_stderr__ "Value not found" "HOME"
         exit 2
       fi
     fi
@@ -1159,7 +1227,7 @@ else
     #_   - affirmative__confirmed_home, or
     #_   - yes__confirmed_home
     #_
-    unset assign_variable
+    unset -v assign_variable
   else
     : "f:$?:${LINENO}" #>
     alter_confirmed_home_value="yes"
@@ -1175,10 +1243,10 @@ else
       #_   - affirmative__found_home, or
       #_   - yes__found_home
       #_
-      unset assign_variable
+      unset -v assign_variable
     else
       : "f:$?:${LINENO}" #>
-      __print_stderr_notice__ \
+      __print_notice_stderr__ \
           "Data from both sources are of zero length" "Line:${LINENO}"
     fi
   fi
@@ -1262,7 +1330,7 @@ else
         #_
         #_ So both values passed all of the tests.
         #_
-        # __print_stderr_warning__ "Conflicting data" "Line:${LINENO}"
+        # __print_warning_stderr__ "Conflicting data" "Line:${LINENO}"
         #_ If \found_home\ also passed all of the tests, then use that
         #_ one because \found_home\ is based on /etc/passwd.
         #_
@@ -1375,6 +1443,12 @@ else
     #>
 fi
 unset -v \
+  alter_confirmed_home_value \
+  alter_found_home_value \
+  alter_original_home_value \
+  assign_variable \
+  confirmed_home \
+  found_home \
   stdout_04_readonly_awk \
   stdout_05_tilde_exp \
   stdout_06_id_un \
@@ -1466,7 +1540,7 @@ else
     : "t:$?:${LINENO}" #>
   else
     : "f:$?:${LINENO}" #>
-    __print_stderr_error__ "Command \\cd\\ failed" "cd; cd -P ."
+    __print_error_stderr__ "Command \\cd\\ failed" "cd; cd -P ."
     exit 1
   fi
 
@@ -1478,7 +1552,7 @@ else
 
     # Bug, try also \pwd -P\
 
-    __print_stderr_warning__ "Parameter is undefined" "PWD"
+    __print_warning_stderr__ "Parameter is undefined" "PWD"
   fi
 fi
 
@@ -1515,7 +1589,7 @@ do
     continue 1
   fi
 done
-unset fF
+unset -v fF
 
 
   # Buggy - rewrite script from this point on.
@@ -1655,7 +1729,39 @@ unset fF
   #exit "${LINENO}" #>
 
 
-exit 00
+:;: "Clean up"
+# In case the script is sourced.
+CDPATH=${old_cdpath:-}
+IFS=${old_ifs:-}
+LC_ALL=${old_lc_all:-}
+OLDPATH=${old_oldpath:-}
+PATH=${old_path:-}
+unset -v \
+  POSIXLY_CORRECT \
+  global_return_code \
+  old_cdpath \
+  old_ifs \
+  old_lc_all \
+  old_ld_preload \
+  old_oldpath \
+  old_path \
+  output_verbose_on \
+  special_variable_zero \
+  usage_msg
+  #old_bash_env \
+  #old_env \
+unset -f \
+  __check_for_variable_assignment__ \
+  __exit_per_global_return_code__ \
+  __input_required__ \
+  __make_sure_variable_is_defined_properly__ \
+  __print_error_stderr__ \
+  __print_message_stderr__ \
+  __print_notice_stderr__ \
+  __print_results__ \
+  __print_warning_stderr__ \
+  __reset_xtrace__
+exit 000
 
 
 #######  URL\s  #######
@@ -2997,6 +3103,3 @@ exit 00
 #     https://man.archlinux.org/man/busybox.1.en#sh
 #     https://man.archlinux.org/man/busybox.1.en#ash
 #     # Per commandline: shell builtin in both busybox sh and ash
-#
-
-
