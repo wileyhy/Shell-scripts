@@ -23,7 +23,15 @@
 
 
 
+
 #_  Notes:
+#_  - Not all \unset\s have \-f\, ie, Solaris 11.2 \sh\. However, the
+#_  Solaris 11.2 man page for unset\1\ reads, \\For each name,
+#_  \unset\ removes the corresponding variable or function value.\\
+#_  Still, historical versions of \unset\ may not have included the
+#_  unsetting of functions.
+#_  - In Posix 2008, for Special Builtin \unset\, option \-f\ is
+#_  specified.
 #_  - In Posix 2008 \sh\, the ENV parameter is not expanded in a non-
 #_  interactive shell. So any value of ENV won\t have any effect.
 #_  - In Bash 5.3, the BASH_ENV parameter is sourced by non-
@@ -36,9 +44,8 @@
 #_  - Variable \cmd_str_*\ is defined as a particular invocation so
 #_  that (a) command execution and (b) the various related messages
 #_  can all use or reference the precise same command string.
-#_  - Re variables \local__posparm_one\ and similar: the variables
-#_  are named \\local__\\, but the variables themselves are of global
-#_  scope. Bug?
+#_  - Re variables \function_variable__1\ and similar: these are
+#_  global variables.
 #_  - Re how filenames beginning with a hyphen are disallowed, see
 #_  Posix 2008, General Concepts 4.7.
 #_  - On Fedora 45, the default values according to \getconf\:
@@ -116,7 +123,7 @@
 
   #> Debug.
   #reset; clear; grep -v -F -e '#>' -e '#_' ./candr.xtrace 2>&1 | less -RNS
-  #\set -x #>
+  \set -x #>
   \set -e #>
   \set -f #> Disable pathame expansion.
   #\: #>
@@ -203,10 +210,9 @@ unset \
   ec0 ec1 ec2 ec3 ec4 ec5 ec6
 
 
+:;: "Define functions -- Level 1"
 
-:;: "Functions"
-
-: "Define function:    __check_for_variable_assignment__" #>
+: "Define function:    __check_for_variable_assignment__" #>          level 1
 # Usage:
 #     __check_for_variable_assignment__ [Unexpanded variable name]
 #     __check_for_variable_assignment__ HOME
@@ -225,7 +231,156 @@ __check_for_variable_assignment__ ()
   : "Leaving __check_for_variable_assignment__";: #>
 }
 
-: "Define function:    __exit_per_return_code_for_script__" #>
+: "Define function:    __print_message_stderr__" #>                   level 1
+# Usage:
+#         __print_message_stderr__ [Message type] [Description] [Data]
+#         __print_message_stderr__ "Warning"      "$1"          "${2:-}"
+#         __print_message_stderr__ "Exiting" (Latter inputs can be omitted)
+#
+__print_message_stderr__ ()
+{
+  # Format
+  #   Just execute as many if..fi\s as there are assigned positional
+  # parameters.
+  while true
+  do 
+    if test -n "${1:-}"
+    then
+      : "t:$?:${LINENO}" #>
+      function_variable__1=${1}
+    else
+      : "f:$?:${LINENO}" #>
+      break
+    fi
+
+    if test -n "${2:-}"
+    then
+      : "t:$?:${LINENO}" #>
+      function_variable__2=": $2"
+    else
+      : "f:$?:${LINENO}" #>
+      break
+    fi
+
+    if test -n "${3:-}"
+    then
+      : "t:$?:${LINENO}" #>
+      function_variable__3=": $3"
+    else
+      : "f:$?:${LINENO}" #>
+      break
+    fi
+
+    if test -n "${4:-}"
+    then
+      : "t:$?:${LINENO}"
+      function_variable__4=$( printf ': %b%s%b' '\x27' "$4" '\x27' )
+    else
+      : "f:$?:${LINENO}"
+      break
+    fi
+
+    break
+  done
+
+  # Print
+  printf '%s%s%s%s\n' 1>&2 \
+    "${function_variable__1:-}" \
+    "${function_variable__2:-}" \
+    "${function_variable__3:-}" \
+    "${function_variable__4:-}"
+
+  unset \
+    function_variable__1 \
+    function_variable__2 \
+    function_variable__3 \
+    function_variable__4
+  : "Leaving __print_message_stderr__";: #>
+}
+
+: "Define function:    __reset_xtrace__" #>                           level 1
+# Usage:
+#     __reset_xtrace__  [No arguments]
+#
+__reset_xtrace__ ()
+{
+  :
+}
+
+: "Define function:    __xtrace_off__" #>                             level 1
+# Unset xtrace and prepare to restore state.
+#   Usage:
+#     __xtrace_off__ [No arguments]
+#
+__xtrace_off__ ()
+{
+  case $- in
+    *x*) set +x
+      __reset_xtrace__ ()
+      {
+        printf '# __reset_xtrace__\n' 1>&2
+        set -x
+      }
+      ;;
+    *) __reset_xtrace__ ()
+      { :;}
+      ;;
+  esac
+  : "Leaving __xtrace_off__";: #>
+}
+
+
+:;: "Define functions -- Level 2"
+
+: "Define function:    __print_error_stderr__" #>                     level 2
+# Usage:
+#        __print_error_stderr__   [Description]         [Data]
+#        __print_error_stderr__   "Zero length input" \
+#                                    (Latter inputs can be omitted)
+#
+__print_error_stderr__   ()
+{
+  __xtrace_off__ "${LINENO}"
+  __print_message_stderr__ \
+    "${special_variable_zero}" "Error"   "$1" "${2:-}"
+  __reset_xtrace__
+  : "Leaving __print_error_stderr__";: #>
+}
+
+: "Define function:    __print_notice_stderr__" #>                    level 2
+# Usage:
+#        __print_notice_stderr__  [Description]   [Data]
+#        __print_notice_stderr__  "Value of PATH" "${PATH}"
+#
+__print_notice_stderr__  ()
+{
+  __xtrace_off__ "${LINENO}"
+  __print_message_stderr__ \
+    "${special_variable_zero}" "Notice"  "$1" "${2:-}"
+  __reset_xtrace__
+  : "Leaving __print_notice_stderr__";: #>
+}
+
+: "Define function:    __print_warning_stderr__" #>                   level 2
+# Usage:
+#         __print_warning_stderr__  [Description]     [Data]
+#         __print_warning_stderr__  "Command failed"  "hash -r"
+#
+__print_warning_stderr__ ()
+{
+  __xtrace_off__ "${LINENO}"
+  __print_message_stderr__ \
+    "${special_variable_zero}" "Warning" "$1" "${2:-}"
+  __reset_xtrace__
+  : "Leaving __print_warning_stderr__";: #>
+}
+
+
+:;: "Define functions -- Level 3"
+
+  # Bug, order of definition MATTERS.
+  
+: "Define function:    __exit_per_return_code_for_script__" #>        level 3
 # If the value of variable \return_code_for_script\ is non-zero, then
 # exit.
 #   Usage:
@@ -244,7 +399,7 @@ __exit_per_return_code_for_script__ ()
   : "Leaving __exit_per_return_code_for_script__";: #>
 }
 
-: "Define function:    __input_required__" #>
+: "Define function:    __input_required__" #>                         level 3
 # Usage:    __input_required__ "$@"
 #
 __input_required__ ()
@@ -261,7 +416,7 @@ __input_required__ ()
   : "Leaving __input_required__";: #>
 }
 
-: "Define function:    __make_sure_variable_is_defined_properly__" #>
+: "Define function:    __make_sure_variable_is_defined_properly__" #> level 3
 # Test possible values of HOME.
 #
 # Usage:
@@ -329,103 +484,7 @@ __make_sure_variable_is_defined_properly__ ()
   : "Leaving __make_sure_variable_is_defined_properly__'";: #>
 }
 
-: "Define function:    __print_error_stderr__" #>
-# Usage:
-#        __print_error_stderr__   [Description]         [Data]
-#        __print_error_stderr__   "Zero length input" \
-#                                    (Latter inputs can be omitted)
-#
-__print_error_stderr__   ()
-{
-  __xtrace_off__ "${LINENO}"
-  __print_message_stderr__ \
-    "${special_variable_zero}" "Error"   "$1" "${2:-}"
-  __reset_xtrace__
-  : "Leaving __print_error_stderr__";: #>
-}
-
-: "Define function:    __print_message_stderr__" #>
-# Usage:
-#         __print_message_stderr__ [Message type] [Description] [Data]
-#         __print_message_stderr__ "Warning"      "$1"          "${2:-}"
-#         __print_message_stderr__ "Exiting" (Latter inputs can be omitted)
-#
-__print_message_stderr__ ()
-{
-  # Format
-  #   Just execute as many if..fi\s as there are assigned positional
-  # parameters.
-  while true
-  do 
-    if test -n "${1:-}"
-    then
-      : "t:$?:${LINENO}" #>
-      local__posparm_one=${1}
-    else
-      : "f:$?:${LINENO}" #>
-      break
-    fi
-
-    if test -n "${2:-}"
-    then
-      : "t:$?:${LINENO}" #>
-      local__posparm_two=": $2"
-    else
-      : "f:$?:${LINENO}" #>
-      break
-    fi
-
-    if test -n "${3:-}"
-    then
-      : "t:$?:${LINENO}" #>
-      local__posparm_three=": $3"
-    else
-      : "f:$?:${LINENO}" #>
-      break
-    fi
-
-    if test -n "${4:-}"
-    then
-      : "t:$?:${LINENO}"
-      local__posparm_four=$( printf ': %b%s%b' '\x27' "$4" '\x27' )
-    else
-      : "f:$?:${LINENO}"
-      break
-    fi
-
-    break
-  done
-
-  # Print
-  printf '%s%s%s%s\n' 1>&2 \
-    "${local__posparm_one:-}" \
-    "${local__posparm_two:-}" \
-    "${local__posparm_three:-}" \
-    "${local__posparm_four:-}"
-
-  unset \
-    local__posparm_one \
-    local__posparm_two \
-    local__posparm_three \
-    local__posparm_four
-  : "Leaving __print_message_stderr__";: #>
-}
-
-: "Define function:    __print_notice_stderr__" #>
-# Usage:
-#        __print_notice_stderr__  [Description]   [Data]
-#        __print_notice_stderr__  "Value of PATH" "${PATH}"
-#
-__print_notice_stderr__  ()
-{
-  __xtrace_off__ "${LINENO}"
-  __print_message_stderr__ \
-    "${special_variable_zero}" "Notice"  "$1" "${2:-}"
-  __reset_xtrace__
-  : "Leaving __print_notice_stderr__";: #>
-}
-
-: "Define function:    __print_results__" #>
+: "Define function:    __print_results__" #>                          level 3
 # Usage:  __print_results__ [Script input] \
 #                                   [${canpth}|${nsfod}] \
 #                                              [optional redirection]
@@ -476,50 +535,58 @@ __print_results__ ()
     #exit "${LINENO}" #>
 }
 
-: "Define function:    __print_warning_stderr__" #>
-# Usage:
-#         __print_warning_stderr__  [Description]     [Data]
-#         __print_warning_stderr__  "Command failed"  "hash -r"
-#
-__print_warning_stderr__ ()
-{
-  __xtrace_off__ "${LINENO}"
-  __print_message_stderr__ \
-    "${special_variable_zero}" "Warning" "$1" "${2:-}"
-  __reset_xtrace__
-  : "Leaving __print_warning_stderr__";: #>
-}
+  # Bug, how do you print functions in POSIX 2008?
 
-: "Define function:    __reset_xtrace__" #>
-# Usage:
-#     __reset_xtrace__  [No arguments]
-#
-__reset_xtrace__ ()
-{
-  :
-}
+  #>
+  __reset_xtrace__ () { :; } #>
+  type __reset_xtrace__ #>
+  :;: #>
 
-: "Define function:    __xtrace_off__" #>
-# Unset xtrace and prepare to restore state.
-#   Usage:
-#     __xtrace_off__ [No arguments]
+: "Define function:    __unset_user_functions__" #>                   level 3
 #
-__xtrace_off__ ()
+# Usage: 
+#   __unset_user_functions__  [string]
+#   __unset_user_functions__  "${aA}"
+#   __unset_user_functions__  "${aA}"
+#
+__unset_user_functions__ ()
 {
-  case $- in
-    *x*) set +x
-      __reset_xtrace__ ()
-      {
-        printf '# __reset_xtrace__\n' 1>&2
-        set -x
-      }
-      ;;
-    *) __reset_xtrace__ ()
-      { :;}
-      ;;
-  esac
-  : "Leaving __xtrace_off__";: #>
+  :;: "Is the function defined?"
+  if type "$1" | grep "function"
+  then
+    : "t:$?:${LINENO}" #>
+    :;: "\\unset\\ of \\$1\\"
+    if unset -- "$1" #2>/dev/null
+    then
+      : "t:$?:${LINENO}" #>
+    else
+      : "f:$?:${LINENO}" #>
+    fi
+
+    :;: "Was the function actually unset?"
+    if type "$1" | grep "function"
+    then
+      : "t:$?:${LINENO}" #>
+      __print_notice_stderr__ \
+        "\\unset\\ of function failed" "$1"
+      return 1
+    else
+      : "f:$?:${LINENO}" #>
+      :;: "Yes, command \\unset\\ succeeded."
+      return 0
+    fi
+  else
+    : "f:$?:${LINENO}" #>
+    :;: "No, function \\$1\\ was not defined."
+    return 1
+  fi
 }
+  #>
+  :;: #>
+  __unset_user_functions__ "__reset_xtrace__" #>
+  type __reset_xtrace__ #>
+  exit "${LINENO}" #>
+
   #> Debug
   # __print_notice_stderr__ "Exiting"
   # __print_error_stderr__ "Input contains one or more non-printable strings"
@@ -726,16 +793,19 @@ do
     __print_notice_stderr__ "Command is not in PATH" "${aA}"
   fi
 
-  # Unset user functions
-  #+ Workaround for errexit.
-  cmd_str_01="unset -f"
-  if eval "${cmd_str_01}" -- "${aA}" 2>/dev/null
+  __unset_user_functions__ "${aA}"
+done
+do
+  if command -v -- "${bB}" >/dev/null
   then
     : "t:$?:${LINENO}" #>
   else
-    : "f:$?:${LINENO}" #>
-    : "Command \\${cmd_str_01}\\ returned non-zero"
+    : "f:${ec1:=$?}" #>
+    return_code_for_script=${ec1:=$?}
+    __print_notice_stderr__ "Built-in is not available" "${bB}"
   fi
+
+  __unset_user_functions__ "${bB}"
 done
   #>
   #exit "${LINENO}" #>
@@ -777,16 +847,7 @@ do
     __print_notice_stderr__ "Built-in is not available" "${bB}"
   fi
 
-  # Unset user functions
-  #+ Workaround for errexit.
-  cmd_str_02="unset -f"
-  if eval "${cmd_str_02}" -- "${bB}" 2>/dev/null
-  then
-    : "t:$?:${LINENO}" #>
-  else
-    : "f:$?:${LINENO}" #>
-    : "Command \\${cmd_str_02}\\ returned non-zero"
-  fi
+  __unset_user_functions__ "${bB}"
 done
   #>
   #exit "${LINENO}" #>
@@ -1727,10 +1788,11 @@ set -- \
     home__original \
   global__assign_variable \
   global__output_verbose_on \
-  local__posparm_one \
-    local__posparm_two \
-    local__posparm_three \
-    local__posparm_four \
+  function_variable__1 \
+    function_variable__2 \
+    function_variable__3 \
+    function_variable__4 \
+    function_variable__cmd_str \
   print_value_of_path \
   return_code_for_script \
   stdout_00_tr_d \
@@ -1762,6 +1824,7 @@ set -- \
   __print_notice_stderr__ \
   __print_results__ \
   __print_warning_stderr__ \
+  __unset_user_functions__ \
   __reset_xtrace__
 
 if unset -f "$@" 2>/dev/null
@@ -1772,6 +1835,7 @@ else
   unset "$@"
 fi
 
+:;: "Done"
 exit 000
 
 
