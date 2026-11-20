@@ -25,6 +25,10 @@
 
 
 #_  Notes:
+#_  - In Busybox 1.37, \unset\ without \-f\ doesn\t unset functions.
+#_      :-(
+#_  - In POSIX 2008, for printing functions use \type\. The \set\
+#_  builtin does\t print them yet, as it does in version 5.3 of Bash.
 #_  - Not all \unset\s have \-f\, ie, Solaris 11.2 \sh\. However, the
 #_  Solaris 11.2 man page for unset\1\ reads, \\For each name,
 #_  \unset\ removes the corresponding variable or function value.\\
@@ -123,7 +127,7 @@
 
   #> Debug.
   #reset; clear; grep -v -F -e '#>' -e '#_' ./candr.xtrace 2>&1 | less -RNS
-  \set -x #>
+  #\set -x #>
   \set -e #>
   \set -f #> Disable pathame expansion.
   #\: #>
@@ -208,6 +212,8 @@ usage_msg="
 unset \
   aA bB cC dD eE fF \
   ec0 ec1 ec2 ec3 ec4 ec5 ec6
+  #>
+  set -x #>
 
 
 :;: "Define functions -- Level 1"
@@ -535,8 +541,6 @@ __print_results__ ()
     #exit "${LINENO}" #>
 }
 
-  # Bug, how do you print functions in POSIX 2008?
-
   #>
   __reset_xtrace__ () { :; } #>
   type __reset_xtrace__ #>
@@ -586,7 +590,7 @@ __unset_user_functions__ ()
   __unset_user_functions__ "__reset_xtrace__" #>
   type __reset_xtrace__ #>
   exit "${LINENO}" #>
-
+  #>
   #> Debug
   # __print_notice_stderr__ "Exiting"
   # __print_error_stderr__ "Input contains one or more non-printable strings"
@@ -772,6 +776,7 @@ for aA in \
   "strings" \
   "test" \
   "true" \
+  "type" \
   "unalias" \
   #>
   #> count is ?
