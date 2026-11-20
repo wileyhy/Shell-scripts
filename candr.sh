@@ -10,7 +10,7 @@
 # operands.
 #
 #   Goals: that this script...
-#     - Is written for any Posix-2008 compliant shell.
+#     - Is written for any Posix 2008 compliant shell.
 #     - Avoid any local side-effects.
 #
 #   (c) Wiley Young 2026
@@ -28,13 +28,13 @@
 #_  - In Busybox 1.37, \unset\ without \-f\ doesn\t unset functions.
 #_      :-(
 #_  - In POSIX 2008, for printing functions use \type\. The \set\
-#_  builtin does\t print them yet, as it does in version 5.3 of Bash.
+#_  built-in does\t print them yet, as it does in version 5.3 of Bash.
 #_  - Not all \unset\s have \-f\, ie, Solaris 11.2 \sh\. However, the
 #_  Solaris 11.2 man page for unset\1\ reads, \\For each name,
 #_  \unset\ removes the corresponding variable or function value.\\
 #_  Still, historical versions of \unset\ may not have included the
 #_  unsetting of functions.
-#_  - In Posix 2008, for Special Builtin \unset\, option \-f\ is
+#_  - In Posix 2008, for Special Built-in \unset\, option \-f\ is
 #_  specified.
 #_  - In Posix 2008 \sh\, the ENV parameter is not expanded in a non-
 #_  interactive shell. So any value of ENV won\t have any effect.
@@ -50,16 +50,16 @@
 #_  can all use or reference the precise same command string.
 #_  - Re variables \function_variable__1\ and similar: these are
 #_  global variables.
-#_  - Re how filenames beginning with a hyphen are disallowed, see
-#_  Posix 2008, General Concepts 4.7.
+#_  - Re why filenames beginning with a hyphen are by default
+#_  disallowed in this script, see Posix 2008, General Concepts 4.7.
 #_  - On Fedora 45, the default values according to \getconf\:
 #_  NAME_MAX = 255; PATH_MAX = 4096
-#_  - At 11/12, all non-builtins are located in /usr/bin on
+#_  - As of 12 Nov 2026, all non-built-ins are located in /usr/bin on
 #_  Fedora 45.
 #_  - Variables of the form \ec1\ are used for transmitting the
 #_  value of the exit code from the if list to \:\ into
 #_  \return_code_for_script\.
-#_  - Special Builtins per Posix 2008: break : continue . eval exec
+#_  - Special Built-ins per Posix 2008 -- break : continue . eval exec
 #_  exit export readonly return set shift times trap unset
 #_  - \codeblocks\ is not Posix at all, 2008-2024, and not installed.
 #_  - Commands which are not Posix at all: \enable\ and \which\.
@@ -82,7 +82,7 @@
 #_  there is no overlap between said sets in the specification, but
 #_  in GNU utilities there is.
 #_  - The \-q\ option to \grep\ does exist in Posix 2008.
-#_  - In Posix-2008, the handling of \//\ is intentionally
+#_  - In Posix 2008, the handling of \//\ is intentionally
 #_  implementation defined, so catch it, flag it as an error, and
 #_  write a warning to Stderr. See spec. on \dirname\.
 #_  - Defining directories with a trailing forward slash will
@@ -96,7 +96,7 @@
 #_  Bash, attempting in a script to assign a value to a RO variable is
 #_  a fatal error, but that doesn\t appear to have been specified by
 #_  Posix in 2008.
-#_  - Names of special built-ins cannot be used as names of functions
+#_  - Names of Special Built-ins cannot be used as names of functions
 #_  (ie, \unset\).
 #_  - Option \-v\ of utility \unset\ is in fact specified in 2008.
 #_  - The \!\ keyword doesn\t print in xtrace.
@@ -216,9 +216,9 @@ unset \
   set -x #>
 
 
-:;: "Define functions -- Level 1"
+: "Define functions:  Level 1" #>
 
-: "Define function:    __check_for_variable_assignment__" #>          level 1
+: "Define function:    __check_for_variable_assignment__" #>
 # Usage:
 #     __check_for_variable_assignment__ [Unexpanded variable name]
 #     __check_for_variable_assignment__ HOME
@@ -237,7 +237,7 @@ __check_for_variable_assignment__ ()
   : "Leaving __check_for_variable_assignment__";: #>
 }
 
-: "Define function:    __print_message_stderr__" #>                   level 1
+: "Define function:    __print_message_stderr__" #>
 # Usage:
 #         __print_message_stderr__ [Message type] [Description] [Data]
 #         __print_message_stderr__ "Warning"      "$1"          "${2:-}"
@@ -304,7 +304,7 @@ __print_message_stderr__ ()
   : "Leaving __print_message_stderr__";: #>
 }
 
-: "Define function:    __reset_xtrace__" #>                           level 1
+: "Define function:    __reset_xtrace__" #>
 # Usage:
 #     __reset_xtrace__  [No arguments]
 #
@@ -313,7 +313,7 @@ __reset_xtrace__ ()
   :
 }
 
-: "Define function:    __xtrace_off__" #>                             level 1
+: "Define function:    __xtrace_off__" #>
 # Unset xtrace and prepare to restore state.
 #   Usage:
 #     __xtrace_off__ [No arguments]
@@ -336,9 +336,9 @@ __xtrace_off__ ()
 }
 
 
-:;: "Define functions -- Level 2"
+: "Define functions: Level 2" #>
 
-: "Define function:    __print_error_stderr__" #>                     level 2
+: "Define function:    __print_error_stderr__" #>
 # Usage:
 #        __print_error_stderr__   [Description]         [Data]
 #        __print_error_stderr__   "Zero length input" \
@@ -353,7 +353,7 @@ __print_error_stderr__   ()
   : "Leaving __print_error_stderr__";: #>
 }
 
-: "Define function:    __print_notice_stderr__" #>                    level 2
+: "Define function:    __print_notice_stderr__" #>
 # Usage:
 #        __print_notice_stderr__  [Description]   [Data]
 #        __print_notice_stderr__  "Value of PATH" "${PATH}"
@@ -367,7 +367,7 @@ __print_notice_stderr__  ()
   : "Leaving __print_notice_stderr__";: #>
 }
 
-: "Define function:    __print_warning_stderr__" #>                   level 2
+: "Define function:    __print_warning_stderr__" #>
 # Usage:
 #         __print_warning_stderr__  [Description]     [Data]
 #         __print_warning_stderr__  "Command failed"  "hash -r"
@@ -382,11 +382,11 @@ __print_warning_stderr__ ()
 }
 
 
-:;: "Define functions -- Level 3"
+: "Define functions: Level 3" #>
 
   # Bug, order of definition MATTERS.
   
-: "Define function:    __exit_per_return_code_for_script__" #>        level 3
+: "Define function:    __exit_per_return_code_for_script__" #>
 # If the value of variable \return_code_for_script\ is non-zero, then
 # exit.
 #   Usage:
@@ -405,7 +405,7 @@ __exit_per_return_code_for_script__ ()
   : "Leaving __exit_per_return_code_for_script__";: #>
 }
 
-: "Define function:    __input_required__" #>                         level 3
+: "Define function:    __input_required__" #>
 # Usage:    __input_required__ "$@"
 #
 __input_required__ ()
@@ -422,7 +422,7 @@ __input_required__ ()
   : "Leaving __input_required__";: #>
 }
 
-: "Define function:    __make_sure_variable_is_defined_properly__" #> level 3
+: "Define function:    __make_sure_variable_is_defined_properly__" #>
 # Test possible values of HOME.
 #
 # Usage:
@@ -490,7 +490,7 @@ __make_sure_variable_is_defined_properly__ ()
   : "Leaving __make_sure_variable_is_defined_properly__'";: #>
 }
 
-: "Define function:    __print_results__" #>                          level 3
+: "Define function:    __print_results__" #>
 # Usage:  __print_results__ [Script input] \
 #                                   [${canpth}|${nsfod}] \
 #                                              [optional redirection]
@@ -546,7 +546,7 @@ __print_results__ ()
   type __reset_xtrace__ #>
   :;: #>
 
-: "Define function:    __unset_user_functions__" #>                   level 3
+: "Define function:    __unset_user_functions__" #>
 #
 # Usage: 
 #   __unset_user_functions__  [string]
@@ -1495,7 +1495,7 @@ fi
 
 :;: "PWD aught to be defined, for \\cd\\ and \\pwd\\"
 #_ Notes,
-#_   - In Posix-2008 effects of assignments to PWD are unspecified.
+#_   - In Posix 2008 effects of assignments to PWD are unspecified.
 #_   - In Bash 5.3.9+,
 #_     - If restricted mode is enabled and PWD is undefined, a call to
 #_     \cd\ will not assign a value to PWD.
@@ -2011,26 +2011,26 @@ exit 000
 #
 #     # Oracle (Solaris)
 #     https://docs.oracle.com/cd/E36784_01/html/E36870/cd-1.html#scrolltoc -- binary!
-#     https://docs.oracle.com/cd/E36784_01/html/E36870/sh-1.html#scrolltoc -- shell builtin
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/sh-1.html#scrolltoc -- shell built-in
 #
 #     # Mac
-#     https://ss64.com/mac/cd.html -- bash builtin
-#     https://ss64.com/mac/cd-zsh.html -- zsh builtin
+#     https://ss64.com/mac/cd.html -- bash built-in
+#     https://ss64.com/mac/cd-zsh.html -- zsh built-in
 #
 #     # FreeBSD
 #     https://man.freebsd.org/cgi/man.cgi?query=cd&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
 #     # NetBSD
 #     https://man.netbsd.org/cd.1 -- binary?
-#     https://man.netbsd.org/sh.1 -- builtin
+#     https://man.netbsd.org/sh.1 -- built-in
 #
 #     # OpenBSD
-#     https://man.openbsd.org/sh -- shell builtin
+#     https://man.openbsd.org/sh -- shell built-in
 #
 #     # BusyBox
 #     https://man.archlinux.org/man/busybox.1.en#sh
 #     https://man.archlinux.org/man/busybox.1.en#ash
-#     # Per commandline: \cd\ is a shell builtin in both busybox sh and ash
+#     # Per commandline: \cd\ is a shell built-in in both busybox sh and ash
 #
 #
 #
@@ -2048,24 +2048,24 @@ exit 000
 #
 #     # Oracle (Solaris)
 #     https://docs.oracle.com/cd/E36784_01/html/E36870/command-1.html#scrolltoc -- binary!
-#     # No shell builtin
+#     # No shell built-in
 #
 #     # Mac
-#     https://ss64.com/mac/command.html -- bash and zsh builtins; just one man page, though
+#     https://ss64.com/mac/command.html -- bash and zsh built-ins; just one man page, though
 #
 #     # FreeBSD
 #     https://man.freebsd.org/cgi/man.cgi?query=command&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
 #     # NetBSD
-#     https://man.netbsd.org/sh.1 -- shell builtin
+#     https://man.netbsd.org/sh.1 -- shell built-in
 #
 #     # OpenBSD
-#     https://man.openbsd.org/sh -- shell builtin
+#     https://man.openbsd.org/sh -- shell built-in
 #
 #     # BusyBox - Not directly available - try BusyBox sh or ash
 #     https://man.archlinux.org/man/busybox.1.en#sh
 #     https://man.archlinux.org/man/busybox.1.en#ash
-#     # Per commandline: shell builtin in both busybox sh and ash
+#     # Per commandline: shell built-in in both busybox sh and ash
 #
 #
 #
@@ -2118,18 +2118,18 @@ exit 000
 #
 #     # Oracle (Solaris)
 #     https://docs.oracle.com/cd/E36784_01/html/E36870/echo-1.html#scrolltoc -- binary!
-#     https://docs.oracle.com/cd/E36784_01/html/E36870/sh-1.html#scrolltoc -- shell builtin
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/sh-1.html#scrolltoc -- shell built-in
 #
 #     # Mac
-#     https://ss64.com/mac/echo.html -- bash builtin
-#     # Apparently there\s a zsh builtin echo, but the man page link points to \alias\
+#     https://ss64.com/mac/echo.html -- bash built-in
+#     # Apparently there\s a zsh built-in echo, but the man page link points to \alias\
 #
 #     # FreeBSD
 #     https://man.freebsd.org/cgi/man.cgi?query=echo&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
 #     # NetBSD
 #     https://man.netbsd.org/echo.1 -- binary
-#     # No shell builtin
+#     # No shell built-in
 #
 #     # OpenBSD
 #     https://man.openbsd.org/echo -- echo
@@ -2138,7 +2138,7 @@ exit 000
 #     http://www.busybox.net/downloads/BusyBox.html#echo
 #     https://man.archlinux.org/man/busybox.1.en#sh
 #     https://man.archlinux.org/man/busybox.1.en#ash
-#     # Per commandline: also shell builtin in both busybox sh and ash
+#     # Per commandline: also shell built-in in both busybox sh and ash
 #
 #
 #
@@ -2331,24 +2331,24 @@ exit 000
 #
 #     # Oracle (Solaris)
 #     https://docs.oracle.com/cd/E36784_01/html/E36870/hash-1.html#scrolltoc -- binary!
-#     https://docs.oracle.com/cd/E36784_01/html/E36870/sh-1.html#scrolltoc -- shell builtin
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/sh-1.html#scrolltoc -- shell built-in
 #
 #     # Mac
-#     https://ss64.com/mac/hash.html -- bash builtin
+#     https://ss64.com/mac/hash.html -- bash built-in
 #
 #     # FreeBSD
 #     https://man.freebsd.org/cgi/man.cgi?query=hash&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
 #     # NetBSD
-#     https://man.netbsd.org/sh.1 -- shell builtin
+#     https://man.netbsd.org/sh.1 -- shell built-in
 #
 #     # OpenBSD
-#     https://man.openbsd.org/sh -- shell builtin
+#     https://man.openbsd.org/sh -- shell built-in
 #
 #     # BusyBox - Not directly available - try BusyBox sh or ash
 #     https://man.archlinux.org/man/busybox.1.en#sh
 #     https://man.archlinux.org/man/busybox.1.en#ash
-#     # Per commandline: shell builtin in both busybox sh and ash
+#     # Per commandline: shell built-in in both busybox sh and ash
 #
 #
 #
@@ -2498,27 +2498,27 @@ exit 000
 #
 #     # Oracle (Solaris)
 #     https://docs.oracle.com/cd/E36784_01/html/E36870/printf-1.html#scrolltoc
-#     # No shell builtin
+#     # No shell built-in
 #
 #     # Mac
-#     https://ss64.com/mac/printf.html -- bash builtin
+#     https://ss64.com/mac/printf.html -- bash built-in
 #
 #     # FreeBSD
 #     https://man.freebsd.org/cgi/man.cgi?query=printf&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
 #     # NetBSD
 #     https://man.netbsd.org/printf.1 -- binary
-#     # No shell builtin
+#     # No shell built-in
 #
 #     # OpenBSD
 #     https://man.openbsd.org/printf -- binary
-#     https://man.openbsd.org/sh -- shell builtin
+#     https://man.openbsd.org/sh -- shell built-in
 #
 #     # BusyBox
 #     http://www.busybox.net/downloads/BusyBox.html#printf
 #     https://man.archlinux.org/man/busybox.1.en#sh
 #     https://man.archlinux.org/man/busybox.1.en#ash
-#     # Per commandline: also shell builtin in both busybox sh and ash
+#     # Per commandline: also shell built-in in both busybox sh and ash
 #
 #
 #
@@ -2531,23 +2531,23 @@ exit 000
 #
 #     # GNU
 #     https://www.gnu.org/software/coreutils/manual/html_node/pwd-invocation.html -- binary
-#     https://www.gnu.org/software/bash/manual/html_node/Bourne-Shell-Builtins.html#index-pwd -- shell builtin
+#     https://www.gnu.org/software/bash/manual/html_node/Bourne-Shell-Builtins.html#index-pwd -- shell built-in
 #
 #     # IBM (AIX)
 #
 #     # Oracle (Solaris)
 #     https://docs.oracle.com/cd/E36784_01/html/E36870/pwd-1.html#scrolltoc -- binary!
-#     https://docs.oracle.com/cd/E36784_01/html/E36870/sh-1.html#scrolltoc -- shell builtin
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/sh-1.html#scrolltoc -- shell built-in
 #
 #     # Mac
-#     https://ss64.com/mac/pwd.html -- binary? man page is silent re builtins
+#     https://ss64.com/mac/pwd.html -- binary? man page is silent re built-ins
 #
 #     # FreeBSD
 #     https://man.freebsd.org/cgi/man.cgi?query=pwd&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html 
 #
 #     # NetBSD
 #     https://man.netbsd.org/pwd.1 -- binary?
-#     https://man.netbsd.org/sh.1 -- shell builtin
+#     https://man.netbsd.org/sh.1 -- shell built-in
 #
 #     # OpenBSD
 #     https://man.openbsd.org/pwd
@@ -2556,7 +2556,7 @@ exit 000
 #     http://www.busybox.net/downloads/BusyBox.html#pwd
 #     https://man.archlinux.org/man/busybox.1.en#sh
 #     https://man.archlinux.org/man/busybox.1.en#ash
-#     # Per commandline: also a shell builtin in both busybox sh and ash
+#     # Per commandline: also a shell built-in in both busybox sh and ash
 #
 #
 #
@@ -2673,11 +2673,11 @@ exit 000
 #     https://docs.oracle.com/cd/E36784_01/html/E36870/sh-1.html#scrolltoc
 #       #_ Note, Oracle has separate man pages for each of the shells:
 #       #     bash, beansh, csh, git-sh, jsh, ksh, ksh88, ksh93, sh, tcsh, zsh.
-#       https://docs.oracle.com/cd/E36784_01/html/E36870/shell-builtins-1.html#scrolltoc
+#       https://docs.oracle.com/cd/E36784_01/html/E36870/shell-built-ins-1.html#scrolltoc
 #   
 #     # Mac
 #     https://ss64.com/mac/bash.html -- has --posix mode
-#     https://ss64.com/mac/zsh.html -- Zsh builtins on MacOS
+#     https://ss64.com/mac/zsh.html -- Zsh built-ins on MacOS
 #
 #     # FreeBSD
 #     https://man.freebsd.org/cgi/man.cgi?query=sed&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
@@ -2747,17 +2747,17 @@ exit 000
 #
 #     # Oracle (Solaris)
 #     https://docs.oracle.com/cd/E36784_01/html/E36870/test-1.html#scrolltoc -- binary!
-#     https://docs.oracle.com/cd/E36784_01/html/E36870/sh-1.html#scrolltoc -- shell builtin
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/sh-1.html#scrolltoc -- shell built-in
 #
 #     # Mac
-#     https://ss64.com/mac/test.html -- bash utility and zsh builtin; one man page
+#     https://ss64.com/mac/test.html -- bash utility and zsh built-in; one man page
 #
 #     # FreeBSD
 #     https://man.freebsd.org/cgi/man.cgi?query=test&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
 #     # NetBSD
 #     https://man.netbsd.org/test.1 -- binary
-#     # No shell builtin
+#     # No shell built-in
 #
 #     # OpenBSD
 #     https://man.openbsd.org/test -- binary
@@ -2766,7 +2766,7 @@ exit 000
 #     http://www.busybox.net/downloads/BusyBox.html#test
 #     https://man.archlinux.org/man/busybox.1.en#sh
 #     https://man.archlinux.org/man/busybox.1.en#ash
-#     # Per commandline: also a shell builtin in both busybox sh and ash
+#     # Per commandline: also a shell built-in in both busybox sh and ash
 #
 #
 #
@@ -2787,7 +2787,7 @@ exit 000
 #
 #     # Oracle (Solaris)
 #     https://docs.oracle.com/cd/E36784_01/html/E36870/true-1.html#scrolltoc
-#     # No shell builtin
+#     # No shell built-in
 #
 #     # Mac
 #     https://ss64.com/mac/true.html -- binary?
@@ -2797,17 +2797,17 @@ exit 000
 #
 #     # NetBSD
 #     https://man.netbsd.org/true.1 -- binary
-#     # No shell builtin
+#     # No shell built-in
 #
 #     # OpenBSD
 #     https://man.openbsd.org/true -- binary
-#     https://man.openbsd.org/sh -- shell builtin
+#     https://man.openbsd.org/sh -- shell built-in
 #
 #     # BusyBox
 #     http://www.busybox.net/downloads/BusyBox.html#true
 #     https://man.archlinux.org/man/busybox.1.en#sh
 #     https://man.archlinux.org/man/busybox.1.en#ash
-#     # Per commandline: also a shell builtin in both busybox sh and ash
+#     # Per commandline: also a shell built-in in both busybox sh and ash
 #
 #
 #
@@ -2825,29 +2825,29 @@ exit 000
 #
 #     # Oracle (Solaris)
 #     https://docs.oracle.com/cd/E36784_01/html/E36870/unalias-1.html#scrolltoc
-#     # No shell builtin
+#     # No shell built-in
 #     
 #     # Mac
-#     https://ss64.com/mac/alias.html -- bash builtin
-#     https://ss64.com/mac/alias-zsh.html -- zsh builtin
+#     https://ss64.com/mac/alias.html -- bash built-in
+#     https://ss64.com/mac/alias-zsh.html -- zsh built-in
 #
 #     # FreeBSD
 #     https://man.freebsd.org/cgi/man.cgi?query=unalias&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
 #     # NetBSD
-#     https://man.netbsd.org/sh.1 -- shell builtin
+#     https://man.netbsd.org/sh.1 -- shell built-in
 #
 #     # OpenBSD 
-#     https://man.openbsd.org/sh -- shell builtin
+#     https://man.openbsd.org/sh -- shell built-in
 #
 #     # BusyBox
 #     https://man.archlinux.org/man/busybox.1.en#sh
 #     https://man.archlinux.org/man/busybox.1.en#ash
-#     # Per commandline: shell builtin in both busybox sh and ash
+#     # Per commandline: shell built-in in both busybox sh and ash
 #
 #
 #
-#   # break -- POSIX 2024 Special Builtin
+#   # break -- POSIX 2024 Special Built-in
 #     # POSIX 2008
 #     https://pubs.opengroup.org/onlinepubs/9699919799.2008edition/utilities/V3_chap02.html#break
 #
@@ -2860,10 +2860,10 @@ exit 000
 #
 #     # Oracle (Solaris)
 #     https://docs.oracle.com/cd/E36784_01/html/E36870/break-1.html#scrolltoc -- binary
-#     https://docs.oracle.com/cd/E36784_01/html/E36870/sh-1.html#scrolltoc -- shell builtin
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/sh-1.html#scrolltoc -- shell built-in
 #
 #     # Mac
-#     https://ss64.com/mac/break.html -- bash and zsdh builtins; one man page
+#     https://ss64.com/mac/break.html -- bash and zsh built-ins; one man page
 #
 #     # FreeBSD
 #     https://man.freebsd.org/cgi/man.cgi?query=break&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
@@ -2872,16 +2872,16 @@ exit 000
 #     https://man.netbsd.org/sh.1 -- shell keyword
 #
 #     # OpenBSD
-#     https://man.openbsd.org/sh -- shell builtin
+#     https://man.openbsd.org/sh -- shell built-in
 #
 #     # BusyBox
 #     https://man.archlinux.org/man/busybox.1.en#sh
 #     https://man.archlinux.org/man/busybox.1.en#ash
-#     # Per commandline: shell builtin in both busybox sh and ash
+#     # Per commandline: shell built-in in both busybox sh and ash
 #
 #
 #
-#   # colon -- POSIX 2024 Special Builtin
+#   # colon -- POSIX 2024 Special Built-in
 #     # POSIX 2008
 #     https://pubs.opengroup.org/onlinepubs/9699919799.2008edition/utilities/V3_chap02.html#colon
 #
@@ -2893,7 +2893,7 @@ exit 000
 #     # IBM (AIX)
 #
 #     # Oracle (Solaris)
-#     https://docs.oracle.com/cd/E36784_01/html/E36870/sh-1.html#scrolltoc -- shell builtin
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/sh-1.html#scrolltoc -- shell built-in
 #
 #     # Mac
 #       NA?
@@ -2902,19 +2902,19 @@ exit 000
 #     https://man.freebsd.org/cgi/man.cgi?query=continue&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
 #     # NetBSD
-#     https://man.netbsd.org/sh.1 -- shell builtin
+#     https://man.netbsd.org/sh.1 -- shell built-in
 #
 #     # OpenBSD
-#     https://man.openbsd.org/sh -- shell builtin
+#     https://man.openbsd.org/sh -- shell built-in
 #
 #     # BusyBox
 #     https://man.archlinux.org/man/busybox.1.en#sh
 #     https://man.archlinux.org/man/busybox.1.en#ash
-#     # Per commandline: shell builtin in both busybox sh and ash
+#     # Per commandline: shell built-in in both busybox sh and ash
 #
 #
 #
-#   # continue -- POSIX 2024 Special Builtin
+#   # continue -- POSIX 2024 Special Built-in
 #     # POSIX 2008
 #     https://pubs.opengroup.org/onlinepubs/9699919799.2008edition/utilities/V3_chap02.html#continue
 #
@@ -2927,10 +2927,10 @@ exit 000
 #
 #     # Oracle (Solaris)
 #     https://docs.oracle.com/cd/E36784_01/html/E36870/continue-1.html#scrolltoc -- binary?
-#     https://docs.oracle.com/cd/E36784_01/html/E36870/sh-1.html#scrolltoc -- shell builtin
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/sh-1.html#scrolltoc -- shell built-in
 #
 #     # Mac
-#     https://ss64.com/mac/continue.html -- bash and zsh builtins; one man page
+#     https://ss64.com/mac/continue.html -- bash and zsh built-ins; one man page
 #
 #     # FreeBSD
 #     https://man.freebsd.org/cgi/man.cgi?query=continue&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
@@ -2939,16 +2939,16 @@ exit 000
 #     https://man.netbsd.org/sh.1 -- shell keyword
 #
 #     # OpenBSD
-#     https://man.openbsd.org/sh -- shell builtin
+#     https://man.openbsd.org/sh -- shell built-in
 #
 #     # BusyBox
 #     https://man.archlinux.org/man/busybox.1.en#sh
 #     https://man.archlinux.org/man/busybox.1.en#ash
-#     # Per commandline: shell builtin in both busybox sh and ash
+#     # Per commandline: shell built-in in both busybox sh and ash
 #
 #
 #
-#   # eval -- POSIX 2024 Special Builtin
+#   # eval -- POSIX 2024 Special Built-in
 #     # POSIX 2008
 #     https://pubs.opengroup.org/onlinepubs/9699919799.2008edition/utilities/V3_chap02.html#eval
 #
@@ -2961,28 +2961,28 @@ exit 000
 #
 #     # Oracle (Solaris)
 #     https://docs.oracle.com/cd/E36784_01/html/E36870/eval-1.html#scrolltoc -- binary?
-#     https://docs.oracle.com/cd/E36784_01/html/E36870/sh-1.html#scrolltoc -- shell builtin
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/sh-1.html#scrolltoc -- shell built-in
 #
 #     # Mac
-#     https://ss64.com/mac/eval.html -- bash and zsh builtin; one man page
+#     https://ss64.com/mac/eval.html -- bash and zsh built-in; one man page
 #
 #     # FreeBSD
 #     https://man.freebsd.org/cgi/man.cgi?query=eval&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
 #     # NetBSD
-#     https://man.netbsd.org/sh.1 -- shell builtin
+#     https://man.netbsd.org/sh.1 -- shell built-in
 #
 #     # OpenBSD
-#     https://man.openbsd.org/sh -- shell builtin
+#     https://man.openbsd.org/sh -- shell built-in
 #
 #     # BusyBox
 #     https://man.archlinux.org/man/busybox.1.en#sh
 #     https://man.archlinux.org/man/busybox.1.en#ash
-#     # Per commandline: shell builtin in both busybox sh and ash
+#     # Per commandline: shell built-in in both busybox sh and ash
 #
 #
 #
-#   # exit -- POSIX 2024 Special Builtin
+#   # exit -- POSIX 2024 Special Built-in
 #     # POSIX 2008
 #     https://pubs.opengroup.org/onlinepubs/9699919799.2008edition/utilities/V3_chap02.html#exit
 #
@@ -2995,28 +2995,28 @@ exit 000
 #
 #     # Oracle (Solaris)
 #     https://docs.oracle.com/cd/E36784_01/html/E36870/exit-1.html#scrolltoc -- binary?
-#     https://docs.oracle.com/cd/E36784_01/html/E36870/sh-1.html#scrolltoc -- shell builtin
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/sh-1.html#scrolltoc -- shell built-in
 #
 #     # Mac
-#     https://ss64.com/mac/exit.html -- bash and zsh builtin; one man page
+#     https://ss64.com/mac/exit.html -- bash and zsh built-in; one man page
 #
 #     # FreeBSD
 #     https://man.freebsd.org/cgi/man.cgi?query=exit&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
 #     # NetBSD
-#     https://man.netbsd.org/sh.1 -- shell builtin
+#     https://man.netbsd.org/sh.1 -- shell built-in
 #
 #     # OpenBSD
-#     https://man.openbsd.org/sh -- shell builtin
+#     https://man.openbsd.org/sh -- shell built-in
 #
 #     # BusyBox
 #     https://man.archlinux.org/man/busybox.1.en#sh
 #     https://man.archlinux.org/man/busybox.1.en#ash
-#     # Per commandline: shell builtin in both busybox sh and ash
+#     # Per commandline: shell built-in in both busybox sh and ash
 #
 #
 #
-#   # readonly -- POSIX 2024 Special Builtin
+#   # readonly -- POSIX 2024 Special Built-in
 #     # POSIX 2008
 #     https://pubs.opengroup.org/onlinepubs/9699919799.2008edition/utilities/V3_chap02.html#readonly
 #
@@ -3029,7 +3029,7 @@ exit 000
 #
 #     # Oracle (Solaris)
 #     https://docs.oracle.com/cd/E36784_01/html/E36870/readonly-1.html#scrolltoc -- binary?
-#     https://docs.oracle.com/cd/E36784_01/html/E36870/sh-1.html#scrolltoc -- shell builtin
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/sh-1.html#scrolltoc -- shell built-in
 #
 #     # Mac
 #     https://ss64.com/mac/readonly.html -- bash utility
@@ -3038,19 +3038,19 @@ exit 000
 #     https://man.freebsd.org/cgi/man.cgi?query=readonly&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
 #     # NetBSD
-#     https://man.netbsd.org/sh.1 -- shell builtin
+#     https://man.netbsd.org/sh.1 -- shell built-in
 #
 #     # OpenBSD
-#     https://man.openbsd.org/sh -- shell builtin
+#     https://man.openbsd.org/sh -- shell built-in
 #
 #     # BusyBox
 #     https://man.archlinux.org/man/busybox.1.en#sh
 #     https://man.archlinux.org/man/busybox.1.en#ash
-#     # Per commandline: shell builtin in both busybox sh and ash
+#     # Per commandline: shell built-in in both busybox sh and ash
 #
 #
 #
-#   # return -- POSIX 2024 Special Builtin
+#   # return -- POSIX 2024 Special Built-in
 #     # POSIX 2008
 #     https://pubs.opengroup.org/onlinepubs/9699919799.2008edition/utilities/V3_chap02.html#return
 #
@@ -3063,28 +3063,28 @@ exit 000
 #
 #     # Oracle (Solaris)
 #     https://docs.oracle.com/cd/E36784_01/html/E36870/return-1.html#scrolltoc -- binary?
-#     https://docs.oracle.com/cd/E36784_01/html/E36870/sh-1.html#scrolltoc -- shell builtin
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/sh-1.html#scrolltoc -- shell built-in
 #
 #     # Mac
-#     https://ss64.com/mac/return.html -- bash builtin
+#     https://ss64.com/mac/return.html -- bash built-in
 #
 #     # FreeBSD
 #     https://man.freebsd.org/cgi/man.cgi?query=return&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
 #     # NetBSD
-#     https://man.netbsd.org/sh.1 -- shell builtin
+#     https://man.netbsd.org/sh.1 -- shell built-in
 #
 #     # OpenBSD
-#     https://man.openbsd.org/sh -- shell builtin
+#     https://man.openbsd.org/sh -- shell built-in
 #
 #     # BusyBox
 #     https://man.archlinux.org/man/busybox.1.en#sh
 #     https://man.archlinux.org/man/busybox.1.en#ash
-#     # Per commandline: shell builtin in both busybox sh and ash
+#     # Per commandline: shell built-in in both busybox sh and ash
 #
 #
 #
-#   # set -- POSIX 2024 Special Builtin
+#   # set -- POSIX 2024 Special Built-in
 #     # POSIX 2008
 #     https://pubs.opengroup.org/onlinepubs/9699919799.2008edition/utilities/V3_chap02.html#set
 #
@@ -3097,28 +3097,28 @@ exit 000
 #
 #     # Oracle (Solaris)
 #     https://docs.oracle.com/cd/E36784_01/html/E36870/set-1.html#scrolltoc -- binary?
-#     https://docs.oracle.com/cd/E36784_01/html/E36870/sh-1.html#scrolltoc -- shell builtin
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/sh-1.html#scrolltoc -- shell built-in
 #
 #     # Mac
-#     https://ss64.com/mac/set.html -- bash builtin
+#     https://ss64.com/mac/set.html -- bash built-in
 #
 #     # FreeBSD
 #     https://man.freebsd.org/cgi/man.cgi?query=set&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
 #     # NetBSD
-#     https://man.netbsd.org/sh.1 -- shell builtin
+#     https://man.netbsd.org/sh.1 -- shell built-in
 #
 #     # OpenBSD
-#     https://man.openbsd.org/sh -- shell builtin
+#     https://man.openbsd.org/sh -- shell built-in
 #
 #     # BusyBox
 #     https://man.archlinux.org/man/busybox.1.en#sh
 #     https://man.archlinux.org/man/busybox.1.en#ash
-#     # Per commandline: shell builtin in both busybox sh and ash
+#     # Per commandline: shell built-in in both busybox sh and ash
 #
 #
 #
-#   # shift -- POSIX 2024 Special Builtin
+#   # shift -- POSIX 2024 Special Built-in
 #     # POSIX 2008
 #     https://pubs.opengroup.org/onlinepubs/9699919799.2008edition/utilities/V3_chap02.html#shift
 #
@@ -3131,28 +3131,28 @@ exit 000
 #
 #     # Oracle (Solaris)
 #     https://docs.oracle.com/cd/E36784_01/html/E36870/shift-1.html#scrolltoc -- binary?
-#     https://docs.oracle.com/cd/E36784_01/html/E36870/sh-1.html#scrolltoc -- shell builtin
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/sh-1.html#scrolltoc -- shell built-in
 #
 #     # Mac
-#     https://ss64.com/mac/shift.html -- bash builtin
+#     https://ss64.com/mac/shift.html -- bash built-in
 #
 #     # FreeBSD
 #     https://man.freebsd.org/cgi/man.cgi?query=shift&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
 #     # NetBSD
-#     https://man.netbsd.org/sh.1 -- shell builtin
+#     https://man.netbsd.org/sh.1 -- shell built-in
 #
 #     # OpenBSD
-#     https://man.openbsd.org/sh -- shell builtin
+#     https://man.openbsd.org/sh -- shell built-in
 #
 #     # BusyBox
 #     https://man.archlinux.org/man/busybox.1.en#sh
 #     https://man.archlinux.org/man/busybox.1.en#ash
-#     # Per commandline: shell builtin in both busybox sh and ash
+#     # Per commandline: shell built-in in both busybox sh and ash
 #
 #
 #
-#   # unset -- POSIX 2024 Special Builtin
+#   # unset -- POSIX 2024 Special Built-in
 #     # POSIX 2008
 #     https://pubs.opengroup.org/onlinepubs/9699919799.2008edition/utilities/V3_chap02.html#unset
 #
@@ -3165,24 +3165,24 @@ exit 000
 #
 #     # Oracle (Solaris)
 #     https://docs.oracle.com/cd/E36784_01/html/E36870/unset-1.html#scrolltoc -- binary?
-#     https://docs.oracle.com/cd/E36784_01/html/E36870/sh-1.html#scrolltoc -- shell builtin
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/sh-1.html#scrolltoc -- shell built-in
 #
 #     # Mac
-#     https://ss64.com/mac/unset.html -- bash builtin
+#     https://ss64.com/mac/unset.html -- bash built-in
 #
 #     # FreeBSD
 #     https://man.freebsd.org/cgi/man.cgi?query=unset&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
 #     # NetBSD
-#     https://man.netbsd.org/sh.1 -- shell builtin
+#     https://man.netbsd.org/sh.1 -- shell built-in
 #
 #     # OpenBSD
-#     https://man.openbsd.org/sh -- shell builtin
+#     https://man.openbsd.org/sh -- shell built-in
 #
 #     # BusyBox
 #     https://man.archlinux.org/man/busybox.1.en#sh
 #     https://man.archlinux.org/man/busybox.1.en#ash
-#     # Per commandline: shell builtin in both busybox sh and ash
+#     # Per commandline: shell built-in in both busybox sh and ash
 #
 
 
