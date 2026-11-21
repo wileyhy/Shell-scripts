@@ -192,7 +192,7 @@ old_lc_all=${LC_ALL:-}
 LC_ALL=C
 old_ld_preload=${LD_PRELOAD:-}
 unset LD_PRELOAD
-allow_input_to_begin_with_hyphens=no
+yn__allow_input_to_begin_with_hyphens=no
 return_code_for_script=0
 special_variable_zero=${0#./}
 special_variable_zero=${0##*/}
@@ -201,7 +201,7 @@ usage_msg="
   Usage: The first argument may be an option flag. If both \\-b\\
   and \\-v\\ are present, the last one shall apply.
 
-  "${special_variable_zero}" [-b|-h|-v|-V] [FILES] ...
+  ${special_variable_zero} [-b|-h|-v|-V] [FILES] ...
     --brief     -b    Default format: '%s\n' [output]
     --help      -h    Print this message and exit.
     --verbose   -v    Format: '%s: \"%s\" -> %s\n' \$0 [input] [output]
@@ -216,7 +216,7 @@ unset \
   set -x #>
 
 
-: "Define functions:  Level 1" #>
+: "Define functions: Level 1" #>
 
 : "Define function:    __check_for_variable_assignment__" #>
 # Usage:
@@ -509,7 +509,7 @@ __print_results__ ()
     : "\$1: $1"
     : "\$2: $2"
     : "\$return_code_for_script: ${return_code_for_script}" #>
-    : "\$global__output_verbose_on: ${global__output_verbose_on}" #>
+    : "\$global__yn__output_verbose_on: ${global__yn__output_verbose_on}" #>
     #exit "${LINENO}" #>
 
   :;: "If there was an error, then switch verbose to \\on\\"
@@ -518,11 +518,11 @@ __print_results__ ()
     : "t:$?:${LINENO}" #>
   else
     : "f:$?:${LINENO}" #>
-    global__output_verbose_on=yes
+    global__yn__output_verbose_on=yes
   fi
 
-  :;: "\\case\\ on \\global__output_verbose_on\\"
-  case "${global__output_verbose_on}" in
+  :;: "\\case\\ on \\global__yn__output_verbose_on\\"
+  case "${global__yn__output_verbose_on}" in
     yes | y )
       : "\\case\\ branch: \\yes\\" #>
       printf '%s: %b%s%b -> %s\n' \
@@ -602,6 +602,66 @@ __unset_user_functions__ ()
   # __check_for_variable_assignment__ PATH #>
   # __check_for_variable_assignment__ TTY #>
   #exit "${LINENO}" #>
+
+
+: "Define functions: Level 4" #>
+
+: "Define function:    __check_presence_of_commands__" #>
+#
+# Usage:
+#     __check_presence_of_commands__ \
+#         [Options for command] [Message, argument for Notice] \
+#             [Whether to unset user functions]
+#     __check_presence_of_commands__ \
+#         [-pv|-v] "Blah" \
+#             [yes|no]
+#     __check_presence_of_commands__ \
+#         -pv "Command is not in PATH" \
+#             "yes"
+#     __check_presence_of_commands__ \
+#         -v "Built-in is not available" \
+#             "no"
+#
+__check_presence_of_commands__ ()
+{
+  if test $# -gt 3
+  then
+    : "t:$?:${LINENO}" #>
+    local__option_for_command=$1
+    local__text_for_print_notice=$2
+    local__yn__unset_functions=$3
+    shift 3
+
+    for iI
+    do
+      if command "${local__option_for_command}" -- "${iI}" >/dev/null
+      then
+        : "t:$?:${LINENO}" #>
+      else
+        : "f:${ec1:=$?}" #>
+        return_code_for_script=${ec1:=$?}
+        yn__print_value_of_path=yes
+        __print_notice_stderr__ "$2" "${iI}"
+      fi
+  
+      case "${local__yn__unset_functions}" in
+        yes ) __unset_user_functions__ "${iI}" ;;
+        no  ) continue ;;
+        *   ) echo "Unreachable code"; exit 3 ;;
+      esac
+    done
+  else
+    : "f:${ec1:=$?}" #>
+    echo Error, posparms
+    exit "${LINENO}"
+  fi
+
+  unset \
+    local__option_for_command \
+    local__text_for_print_notice \
+    local__yn__unset_functions
+}
+
   #>
   #> Script Testing
   #set -- #>
@@ -631,7 +691,7 @@ then
     case "$1" in
       --brief   | -b* | --b* )
         : "\\case\\ branch: \\--brief\\" #>
-        global__output_verbose_on=no
+        global__yn__output_verbose_on=no
         if shift 2>/dev/null
         then
           : "t:$?:${LINENO}"
@@ -641,15 +701,15 @@ then
           break
         fi
         ;;
-      --help    | -h* | --h* | -? )
+      --help    | -h* | --h* | -\? )
         : "\\case\\ branch: \\--help\\" #>
         printf '%s\n' "${usage_msg:?}" 1>&2
         exit 1
         ;;
       --verbose | -v* | --verb* )
         : "\\case\\ branch: \\--verbose\\" #>
-        global__output_verbose_on=yes
-        allow_input_to_begin_with_hyphens=yes
+        global__yn__output_verbose_on=yes
+        yn__allow_input_to_begin_with_hyphens=yes
         if shift 2>/dev/null
         then
           : "t:$?:${LINENO}"
@@ -666,16 +726,16 @@ then
         ;;
       -- )
         : "\\case\\ branch: \\--\\: let strings begin with hypens" #>
-        global__output_verbose_on=no
-        allow_input_to_begin_with_hyphens=yes
+        global__yn__output_verbose_on=no
+        yn__allow_input_to_begin_with_hyphens=yes
         shift
         break
         ;;
       * )
         : "\\case\\ branch: no options: use default: \\--brief\\" #>
-        global__output_verbose_on=no
-        :;: "Is \\allow_input_to_begin_with_hyphens\\ set \\yes\\?"
-        if test "yes" = "${allow_input_to_begin_with_hyphens}"
+        global__yn__output_verbose_on=no
+        :;: "Is \\yn__allow_input_to_begin_with_hyphens\\ set \\yes\\?"
+        if test "yes" = "${yn__allow_input_to_begin_with_hyphens}"
         then
           : "t:$?:${LINENO}"
         else
@@ -699,14 +759,14 @@ fi
 
 __input_required__ "$@"
   #>
-  #: "global__output_verbose_on: ${global__output_verbose_on}" #>
+  #: "global__yn__output_verbose_on: ${global__yn__output_verbose_on}" #>
   #set -x #>
   #: exit "${LINENO}" #>
   #set +x #>
 
 
 :;: "Commands"
-print_value_of_path=no
+yn__print_value_of_path=no
 
 # Remove the hash table, so that PATH lookups are forced and
 # therefore current. Posix 2008 recommends \PATH=${PATH}\ in spec.
@@ -737,7 +797,6 @@ else
     fi
   else
     : "f:$?:${LINENO}" #>
-    print_value_of_path=yes
     __print_notice_stderr__ "Command is not in PATH" "hash"
   fi
 fi
@@ -750,12 +809,8 @@ __xtrace_off__ "${LINENO}"
   #aA=codeblocks #>
 
 
-  # Bug, these two loops are nearly the same: convert to a function.
-
-
 # Utilities
-#
-for aA in \
+__check_presence_of_commands__ "-pv" "Command is not in PATH" "yes" \
   "awk" \
   "cd" \
   "command" \
@@ -777,61 +832,10 @@ for aA in \
   "test" \
   "true" \
   "type" \
-  "unalias" \
-  #>
-  #> count is ?
-  #>
-do
-    #> Just to see in which directory each utility is located.
-    #which "${aA}" 2>/dev/null || command -v "${aA}" #>
-    #continue #>
-  if command -pv -- "${aA}" >/dev/null
-  then
-    : "t:$?:${LINENO}" #>
-  else
-    : "f:${ec0:=$?}" #>
-      #>
-      #command -v -- "${aA}" ||: #>
-      #>
-    return_code_for_script=${ec0:=$?}
-    print_value_of_path=yes
-    __print_notice_stderr__ "Command is not in PATH" "${aA}"
-  fi
-
-  __unset_user_functions__ "${aA}"
-done
-do
-  if command -v -- "${bB}" >/dev/null
-  then
-    : "t:$?:${LINENO}" #>
-  else
-    : "f:${ec1:=$?}" #>
-    return_code_for_script=${ec1:=$?}
-    __print_notice_stderr__ "Built-in is not available" "${bB}"
-  fi
-
-  __unset_user_functions__ "${bB}"
-done
-  #>
-  #exit "${LINENO}" #>
-
-
-# If xtrace was on, restore it.
-__reset_xtrace__
-
-
-# Print the value of PATH if necessary.
-if test "yes" = "${print_value_of_path}"
-then
-  : "t:$?:${LINENO}" #>
-  __print_notice_stderr__ "Value of PATH" "${PATH}"
-else : "f:$?${LINENO}" #>
-fi
-
+  "unalias"
 
 # Built-ins: Special and Regular
-#
-for bB in \
+__check_presence_of_commands__ "-v" "Built-in is not available" "no" \
   "break" \
   ":" \
   "continue" \
@@ -842,21 +846,17 @@ for bB in \
   "set" \
   "shift" \
   "unset"
-do
-  if command -v -- "${bB}" >/dev/null
-  then
-    : "t:$?:${LINENO}" #>
-  else
-    : "f:${ec1:=$?}" #>
-    return_code_for_script=${ec1:=$?}
-    __print_notice_stderr__ "Built-in is not available" "${bB}"
-  fi
 
-  __unset_user_functions__ "${bB}"
-done
-  #>
-  #exit "${LINENO}" #>
+# If xtrace was on, restore it.
+__reset_xtrace__
 
+# Print the value of PATH if necessary.
+if test "yes" = "${yn__print_value_of_path}"
+then
+  : "t:$?:${LINENO}" #>
+  __print_notice_stderr__ "Value of PATH" "${PATH}"
+else : "f:$?${LINENO}" #>
+fi
 
 # If any of the commands were missing, then exit.
 __exit_per_return_code_for_script__
@@ -1107,7 +1107,7 @@ done
 
 
 :;: "Make sure HOME is defined, for \\cd\\"
-home__original=${HOME}
+home_original=${HOME}
 #_
 #_  Notes,
 #_    - Assigning PWD depends on HOME having a valid value.
@@ -1148,9 +1148,9 @@ else
 
   __make_sure_variable_is_defined_properly__ \
       "HOME" "negative"
-  alter_value__home__original="${global__assign_variable}"
+  alter_value__home_original="${global__assign_variable}"
   #_ Note,
-  #_   Possible values for \alter_value__home__original\ are:
+  #_   Possible values for \alter_value__home_original\ are:
   #_   - negative__HOME, or
   #_   - yes__HOME
   #_
@@ -1224,13 +1224,13 @@ else
   if test "X${stdout_05_tilde_exp}" = "X${stdout_07_awk_etc_passwd}"
   then
     : "t:$?:${LINENO}" "Result confirmed" #>
-    home__confirmed=${stdout_05_tilde_exp}
-    home__found=NA
+    home_confirmed=${stdout_05_tilde_exp}
+    home_found=NA
   else
     : "f:$?:${LINENO}" #>
     #__print_notice_stderr__ "Conflicting data" "Line:${LINENO}"
-    home__confirmed="::Conflicting_data::"
-    home__found=""
+    home_confirmed="::Conflicting_data::"
+    home_found=""
     #_
     #_  Note,
     #_    If the data is incongruent, then which variable does the
@@ -1245,16 +1245,16 @@ else
     if test -n "${stdout_05_tilde_exp}"
     then
       : "t:$?:${LINENO}" #>
-      home__found=${stdout_05_tilde_exp}
+      home_found=${stdout_05_tilde_exp}
     else
       : "f:$?:${LINENO}" #>
       if test -n "${stdout_07_awk_etc_passwd}"
       then
         : "t:$?:${LINENO}" #>
-        home__found=${stdout_07_awk_etc_passwd}
+        home_found=${stdout_07_awk_etc_passwd}
       else
         : "f:$?:${LINENO}" #>
-        home__found="::No_valid_values_were_found::"
+        home_found="::No_valid_values_were_found::"
         __print_warning_stderr__ "Value not found" "HOME"
         exit 2
       fi
@@ -1262,33 +1262,33 @@ else
   fi
 
   # Check the new data for validity.
-  if test -n "${home__confirmed}"
+  if test -n "${home_confirmed}"
   then
     : "t:$?:${LINENO}" #>
     __make_sure_variable_is_defined_properly__ \
-        "home__confirmed" "affirmative"
-    alter_value__home__confirmed="${global__assign_variable}"
-    alter_value__home__found="no"
+        "home_confirmed" "affirmative"
+    alter_value__home_confirmed="${global__assign_variable}"
+    alter_value__home_found="no"
     #_
-    #_ Note, possible values for \alter_value__home__confirmed\ are:
-    #_   - affirmative__home__confirmed, or
-    #_   - yes__home__confirmed
+    #_ Note, possible values for \alter_value__home_confirmed\ are:
+    #_   - affirmative__home_confirmed, or
+    #_   - yes__home_confirmed
     #_
     unset global__assign_variable
   else
     : "f:$?:${LINENO}" #>
-    alter_value__home__confirmed="yes"
-    alter_value__home__found=""
-    if test -n "${home__found}"
+    alter_value__home_confirmed="yes"
+    alter_value__home_found=""
+    if test -n "${home_found}"
     then
       : "t:$?:${LINENO}" #>
       __make_sure_variable_is_defined_properly__ \
-          "home__found" "affirmative"
-      alter_value__home__found="${global__assign_variable}"
+          "home_found" "affirmative"
+      alter_value__home_found="${global__assign_variable}"
       #_ Note,
-      #_   Possible values for \alter_value__home__found\, are:
-      #_   - affirmative__home__found, or
-      #_   - yes__home__found
+      #_   Possible values for \alter_value__home_found\, are:
+      #_   - affirmative__home_found, or
+      #_   - yes__home_found
       #_
       unset global__assign_variable
     else
@@ -1299,27 +1299,27 @@ else
   fi
     :;: #>
     : "HOME: ${HOME:-}" #>
-    : "alter_value__home__original: ${alter_value__home__original:-}" #>
-    : "home__confirmed: ${home__confirmed:-}" #>
-    : "alter_value__home__confirmed: ${alter_value__home__confirmed:-}" #>
-    : "home__found: ${home__found:-}" #>
-    : "alter_value__home__found: ${alter_value__home__found:-}" #>
+    : "alter_value__home_original: ${alter_value__home_original:-}" #>
+    : "home_confirmed: ${home_confirmed:-}" #>
+    : "alter_value__home_confirmed: ${alter_value__home_confirmed:-}" #>
+    : "home_found: ${home_found:-}" #>
+    : "alter_value__home_found: ${alter_value__home_found:-}" #>
     #exit "${LINENO}" #>
 
     #_ Note,
     #_   Var  HOME             could have values of  yes   or  negative
-    #_   Var  home__confirmed   could have values of  yes   or  affirmative
-    #_   Var  home__found       could have values of  yes   or  affirmative
+    #_   Var  home_confirmed   could have values of  yes   or  affirmative
+    #_   Var  home_found       could have values of  yes   or  affirmative
 
   # Assign HOME accordingly.
-  #_ Do HOME and \home__confirmed\ have the same value?
-  if test "${HOME:=}" = "${home__confirmed}"
+  #_ Do HOME and \home_confirmed\ have the same value?
+  if test "${HOME:=}" = "${home_confirmed}"
   then
     : "t:$?:${LINENO}" #>
-    #_ Yes, HOME and \home__confirmed\ have the same value.
+    #_ Yes, HOME and \home_confirmed\ have the same value.
     #_
     #_ Did HOME pass all of the tests?
-    if test "negative__HOME" = "${alter_value__home__original}"
+    if test "negative__HOME" = "${alter_value__home_original}"
     then
       : "t:$?:${LINENO}" #>
       #_ Yes, HOME passed all of the tests.
@@ -1329,22 +1329,22 @@ else
       : "f:$?:${LINENO}" #>
       #_ No, HOME failed some of the tests.
       #_
-      #_ But HOME is equivalent to \home__confirmed\, so you cannot use
+      #_ But HOME is equivalent to \home_confirmed\, so you cannot use
       #_ that value either.
       #_
-      #_ Did the third variable, \home__found\, pass all of the tests?
-      if test "affirmative__home__found" = "${alter_value__home__found}"
+      #_ Did the third variable, \home_found\, pass all of the tests?
+      if test "affirmative__home_found" = "${alter_value__home_found}"
       then
         : "t:$?:${LINENO}" #>
-        #_ Yes, \home__found\ passed all of the tests.
-        if HOME=${home__found}
+        #_ Yes, \home_found\ passed all of the tests.
+        if HOME=${home_found}
         then : "t:$?:${LINENO}"
         else : "f:$?:${LINENO}"
         fi
         #_ Done
       else
         : "f:$?:${LINENO}" #>
-        #_ No, \home__found\ failed some of the tests.
+        #_ No, \home_found\ failed some of the tests.
         #_
         #_ So none of the possible values for HOME passed all of the
         #_ tests.
@@ -1359,59 +1359,59 @@ else
     fi
   else
     : "f:$?:${LINENO}" #>
-    #_ No, HOME and \home__confirmed\ do NOT have the same value.
+    #_ No, HOME and \home_confirmed\ do NOT have the same value.
     #_
     #_ Did HOME pass all of the tests?
-    if test "negative__HOME" = "${alter_value__home__original}"
+    if test "negative__HOME" = "${alter_value__home_original}"
     then
       : "t:$?:${LINENO}" #>
       #_ Yes, HOME passed all of the tests.
       #_
-      #_ But, HOME and \home__confirmed\ do not have the same value.
+      #_ But, HOME and \home_confirmed\ do not have the same value.
       #_
-      #_ So, did \home__confirmed\ pass all of the tests?
-      if test "affirmative__home__confirmed" = "${alter_value__home__confirmed}"
+      #_ So, did \home_confirmed\ pass all of the tests?
+      if test "affirmative__home_confirmed" = "${alter_value__home_confirmed}"
       then
         : "t:$?:${LINENO}" #>
-        #_ Yes, \home__confirmed\ passed all of the tests.
+        #_ Yes, \home_confirmed\ passed all of the tests.
         #_
         #_ So both values passed all of the tests.
         #_
         # __print_warning_stderr__ "Conflicting data" "Line:${LINENO}"
-        #_ If \home__found\ also passed all of the tests, then use that
-        #_ one because \home__found\ is based on /etc/passwd.
+        #_ If \home_found\ also passed all of the tests, then use that
+        #_ one because \home_found\ is based on /etc/passwd.
         #_
-        #_ Did \home__found\ pass all of the tests?
-        if test "affirmative__home__found" = "${alter_value__home__found}"
+        #_ Did \home_found\ pass all of the tests?
+        if test "affirmative__home_found" = "${alter_value__home_found}"
         then
           : "t:$?:${LINENO}" #>
-          #_ Yes, \home__found\ passed all of the tests.
-          if HOME=${home__found}
+          #_ Yes, \home_found\ passed all of the tests.
+          if HOME=${home_found}
           then : "t:$?:${LINENO}"
           else : "f:$?:${LINENO}"
           fi
           #_ Done
         else
           : "f:$?:${LINENO}" #>
-          #_ No, \home__found\ failed some of the tests.
+          #_ No, \home_found\ failed some of the tests.
           #_
-          #_ Between both verified values HOME and \home__confirmed\,
+          #_ Between both verified values HOME and \home_confirmed\,
           #_ which should be used: the one set by the user or the one
           #_ identified by Tilde Expansion?
           #_
           #_ The one set by the user could be malicious, so use the
-          #_ one identified by Tilde Expansion: \home__confirmed\.
-          if HOME=${home__confirmed}
+          #_ one identified by Tilde Expansion: \home_confirmed\.
+          if HOME=${home_confirmed}
           then : "t:$?:${LINENO}"
           else : "f:$?:${LINENO}"
           fi
           #_ Done
         fi
       else : "f:$?:${LINENO}" #>
-        #_ No, \home__confirmed\ failed some of the tests.
+        #_ No, \home_confirmed\ failed some of the tests.
         #_
         #_ Since HOME passed all of the tests, and since HOME and
-        #_ \home__confirmed\ do not have the same value, keep the
+        #_ \home_confirmed\ do not have the same value, keep the
         #_ current value of HOME.
         #if HOME=${HOME}; then : "t:$?:${LINENO}"; else : "f:$?:${LINENO}"; fi #>
         #_ Done
@@ -1420,37 +1420,37 @@ else
       : "f:$?:${LINENO}" #>
       #_ No, HOME failed some of the tests.
       #_
-      #_ Since HOME and \home__confirmed\ do not have the same value,
+      #_ Since HOME and \home_confirmed\ do not have the same value,
       #_
-      #_ Did \home__confirmed\ pass all of the tests?
-      if test "affirmative__home__confirmed" = "${alter_value__home__confirmed}"
+      #_ Did \home_confirmed\ pass all of the tests?
+      if test "affirmative__home_confirmed" = "${alter_value__home_confirmed}"
       then
         : "t:$?:${LINENO}" #>
-        #_ Yes, \home__confirmed\ passed all of the tests.
-        if HOME=${home__confirmed}
+        #_ Yes, \home_confirmed\ passed all of the tests.
+        if HOME=${home_confirmed}
         then : "t:$?:${LINENO}"
         else : "f:$?:${LINENO}"
         fi
         #_ Done.
       else
         : "f:$?:${LINENO}" #>
-        #_ No, \home__confirmed\ failed some of the tests.
+        #_ No, \home_confirmed\ failed some of the tests.
         #_
-        #_ So both HOME and \home__confirmed\ failed some of the tests.
+        #_ So both HOME and \home_confirmed\ failed some of the tests.
         #_
-        #_ Did \home__found\ pass all of the tests?
-        if test "affirmative__home__found" = "${alter_value__home__found}"
+        #_ Did \home_found\ pass all of the tests?
+        if test "affirmative__home_found" = "${alter_value__home_found}"
         then
           : "t:$?:${LINENO}" #>
-          #_ Yes, \home__found\ passed all of the tests.
-          if HOME=${home__found}
+          #_ Yes, \home_found\ passed all of the tests.
+          if HOME=${home_found}
           then : "t:$?:${LINENO}"
           else : "f:$?:${LINENO}"
           fi
           #_ Done.
         else
           : "f:$?:${LINENO}" #>
-          #_ No, \home__found\ failed some of the tests.
+          #_ No, \home_found\ failed some of the tests.
           #_
           #_ So all three values failed some of the tests.
           #_
@@ -1760,7 +1760,7 @@ done
   #  each true loop - duplicates mean data loop and error?
   #
   #
-  #: "global__output_verbose_on: ${global__output_verbose_on}" #>
+  #: "global__yn__output_verbose_on: ${global__yn__output_verbose_on}" #>
   #exit "${LINENO}" #>
 
 
@@ -1779,26 +1779,26 @@ set -- \
   POSIXLY_CORRECT \
   aA \
     bB cC dD eE fF \
-  alter_value__home__confirmed \
-    alter_value__home__found \
-    alter_value__home__original \
+  alter_value__home_confirmed \
+    alter_value__home_found \
+    alter_value__home_original \
   ec0 \
     ec1 ec2 ec3 ec4 ec5 ec6 \
   cmd_str_00 \
     cmd_str_01 \
     cmd_str_02 \
     cmd_str_03 \
-  home__confirmed \
-    home__found \
-    home__original \
+  home_confirmed \
+    home_found \
+    home_original \
   global__assign_variable \
-  global__output_verbose_on \
+  global__yn__output_verbose_on \
   function_variable__1 \
     function_variable__2 \
     function_variable__3 \
     function_variable__4 \
     function_variable__cmd_str \
-  print_value_of_path \
+  yn__print_value_of_path \
   return_code_for_script \
   stdout_00_tr_d \
     stdout_01_strings_n1 \
@@ -3184,5 +3184,3 @@ exit 000
 #     https://man.archlinux.org/man/busybox.1.en#ash
 #     # Per commandline: shell built-in in both busybox sh and ash
 #
-
-
