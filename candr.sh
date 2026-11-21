@@ -2,7 +2,7 @@
 # candr.xtrace / canonicalize-dir.sh
 # shellcheck disable=SC2028,SC2268,SC2310,SC2329
 #
-#   Script is unfinished - 19 Nov 2026 WY
+#   Script is unfinished - 20 Nov 2026 WY
 #
 #
 #   Manual canonicalization of directories. Output can be in brief or
