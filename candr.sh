@@ -2,7 +2,7 @@
 # candr.xtrace / canonicalize-dir.sh
 # shellcheck disable=SC2028,SC2268,SC2310,SC2329
 #
-#   Script is unfinished - 20 Nov 2026 WY
+#   Script is unfinished - 21 Nov 2026 WY
 #
 #
 #   Manual canonicalization of directories. Output can be in brief or
@@ -13,7 +13,7 @@
 #     - Is written for any Posix 2008 compliant shell.
 #     - Avoid any local side-effects.
 #
-#   (c) Wiley Young 2026
+#   (c) Wiley Young 2026, MIT License
 #
 # Tested on these distros and shells:
 #   - Fedora 44: bash-5.3.9
@@ -22,28 +22,26 @@
 
 
 
-
-
 #_  Notes:
 #_  - In Busybox 1.37, \unset\ without \-f\ doesn\t unset functions.
 #_      :-(
-#_  - In POSIX 2008, for printing functions use \type\. The \set\
+#_  - In POSIX \08, for printing functions use \type\. The \set\
 #_  built-in does\t print them yet, as it does in version 5.3 of Bash.
 #_  - Not all \unset\s have \-f\, ie, Solaris 11.2 \sh\. However, the
 #_  Solaris 11.2 man page for unset\1\ reads, \\For each name,
 #_  \unset\ removes the corresponding variable or function value.\\
 #_  Still, historical versions of \unset\ may not have included the
 #_  unsetting of functions.
-#_  - In Posix 2008, for Special Built-in \unset\, option \-f\ is
+#_  - In Posix \08, for Special Built-in \unset\, option \-f\ is
 #_  specified.
-#_  - In Posix 2008 \sh\, the ENV parameter is not expanded in a non-
+#_  - In Posix \08 \sh\, the ENV parameter is not expanded in a non-
 #_  interactive shell. So any value of ENV won\t have any effect.
 #_  - In Bash 5.3, the BASH_ENV parameter is sourced by non-
 #_  interactive shells. When bash is invoked as \sh\, it enters posix
 #_  mode after reading the startup files. So a value of BASH_ENV
 #_  could have an effect, but only before the script is executed, so
 #_  unsetting BASH_ENV would not have any effect.
-#_  - In Posix 2008 \awk\, \split()\ is indeed specified.
+#_  - In Posix \08 \awk\, \split()\ is indeed specified.
 #_  - BusyBox \grep\ does have \-q\ as of v.1.37.0.
 #_  - Variable \cmd_str_*\ is defined as a particular invocation so
 #_  that (a) command execution and (b) the various related messages
@@ -51,7 +49,7 @@
 #_  - Re variables \function_variable__1\ and similar: these are
 #_  global variables.
 #_  - Re why filenames beginning with a hyphen are by default
-#_  disallowed in this script, see Posix 2008, General Concepts 4.7.
+#_  disallowed in this script, see Posix \08, General Concepts 4.7.
 #_  - On Fedora 45, the default values according to \getconf\:
 #_  NAME_MAX = 255; PATH_MAX = 4096
 #_  - As of 12 Nov 2026, all non-built-ins are located in /usr/bin on
@@ -59,7 +57,7 @@
 #_  - Variables of the form \ec1\ are used for transmitting the
 #_  value of the exit code from the if list to \:\ into
 #_  \return_code_for_script\.
-#_  - Special Built-ins per Posix 2008 -- break : continue . eval exec
+#_  - Special Built-ins per Posix \08 -- break : continue . eval exec
 #_  exit export readonly return set shift times trap unset
 #_  - \codeblocks\ is not Posix at all, 2008-2024, and not installed.
 #_  - Commands which are not Posix at all: \enable\ and \which\.
@@ -67,7 +65,7 @@
 #_  table as expected even if PATH is set as RO.
 #_  - Redirections are applied before any expansions occur.
 #_  - \#!/bin/env -i sh\ fails.
-#_  - LINENO does exist in Posix 2008.
+#_  - LINENO does exist in Posix \08.
 #_  - Reportedly, Solaris 10 uses a Bourne sh which is not Posix
 #_  compliant.
 #_      https://unix.stackexchange.com/questions/322035/\
@@ -76,29 +74,29 @@
 #_  - When called from a restricted interactive shell, the script
 #_  does not inherit the restricted setting.
 #_  - Both \realpath\ and \readlink\ weren\t specified in Posix until
-#_  2024.
+#_  \24.
 #_  - The \-P\ option to \type\ is not portable.
 #_  - The \pathchk\ utility offers three separate sets of tests;
 #_  there is no overlap between said sets in the specification, but
 #_  in GNU utilities there is.
-#_  - The \-q\ option to \grep\ does exist in Posix 2008.
-#_  - In Posix 2008, the handling of \//\ is intentionally
+#_  - The \-q\ option to \grep\ does exist in Posix \08.
+#_  - In Posix \08, the handling of \//\ is intentionally
 #_  implementation defined, so catch it, flag it as an error, and
 #_  write a warning to Stderr. See spec. on \dirname\.
 #_  - Defining directories with a trailing forward slash will
 #_  effect whether \[[\, \test\, \[\ and \stat\ dereference
 #_  symlinks. However, \realpath -e\ will still resolve such
 #_  strings correctly.
-#_  - The \-r\ option to \hash\ does exist in Posix 2008.
+#_  - The \-r\ option to \hash\ does exist in Posix \08.
 #_  - If PATH is set RO in the interactive calling shell, in the
 #_  script PATH can still be altered.
 #_  - For \readonly\ without arguments, the results are unspecified. In
 #_  Bash, attempting in a script to assign a value to a RO variable is
 #_  a fatal error, but that doesn\t appear to have been specified by
-#_  Posix in 2008.
+#_  Posix in \08.
 #_  - Names of Special Built-ins cannot be used as names of functions
 #_  (ie, \unset\).
-#_  - Option \-v\ of utility \unset\ is in fact specified in 2008.
+#_  - Option \-v\ of utility \unset\ is in fact specified in \08.
 #_  - The \!\ keyword doesn\t print in xtrace.
 #_  - Reminder: don\t change the name of /etc/passwd. Bad things
 #_  happen.
@@ -107,7 +105,7 @@
 #_    - \command\ cannot find built-ins, apparently.
 #_  - In Oksh, evidently, \hash\ is not available.
 #_  - In Posix, \set -o posix\ DNE, in 2008 or 2024. Also, it appears
-#_  that POSIXLY_CORRECT also DNE exist in Posix 2008 or 2024.
+#_  that POSIXLY_CORRECT also DNE exist in Posix \08 or \24.
 #_  - In Dash, \eval\ cannot accept the string \--\ to signify end
 #_  of options.
 #_  - Some shells exit an an attempted assignment to a RO variable:
@@ -122,7 +120,7 @@
 #_  \$1\ has no assigned value, or if the variable in question is not
 #_  included in the output of \set\, then errexit causes the script to
 #_  halt. To have halted would have been an error. Yet, it\s Posix
-#_  2008, so the least confusing workaround has been applied.
+#_  \08, so the least confusing workaround has been applied.
 #_
 
   #> Debug.
@@ -144,7 +142,7 @@
 
 \:;\: "Security"
 #
-# Posix-2024 suggestion for \\Start off a \secure shell script\ in
+# Posix \24 suggestion for \\Start off a \secure shell script\ in
 # which the script avoids being spoofed by its parent,\\ as found in
 # its spec. for \command\.
 #
@@ -249,7 +247,7 @@ __print_message_stderr__ ()
   #   Just execute as many if..fi\s as there are assigned positional
   # parameters.
   while true
-  do 
+  do
     if test -n "${1:-}"
     then
       : "t:$?:${LINENO}" #>
@@ -384,8 +382,6 @@ __print_warning_stderr__ ()
 
 : "Define functions: Level 3" #>
 
-  # Bug, order of definition MATTERS.
-  
 : "Define function:    __exit_per_return_code_for_script__" #>
 # If the value of variable \return_code_for_script\ is non-zero, then
 # exit.
@@ -548,18 +544,17 @@ __print_results__ ()
 
 : "Define function:    __unset_user_functions__" #>
 #
-# Usage: 
+# Usage:
 #   __unset_user_functions__  [string]
-#   __unset_user_functions__  "${aA}"
 #   __unset_user_functions__  "${aA}"
 #
 __unset_user_functions__ ()
 {
-  :;: "Is the function defined?"
+  :;: "Is the function \\$1\\ defined?"
   if type "$1" | grep "function"
   then
     : "t:$?:${LINENO}" #>
-    :;: "\\unset\\ of \\$1\\"
+    :;: "Attempt \\unset\\ of function"
     if unset -- "$1" #2>/dev/null
     then
       : "t:$?:${LINENO}" #>
@@ -568,21 +563,39 @@ __unset_user_functions__ ()
     fi
 
     :;: "Was the function actually unset?"
-    if type "$1" | grep "function"
+    if type -- "$1" | grep "function"
     then
-      : "t:$?:${LINENO}" #>
-      __print_notice_stderr__ \
-        "\\unset\\ of function failed" "$1"
-      return 1
+      : "t:$?:${LINENO}" "No, function was not unset" #>
+
+      # Try again.
+      :;: "Attempt \\unset -f\\ of function"
+      if unset -f -- "$1" #2>/dev/null
+      then
+        : "t:$?:${LINENO}" #>
+      else
+        : "f:$?:${LINENO}" #>
+      fi
+
+      :;: "Again, was the function actually unset?"
+      if type -- "$1" | grep "function"
+      then
+        : "t:$?:${LINENO}" "No, function was not unset" #>
+        __print_notice_stderr__ \
+          "\\unset\\ of function failed" "$1"
+        return 1
+      else
+        : "f:$?:${LINENO}" "Yes, function \\$1\\ was unset" #>
+        return 0
+      fi
     else
       : "f:$?:${LINENO}" #>
-      :;: "Yes, command \\unset\\ succeeded."
+      :;: "Yes, function \\$1\\ was unset"
       return 0
     fi
   else
     : "f:$?:${LINENO}" #>
-    :;: "No, function \\$1\\ was not defined."
-    return 1
+    :;: "No, function \\$1\\ was not defined"
+    return 2
   fi
 }
   #>
@@ -643,7 +656,7 @@ __check_presence_of_commands__ ()
         yn__print_value_of_path=yes
         __print_notice_stderr__ "$2" "${iI}"
       fi
-  
+
       case "${local__yn__unset_functions}" in
         yes ) __unset_user_functions__ "${iI}" ;;
         no  ) continue ;;
@@ -769,7 +782,7 @@ __input_required__ "$@"
 yn__print_value_of_path=no
 
 # Remove the hash table, so that PATH lookups are forced and
-# therefore current. Posix 2008 recommends \PATH=${PATH}\ in spec.
+# therefore current. Posix \08 recommends \PATH=${PATH}\ in spec.
 # on \hash\.
   #>
   #> Script Testing:
@@ -932,7 +945,7 @@ do
   # \pathchk [no arguments]\ checks \\each component of each pathname
   # of the underlying file system\\ using PATH_MAX and NAME_MAX, for any
   # non-searchable directory, and for any character that is invalid in
-  # its containing directory, under Posix 2008.
+  # its containing directory, under Posix \08.
   #
   if pathchk -- "${cC}" 1>&2
   then
@@ -989,48 +1002,105 @@ __exit_per_return_code_for_script__
   # Bug, this list of environment variables is incomplete.
 
 
-#> DEBUG BLOCK -- To be run only if xtrace is enabled.
-#>
 :;: "Section on \\getconf\\" #>
-#>  _POSIX_NO_TRUNC   # for Pathname Resolution
-#>  BLOCK_SIZE        # for GNU Coreutils
-#>  BLOCKSIZE         # for GNU Coreutils
-#>  CDPATH            # for \cd\
-#>  HOME              # for \cd\
-#>  LC_ALL            # Common
-#>  LD_PRELOAD        # for paranoia ;-P
-#>  LOGNAME           # for ?
-#>  NAME_MAX          # for \pathchk [no args]\ and Pathname Resolution
-#>  PATH_MAX          # for \cd\, \pathchk [no args]\ and \pwd\
-#>  OLDPWD            # for \cd\
-#>  PATH              # for \sh\
-#>  POSIXLY_CORRECT   # for GNU Coreutils
-#>  PWD               # for \cd\ and \pwd\
-#>  SYMLOOP_MAX       # for \chdir()\
-#>
-if printf '%s' "$-" | grep -q -e "x" #>
-then #>
-  : "t:$?:${LINENO}" "Parameter values per \\getconf\\" #>
-  __xtrace_off__ "${LINENO}" #>
-  stdout_03_getconf_a=$( getconf -a ) #>
-  #>
-  for dD in _POSIX_NO_TRUNC CDPATH HOME LC_ALL LD_PRELOAD NAME_MAX PATH_MAX OLDPWD PATH PWD SYMLOOP_MAX #>
-  do #>
-      #echo "dD: ${dD}" #>
+#
+# DEBUG BLOCK -- To be run only if xtrace is enabled.
+#
+#
+# Lists of environment variables.
+#
+# [ ] for GNU Coreutils, v.9.11 (c.2026)
+#             BLOCK_SIZE
+#             BLOCKSIZE
+#             POSIXLY_CORRECT
+# [ ] for Posix \08, Pathname Resolution
+#             _POSIX_NO_TRUNC
+#             NAME_MAX
+# [ ] for Posix \08 -- Common env. vars.
+#             LC_ALL
+# [ ] for Posix \08 Utility \awk\
+# [ ] for Posix \08 Utility \cd\
+#             CDPATH
+#             HOME
+#             PATH_MAX
+#             OLDPWD
+#             PWD
+# [ ] for Posix \08 Utility \command\
+# [ ] for Posix \08 Utility \dirname\
+# [ ] for Posix \08 Utility \echo\
+# [ ] for Posix \08 Utility \env\
+# [ ] for Posix \08 Utility \file\
+# [ ] for Posix \08 Utility \find\
+# [ ] for Posix \08 Utility \getconf\
+# [ ] for Posix \08 Utility \grep\
+# [ ] for Posix \08 Utility \id\
+# [ ] for Posix \08 Utility \logname\
+# [ ] for Posix \08 Utility \pathchk [no args]\
+#             NAME_MAX
+#             PATH_MAX
+# [ ] for Posix \08 Utility \printf\
+# [ ] for Posix \08 Utility \pwd\
+#             PATH_MAX
+#             PWD
+# [ ] for Posix \08 Utility \sed\
+# [ ] for Posix \08 Utility \sh\
+#             PATH
+# [ ] for Posix \08 Utility \strings\
+# [ ] for Posix \08 Utility \test\
+# [ ] for Posix \08 Utility \true\
+# [ ] for Posix \08 Utility \type\
+# [ ] for Posix \08 Utility \unalias
+# [ ] for Posix \08 Special Parameter \break\
+# [ ] for Posix \08 Special Parameter \:\
+# [ ] for Posix \08 Special Parameter \continue\
+# [ ] for Posix \08 Special Parameter \eval\
+# [ ] for Posix \08 Special Parameter \exit\
+# [ ] for Posix \08 Special Parameter \readonly\
+# [ ] for Posix \08 Special Parameter \return\
+# [ ] for Posix \08 Special Parameter \set\
+# [ ] for Posix \08 Special Parameter \shift\
+# [ ] for Posix \08 Special Parameter \unset\
+# [ ] for paranoia ;-P
+#             LD_PRELOAD
+# [ ] for ?
+#             LOGNAME
+# [ ] for Posix \08 C function \chdir()\
+#             SYMLOOP_MAX
+#
+if printf '%s' "$-" | grep -q -e "x"
+then
+  : "t:$?:${LINENO}" "Parameter values per \\getconf\\"
+  __xtrace_off__ "${LINENO}"
+  stdout_03_getconf_a=$( getconf -a )
+ 
+  for dD in \
+    _POSIX_NO_TRUNC \
+    CDPATH \
+    HOME \
+    LC_ALL \
+    LD_PRELOAD \
+    NAME_MAX \
+    PATH_MAX \
+    OLDPWD \
+    PATH \
+    PWD \
+    SYMLOOP_MAX
+  do
+      #echo "dD: ${dD}"
     #+ Note, this particular \if..fi\ is a workaround for errexit
     #+ and xtrace visibility.
-    if printf '%s\n' "${stdout_03_getconf_a}" | grep -E -e "^${dD} " #>
-    then : "t:$?:${LINENO}" #>
-    else : "f:$?:${LINENO}" #>
-    fi #>
-  done #>
-  __reset_xtrace__ #>
+    if printf '%s\n' "${stdout_03_getconf_a}" | grep -E -e "^${dD} "
+    then : "t:$?:${LINENO}"
+    else : "f:$?:${LINENO}"
+    fi
+  done
+  __reset_xtrace__
 #else : #> xtrace is off, so this line doesn\t print.
-fi #>
-  #>
-  #set -x #>
-  #: exit "${LINENO}" #>
-  #>
+fi
+ 
+  #set -x
+  #: exit "${LINENO}"
+ 
 
 :;: "Unset Environment Variables"
   #>
@@ -1054,7 +1124,7 @@ do
     #: "eE: ${eE}" #>
     #>
   # It would seem obvious to use \test -n\ and a loop, but doing
-  # so would be problematic under Posix 2008 due to there being
+  # so would be problematic under Posix \08 due to there being
   # multiple layers of expansion. Using a function allows the
   # regular expression to be defined in just one place.
   if __check_for_variable_assignment__ "${eE}"
@@ -1115,7 +1185,7 @@ home_original=${HOME}
 #_      - \PWD\: \\An absolute pathname of the current working
 #_      directory. If an application sets or unsets the value of PWD,
 #_      the behavior of \pwd\ is unspecified.\\ - spec. on \pwd\.
-#_    - From Posix 2008:
+#_    - From Posix \08:
 #_      - Shell Command Language 2.6.1: \\If HOME is unset, the results
 #_      are unspecified.\\
 #_    - The \id\ utility has no knowledge of \sudo\ or means of
@@ -1238,7 +1308,7 @@ else
     #_    Tilde Expansion is specified.
     #_    The GNU Coreutils 9.11 version of \id\ requires
     #_  /etc/passwd, but that doesn\t necessarily mean that other
-    #_  implementations do also. The Posix 2008 spec. of \id\ doesn\t
+    #_  implementations do also. The Posix \08 spec. of \id\ doesn\t
     #_  mention /etc/passwd at all.
     #_    So prefer data from Tilde Expansion.
     #_
@@ -1495,7 +1565,7 @@ fi
 
 :;: "PWD aught to be defined, for \\cd\\ and \\pwd\\"
 #_ Notes,
-#_   - In Posix 2008 effects of assignments to PWD are unspecified.
+#_   - In Posix \08 effects of assignments to PWD are unspecified.
 #_   - In Bash 5.3.9+,
 #_     - If restricted mode is enabled and PWD is undefined, a call to
 #_     \cd\ will not assign a value to PWD.
@@ -1509,7 +1579,7 @@ else
 
   #_ A call to \cd\ is supposed to assign a value to PWD.
   #_
-  #_ Notes, from Posix 2008:
+  #_ Notes, from Posix \08:
   #_  - Shell Command Language 2.6.1: \\If HOME is unset, the results
   #_  are unspecified.\\
   #_  - Spec. of \cd\, description of algorithm:
@@ -1559,7 +1629,7 @@ else
   #_        are unspecified.\\
   #_        -- disallow empty strings as operands.
   #_
-  #_  - Posix 2008 \pwd\:
+  #_  - Posix \08 \pwd\:
   #_    - \\The pwd utility Shall write to standard output an
   #_    absolute pathname of the current working directory, which
   #_    does not contain the filenames dot or dot-dot.\\
@@ -1629,7 +1699,7 @@ done
 
   # Buggy - rewrite script from this point on.
   #
-  # See Posix 2008, Base Definitions, General Concepts,
+  # See Posix \08, Base Definitions, General Concepts,
   #   4.13 Pathname Resolution
   #
   # Requirements:
@@ -1912,7 +1982,7 @@ exit 000
 #     https://pubs.opengroup.org/onlinepubs/9799919799/idx/utilities.html
 #
 #
-# 
+#
 # Special considerations
 #   https://www.gnu.org/software/coreutils/manual/coreutils.html#Trailing-slashes-1
 #   https://www.pixelbeat.org/docs/coreutils-gotchas.html
@@ -2543,7 +2613,7 @@ exit 000
 #     https://ss64.com/mac/pwd.html -- binary? man page is silent re built-ins
 #
 #     # FreeBSD
-#     https://man.freebsd.org/cgi/man.cgi?query=pwd&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html 
+#     https://man.freebsd.org/cgi/man.cgi?query=pwd&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
 #     # NetBSD
 #     https://man.netbsd.org/pwd.1 -- binary?
@@ -2674,7 +2744,7 @@ exit 000
 #       #_ Note, Oracle has separate man pages for each of the shells:
 #       #     bash, beansh, csh, git-sh, jsh, ksh, ksh88, ksh93, sh, tcsh, zsh.
 #       https://docs.oracle.com/cd/E36784_01/html/E36870/shell-built-ins-1.html#scrolltoc
-#   
+#
 #     # Mac
 #     https://ss64.com/mac/bash.html -- has --posix mode
 #     https://ss64.com/mac/zsh.html -- Zsh built-ins on MacOS
@@ -2691,7 +2761,7 @@ exit 000
 #     # BusyBox -- exists in BusyBox, but the full documentations is where??
 #     http://www.busybox.net/downloads/BusyBox.html#sh
 #     https://man.archlinux.org/man/busybox.1.en#sh
-#     
+#
 #       # See also, BusyBox ash
 #       http://www.busybox.net/downloads/BusyBox.html#ash
 #       https://man.archlinux.org/man/busybox.1.en#ash
@@ -2826,7 +2896,7 @@ exit 000
 #     # Oracle (Solaris)
 #     https://docs.oracle.com/cd/E36784_01/html/E36870/unalias-1.html#scrolltoc
 #     # No shell built-in
-#     
+#
 #     # Mac
 #     https://ss64.com/mac/alias.html -- bash built-in
 #     https://ss64.com/mac/alias-zsh.html -- zsh built-in
@@ -2837,7 +2907,7 @@ exit 000
 #     # NetBSD
 #     https://man.netbsd.org/sh.1 -- shell built-in
 #
-#     # OpenBSD 
+#     # OpenBSD
 #     https://man.openbsd.org/sh -- shell built-in
 #
 #     # BusyBox
@@ -3184,3 +3254,5 @@ exit 000
 #     https://man.archlinux.org/man/busybox.1.en#ash
 #     # Per commandline: shell built-in in both busybox sh and ash
 #
+
+
