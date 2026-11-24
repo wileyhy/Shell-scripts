@@ -5,7 +5,7 @@
 #set | sha256sum #>
 #set | wc #>
 set > output_tof_set.txt  #>
-script_version=26.11.23 # Script is incomplete & unfinished.
+script_version=26.11.22 # Script is incomplete & unfinished.
 #\set -x #>
 #
 #
@@ -48,7 +48,7 @@ script_version=26.11.23 # Script is incomplete & unfinished.
 #_  could have an effect, but only before the script is executed, so
 #_  unsetting BASH_ENV would not have any effect.
 #_  - In Posix \08 \awk\, \split()\ is indeed specified.
-#_  - BusyBox \grep\ does have \-q\ as of v.1.37.0.
+#_  - Busybox \grep\ does have \-q\ as of v.1.37.0.
 #_  - Variable \cmd_str_*\ is defined as a particular invocation so
 #_  that (a) command execution and (b) the various related messages
 #_  can all use or reference the precise same command string.
@@ -224,7 +224,7 @@ yn__allow_input_strings_to_begin_with_hyphens=N
 yn__print_only__value_of_path=N
 # These variables are in use locally.
 command -p unset \
-  aA bB cC dD eE fF \
+  lL mM nN oO pP qQ \
   ec0 ec1 ec2 ec3 ec4 ec5 ec6
   #>
   #set -x #>
@@ -236,13 +236,13 @@ command -p unset \
 #
 # Usage:
 #     __check_for_presence_of_commands__ \
-#         [Options for command] [Message, argument for Notice] \
-#             [Whether to unset user functions]
-#     __check_for_presence_of_commands__ [-pv|-v] "Blah" [Y|N]
+#         [Options for \command\] [Message] -- [Command names]
 #     __check_for_presence_of_commands__ \
-#         -pv "Command is not in PATH" -- [command names]
+#         [-pv|-v]              "Some text" -- foo.sh
 #     __check_for_presence_of_commands__ \
-#         -v "Built-in is not available" -- [command names]
+#         -pv      "Command is not in PATH" -- "awk" "cd" "command"
+#     __check_for_presence_of_commands__ \
+#         -v    "Built-in is not available" -- "break" ":" "continue"
 #
 __check_for_presence_of_commands__ ()
 {
@@ -267,10 +267,10 @@ __check_for_presence_of_commands__ ()
     command -p exit "${LINENO}"
   fi
   :;: "Loop on the remainder of positional parameters"
-  for iI
+  for lL
   do
-      :;: "iI: \\${iI}\\";: #>
-    if command "${local__option_for_command}" -- "${iI}" >/dev/null
+      :;: "lL: \\${lL}\\";: #>
+    if command "${local__option_for_command}" -- "${lL}" >/dev/null
     then
       : "t:$?:${LINENO}" #>
     else
@@ -278,9 +278,9 @@ __check_for_presence_of_commands__ ()
       return_code_for_script=${ec1:=$?}
       yn__print_only__value_of_path=Y
       command -p printf '%s: %s: %s\n' \
-        "$0" "${local__text_for_print_notice}" "${iI}" 1>&2
+        "$0" "${local__text_for_print_notice}" "${lL}" 1>&2
     fi
-    __unset_user_functions__ "${iI}"
+    __unset_user_functions__ "${lL}"
   done
   command -p unset \
     local__option_for_command \
@@ -301,7 +301,7 @@ __reset_xtrace__ ()
 #
 # Usage:
 #   __unset_user_functions__  [string]
-#   __unset_user_functions__  "${aA}"
+#   __unset_user_functions__  "${foo}"
 #
 __unset_user_functions__ ()
 {
@@ -404,8 +404,8 @@ __xtrace_off__ ()
 if command -v hash >/dev/null 2>&1
 then
   : "t:$?:${LINENO}" #>
-  stdout_08_hash=$( command -p hash )
-  if command -p test -n "${stdout_08_hash}"
+  stdout_00_hash=$( command -p hash )
+  if command -p test -n "${stdout_00_hash}"
   then
     : "t:$?:${LINENO}" #>
     #+ Workaround for errexit; informative in xtrace.
@@ -415,14 +415,15 @@ then
     else
       : "f:$?:${LINENO}" #>
     fi
-    stdout_09_hash=$( command -p hash )
-    if ! command -p test -n "${stdout_09_hash}"
+    stdout_01_hash=$( command -p hash )
+    if command -p test -n "${stdout_01_hash}"
     then
+      : "t:$?:${LINENO}" #>
+    else
       : "f:$?:${LINENO}" #>
       command -p printf '%s: %s: %s\n' \
         "$0" "Command failed." "\\hash -r\\" 1>&2
       PATH=${PATH}
-    else : "t:$?:${LINENO}" #>
     fi
   else : "f:$?:${LINENO}" #>
   fi
@@ -436,7 +437,7 @@ __xtrace_off__ "${LINENO}"
   #>
   #> Script Testing:
   #enable -n break #>
-  #aA=codeblocks #>
+  #codeblocks #>
   #cd(){ echo foo;} #>
 
 
@@ -609,7 +610,7 @@ __print_only__message_stderr__ ()
 # Usage:
 #        __print_only__error_stderr__   [Description]         [Data]
 #        __print_only__error_stderr__   "Zero length input" \
-#                                    (Latter inputs can be omitted)
+#                                    (Later inputs can be omitted)
 #
 __print_only__error_stderr__   ()
 {
@@ -651,14 +652,14 @@ __print_only__warning_stderr__ ()
 
 :;: "Define functions: Group 1, Level 2" #>
 
-:   "Define function:    __error_invalid_option__" #>
+:   "Define function:    __error_invalid_argument__" #>
 #
-# Usage:    __error_invalid_option__ \
+# Usage:    __error_invalid_argument__ \
 #                     [option in question] [optional line number]
-#           __error_invalid_option__ \
+#           __error_invalid_argument__ \
 #                     "${foo}"              "${LINENO}"
 #
-__error_invalid_option__ ()
+__error_invalid_argument__ ()
 {
   __print_only__error_stderr__ "Invalid option" "$1"
   __print_only__message_stderr__ "$(
@@ -777,9 +778,9 @@ __make_sure_variable_is_defined_properly__ ()
 # Usage:  __print_only__results__ [Script input] \
 #                                   [${canpth}|${nsfod}] \
 #                                              [optional redirection]
-# Usage:  __print_only__results__ "${fF}" "${nsfod}" >&2
+# Usage:  __print_only__results__ "${qQ}" "${nsfod}" >&2
 #                                      ^redirect output to STDERR
-# Usage:  __print_only__results__ "${fF}" "${canpth}"
+# Usage:  __print_only__results__ "${qQ}" "${canpth}"
 #                                      ^normal output to STDOUT
 # shellcheck disable=SC2329
 __print_only__results__ ()
@@ -844,19 +845,19 @@ __print_only__results__ ()
     #reset; clear; ./candr.xtrace -v foooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo #>
     #reset; clear; ./candr.xtrace -v /-foo #>
     #>
-for cC
+for mM
 do
     :;: "Top of loop";: #>
     #>
   __xtrace_off__ "${LINENO}"
 
   # Remove NULs and nonprintable bytes.
-  stdout_00_tr_d=$( printf '%s' "${cC}" | tr -d '\0' )
-  stdout_01_strings_n1=$(
-    printf '%s' "${stdout_00_tr_d}" | strings -n 1
+  stdout_02_tr_d=$( printf '%s' "${mM}" | tr -d '\0' )
+  stdout_03_strings_n1=$(
+    printf '%s' "${stdout_02_tr_d}" | strings -n 1
   )
 
-  if test "X${cC}" = "X${stdout_01_strings_n1}"
+  if test "X${mM}" = "X${stdout_03_strings_n1}"
   then
     : "t:$?:${LINENO}" #>
   else
@@ -873,7 +874,7 @@ do
   # Tests on filename length.
   #
   # Zero length input is disallowed.
-  if test -n "${cC}"
+  if test -n "${mM}"
   then
     : "t:$?:${LINENO}" #>
   else
@@ -893,7 +894,7 @@ do
   # non-searchable directory, and for any character that is invalid in
   # its containing directory, under Posix \08.
   #
-  if pathchk -- "${cC}" 1>&2
+  if pathchk -- "${mM}" 1>&2
   then
     : "t:$?:${LINENO}" #>
   else
@@ -901,7 +902,7 @@ do
     return_code_for_script=${ec4:=$?}
     
     __print_only__error_stderr__ \
-      "Error received from \\pathchk [no args]\\" "${cC}"
+      "Error received from \\pathchk [no args]\\" "${mM}"
 
     # Print the values of the relevant variables.
     __print_only__notice_stderr__ "Values of relevant system parameters"
@@ -934,17 +935,14 @@ __exit_per_return_code_for_script__
 __input_required__ "$@"
 
 : "\\case\\ on positional paramters of the script"
-for yY
+for nN
 do
   :;: "Test \\return_code_for_script\\" #>
-  if test 0 -ne "${return_code_for_script}"
+  if test 0 -eq "${return_code_for_script}"
   then
     : "t:$?:${LINENO}" #>
-    break
-  else
-    : "f:$?:${LINENO}" #>
-    case "$1" in
-      --* | -[bhVv\?]* )
+    case "${nN}" in
+      --* | -[Vbhv\?]* )
         : "\\case\\ branch: double hyphen and option strings" #>
         :;: "Test \\yn__allow_input_strings_to_begin_with_hyphens\\" #>
         if test "Y" = "${yn__allow_input_strings_to_begin_with_hyphens}"
@@ -955,14 +953,14 @@ do
         else
           : "f:$?:${LINENO}" #>
           : "Filenames beginning with hyphens are not allowed" #>
-          if test -e "$1"
+          if test -e "${nN}"
           then
             : "t:$?:${LINENO}" "Filename exists" #>
-            __error_invalid_option__ "$1" "${LINENO}"
+            __error_invalid_argument__ "${nN}" "${LINENO}"
             return_code_for_script=1
           else
             : "f:$?:${LINENO}" "Filename DNE" #>
-            case "$1" in
+            case "${nN}" in
               --brief | --b* | -b )
                 : "\\case\\ branch: --brief" #>
                 global__yn__output_verbose_on=N
@@ -973,6 +971,7 @@ do
                 : "\\case\\ branch: --help" #>
                 printf '%s\n' "${usage_msg:?}" 1>&2
                 return_code_for_script=1
+                break
                 ;;
               --verbose | --verb* | -v )
                 : "\\case\\ branch: --verbose" #>
@@ -985,6 +984,7 @@ do
                 __print_only__message_stderr__ \
                   "${special_variable_zero}" "Version" "${script_version}"
                 return_code_for_script=1
+                break
                 ;;
               -- )
                 : "\\case\\ branch: end-of-options string" #>
@@ -1011,39 +1011,42 @@ do
           : "f:$?:${LINENO}" #>
 
           # Filenames beginning with a hyphen are disallowed, part 1\2.
-          stdout_02_cut=$( printf '%s' "${cC}" | cut -c 1 )
-          if test "-" != "${stdout_02_cut}"
+          stdout_04_cut=$( printf '%s' "${nN}" | cut -c 1 )
+          if test "-" != "${stdout_04_cut}"
           then
             : "t:$?:${LINENO}" #>
           else
             : "f:${ec5:=$?}:${LINENO}" #>
             return_code_for_script=${ec5:=$?}
-            __error_invalid_option__ "$1" "${LINENO}"
+            __error_invalid_argument__ "${nN}" "${LINENO}"
             return_code_for_script=1
           fi
 
           # Filenames beginning with a hyphen are disallowed, part 2\2.
-          if pathchk -P -- "${cC}" 1>&2
+          if pathchk -P -- "${nN}" 1>&2
           then
             : "t:$?:${LINENO}" #>
           else
             : "f:${ec6:=$?}:${LINENO}" #>
             return_code_for_script=${ec6:=$?}
             __print_only__error_stderr__ \
-              "Error received from \\pathchk -P\\" "${cC}"
-            __error_invalid_option__ "$1" "${LINENO}"
+              "Error received from \\pathchk -P\\" "${nN}"
+            __error_invalid_argument__ "${nN}" "${LINENO}"
             return_code_for_script=1
           fi
 
-          __error_invalid_option__ "$1" "${LINENO}"
+          __error_invalid_argument__ "${nN}" "${LINENO}"
           return_code_for_script=1
         fi
         ;;
       * )
-        : "\\case\\ branch: asterisk: \\\$1\\: $1" #>
+        : "\\case\\ branch: asterisk: \\\${nN}\\: ${nN}" #>
         true
         ;;
     esac
+  else
+    : "f:$?:${LINENO}" #>
+    break
   fi
 done
 :;: "End of loop" #>
@@ -1131,9 +1134,9 @@ if printf '%s' "$-" | grep -q -e "x"
 then
   : "t:$?:${LINENO}" "Parameter values per \\getconf\\"
   __xtrace_off__ "${LINENO}"
-  stdout_03_getconf_a=$( getconf -a )
+  stdout_05_getconf_a=$( getconf -a )
  
-  for dD in \
+  for oO in \
     _POSIX_NO_TRUNC \
     CDPATH \
     HOME \
@@ -1146,10 +1149,10 @@ then
     PWD \
     SYMLOOP_MAX
   do
-      #echo "dD: ${dD}"
+      #echo "oO: ${oO}"
     #+ Note, this particular \if..fi\ is a workaround for errexit
     #+ and xtrace visibility.
-    if printf '%s\n' "${stdout_03_getconf_a}" | grep -E -e "^${dD} "
+    if printf '%s\n' "${stdout_05_getconf_a}" | grep -E -e "^${oO} "
     then : "t:$?:${LINENO}"
     else : "f:$?:${LINENO}"
     fi
@@ -1167,48 +1170,48 @@ fi
   #> Script Testing:
   #POSIXLY_CORRECT=Y #>
   #LD_PRELOAD=foo #>
-  #eE=LD_PRELOAD #>
-  #set | grep -E "^${eE}=.+"; echo $? #>
+  #pP=LD_PRELOAD #>
+  #set | grep -E "^${pP}=.+"; echo $? #>
   #unset LD_PRELOAD; echo $? #>
-  #set | grep -E "^${eE}=.+"; echo $? #>
+  #set | grep -E "^${pP}=.+"; echo $? #>
   #LD_PRELOAD=x #>
   #>
 
 old_oldpwd=${OLDPWD:-}
 old_cdpath=${CDPATH:-}
 
-for eE in \
+for pP in \
   CDPATH \
   OLDPWD
 do
-    #: "eE: ${eE}" #>
+    #: "pP: ${pP}" #>
     #>
   # It would seem obvious to use \test -n\ and a loop, but doing
   # so would be problematic under Posix \08 due to there being
   # multiple layers of expansion. Using a function allows the
   # regular expression to be defined in just one place.
-  if __check_for_variable_assignment__ "${eE}"
+  if __check_for_variable_assignment__ "${pP}"
   then
-    : "t:$?:${LINENO}" "${eE} is defined" #>
+    : "t:$?:${LINENO}" "${pP} is defined" #>
     # shellcheck disable=SC2016
-    cmd_str_03='unset -- "${eE}"'
+    cmd_str_03='unset -- "${pP}"'
 
     if eval "${cmd_str_03}"
     then
       : "t:$?:${LINENO}" "\\${cmd_str_03}\\ returned zero" #>
-      if __check_for_variable_assignment__ "${eE}"
+      if __check_for_variable_assignment__ "${pP}"
       then
         : "t:$?:${LINENO}" #>
-        __print_only__error_stderr__ "${eE} is defined"
+        __print_only__error_stderr__ "${pP} is defined"
         exit 1
-      else : "f:$?:${LINENO}" "${eE} is undefined / zero length";: #>
+      else : "f:$?:${LINENO}" "${pP} is undefined / zero length";: #>
       fi
     else
       : "f:$?:${LINENO}" #>
       __print_only__notice_stderr__ \
         "Command \\unset\\ failed" "\\${cmd_str_03}\\"
     fi
-  else : "f:$?:${LINENO}" "${eE} is undefined or of zero length";: #>
+  else : "f:$?:${LINENO}" "${pP} is undefined or of zero length";: #>
   fi
 done
   #>
@@ -1255,7 +1258,7 @@ home_original=${HOME}
   #set -x #>
 
 # Is the existing variable HOME set as RO?
-stdout_04_readonly_awk=$(
+stdout_06_readonly_awk=$(
   readonly -p \
     | awk \
       '{
@@ -1267,7 +1270,7 @@ stdout_04_readonly_awk=$(
         }
       }'
     )
-if test -n "${stdout_04_readonly_awk:-}"
+if test -n "${stdout_06_readonly_awk:-}"
 then
   : "t:$?:${LINENO}" #>
 else
@@ -1303,7 +1306,7 @@ else
   #
   #+  Note, Workaround for errexit and xtrace visibility, as
   #+  throughout.
-  if stdout_05_tilde_exp=$( eval printf '%s\n' ~"$( logname )" )
+  if stdout_07_tilde_exp=$( eval printf '%s\n' ~"$( logname )" )
   then
     : "t:$?:${LINENO}" #>
     : "Tilde expansion succeeded"
@@ -1316,14 +1319,14 @@ else
   if test -f /etc/passwd
   then
     : "t:$?:${LINENO}" #>
-    stdout_06_id_un=$( id -un )
+    stdout_08_id_un=$( id -un )
 
-    if grep -q "${stdout_06_id_un}" /etc/passwd
+    if grep -q "${stdout_08_id_un}" /etc/passwd
     then
       : "t:$?:${LINENO}" #>
       #+ Workaround for errexit and xtrace visibility.
-      if stdout_07_awk_etc_passwd=$(
-           awk -F: -v usrnm="${stdout_06_id_un}" \
+      if stdout_09_awk_etc_passwd=$(
+           awk -F: -v usrnm="${stdout_08_id_un}" \
              '$1 == usrnm { print $6 }' /etc/passwd
            )
       then
@@ -1336,7 +1339,7 @@ else
     else
       : "f:$?:${LINENO}" #>
       __print_only__error_stderr__ \
-        "Username is not present in /etc/passwd " "${stdout_06_id_un}"
+        "Username is not present in /etc/passwd " "${stdout_08_id_un}"
       exit 1
     fi
   else
@@ -1351,10 +1354,10 @@ else
 
   # Check for conflicting results.
   #_ Note, in theory, both variables could be of zero length.
-  if test "X${stdout_05_tilde_exp}" = "X${stdout_07_awk_etc_passwd}"
+  if test "X${stdout_07_tilde_exp}" = "X${stdout_09_awk_etc_passwd}"
   then
     : "t:$?:${LINENO}" "Result confirmed" #>
-    home_confirmed=${stdout_05_tilde_exp}
+    home_confirmed=${stdout_07_tilde_exp}
     home_found=NA
   else
     : "f:$?:${LINENO}" #>
@@ -1372,16 +1375,16 @@ else
     #_  mention /etc/passwd at all.
     #_    So prefer data from Tilde Expansion.
     #_
-    if test -n "${stdout_05_tilde_exp}"
+    if test -n "${stdout_07_tilde_exp}"
     then
       : "t:$?:${LINENO}" #>
-      home_found=${stdout_05_tilde_exp}
+      home_found=${stdout_07_tilde_exp}
     else
       : "f:$?:${LINENO}" #>
-      if test -n "${stdout_07_awk_etc_passwd}"
+      if test -n "${stdout_09_awk_etc_passwd}"
       then
         : "t:$?:${LINENO}" #>
-        home_found=${stdout_07_awk_etc_passwd}
+        home_found=${stdout_09_awk_etc_passwd}
       else
         : "f:$?:${LINENO}" #>
         home_found="::No_valid_values_were_found::"
@@ -1743,15 +1746,15 @@ nsfod="(No such file or directory)"
 
 :;: "The given path must exist in the filesystem"
 #> Script Test input: /dev/qwertyuiop
-for fF
+for qQ
 do
-  if test -e "${fF}"
+  if test -e "${qQ}"
   then
     : "t:$?:${LINENO}" "Path exists" #>
   else
     : "f:$?:${LINENO}" #>
     return_code_for_script=1
-    __print_only__results__ "${fF}" "${nsfod}" >&2
+    __print_only__results__ "${qQ}" "${nsfod}" >&2
     continue 1
   fi
 done
@@ -1846,7 +1849,7 @@ echo not yet implemented
   #       - The special filename dot-dot, \..\, \\Shall refer to the
   #       parent directory of its predecessor directory.
   #         - If \.\ is \/root\, then \..\ May also be \/root\.
-  #         Note, this is c.2008 -- look for changes since then!
+  #         Note, this is c.2008 -- look for changes since then.
   #         - ...
   #
   #
@@ -1919,8 +1922,8 @@ PATH=${old_path:-}
 # Unset variables and functions
 set -- \
   POSIXLY_CORRECT \
-  aA \
-    bB cC dD eE fF iI yY \
+  lL \
+    mM nN oO pP qQ \
   alter_value__home_confirmed \
     alter_value__home_found \
     alter_value__home_original \
@@ -1952,15 +1955,16 @@ set -- \
     old_path \
     old_posixly_correct \
   return_code_for_script \
-  stdout_00_tr_d \
-    stdout_01_strings_n1 \
-    stdout_02_cut \
-    stdout_03_getconf_a \
-    stdout_04_readonly_awk \
-    stdout_05_tilde_exp \
-    stdout_06_id_un \
-    stdout_07_awk_etc_passwd \
-    stdout_08_hash \
+  stdout_00_hash \
+    stdout_01_hash \
+    stdout_02_tr_d \
+    stdout_03_strings_n1 \
+    stdout_04_cut \
+    stdout_05_getconf_a \
+    stdout_06_readonly_awk \
+    stdout_07_tilde_exp \
+    stdout_08_id_un \
+    stdout_09_awk_etc_passwd \
   script_version \
   special_variable_zero \
   usage_msg \
@@ -1968,7 +1972,7 @@ set -- \
   yn__print_only__value_of_path \
   __check_for_presence_of_commands__ \
   __check_for_variable_assignment__ \
-  __error_invalid_option__ \
+  __error_invalid_argument__ \
   __exit_per_return_code_for_script__ \
   __input_required__ \
   __make_sure_variable_is_defined_properly__ \
@@ -2086,10 +2090,10 @@ exit 000
 #     # IBM (AIX)
 #     # Oracle (Solaris)
 #     # Mac
-#     # FreeBSD
-#     # NetBSD
-#     # OpenBSD
-#     # BusyBox
+#     # Freebsd
+#     # Netbsd
+#     # Openbsd
+#     # Busybox
 #
 #
 #   # awk
@@ -2106,21 +2110,22 @@ exit 000
 #
 #     # Oracle (Solaris)
 #     https://docs.oracle.com/cd/E36784_01/html/E36870/awk-1.html#scrolltoc -- AWK
-#     https://docs.oracle.com/cd/E36784_01/html/E36870/nawk-1.html#scrolltoc -- nAWK
+#     https://docs.oracle.com/cd/E36784_01/html/E36870/nawk-1.html#scrolltoc -- NAWK
 #
 #     # Mac
 #     https://ss64.com/mac/awk.html
 #
-#     # FreeBSD
+#     # Freebsd
 #     https://man.freebsd.org/cgi/man.cgi?query=awk&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD
+#     # Netbsd
 #     https://man.netbsd.org/awk.1
 #
-#     # OpenBSD
+#     # Openbsd
 #     https://man.openbsd.org/awk.1
 #
-#     # BusyBox
+#     # Busybox
+#     #   Note -- URL\s are case sensitive
 #     http://www.busybox.net/downloads/BusyBox.html#awk
 #
 #
@@ -2143,16 +2148,16 @@ exit 000
 #     # Mac
 #     https://ss64.com/mac/basename.html
 #
-#     # FreeBSD
+#     # Freebsd
 #     https://man.freebsd.org/cgi/man.cgi?query=basename&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD
+#     # Netbsd
 #     https://man.netbsd.org/basename.1
 #
-#     # OpenBSD
+#     # Openbsd
 #     https://man.openbsd.org/basename.1
 #
-#     # BusyBox
+#     # Busybox
 #     http://www.busybox.net/downloads/BusyBox.html#basename
 #
 #
@@ -2177,17 +2182,17 @@ exit 000
 #     https://ss64.com/mac/cd.html -- bash built-in
 #     https://ss64.com/mac/cd-zsh.html -- zsh built-in
 #
-#     # FreeBSD
+#     # Freebsd
 #     https://man.freebsd.org/cgi/man.cgi?query=cd&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD
+#     # Netbsd
 #     https://man.netbsd.org/cd.1 -- binary?
 #     https://man.netbsd.org/sh.1 -- built-in
 #
-#     # OpenBSD
+#     # Openbsd
 #     https://man.openbsd.org/sh -- shell built-in
 #
-#     # BusyBox
+#     # Busybox
 #     https://man.archlinux.org/man/busybox.1.en#sh
 #     https://man.archlinux.org/man/busybox.1.en#ash
 #     # Per commandline: \cd\ is a shell built-in in both busybox sh and ash
@@ -2213,16 +2218,16 @@ exit 000
 #     # Mac
 #     https://ss64.com/mac/command.html -- bash and zsh built-ins; just one man page, though
 #
-#     # FreeBSD
+#     # Freebsd
 #     https://man.freebsd.org/cgi/man.cgi?query=command&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD
+#     # Netbsd
 #     https://man.netbsd.org/sh.1 -- shell built-in
 #
-#     # OpenBSD
+#     # Openbsd
 #     https://man.openbsd.org/sh -- shell built-in
 #
-#     # BusyBox - Not directly available - try BusyBox sh or ash
+#     # Busybox - Not directly available - try Busybox sh or ash
 #     https://man.archlinux.org/man/busybox.1.en#sh
 #     https://man.archlinux.org/man/busybox.1.en#ash
 #     # Per commandline: shell built-in in both busybox sh and ash
@@ -2247,16 +2252,16 @@ exit 000
 #     # Mac
 #     https://ss64.com/mac/dirname.html
 #
-#     # FreeBSD
+#     # Freebsd
 #     https://man.freebsd.org/cgi/man.cgi?query=dirname&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD
+#     # Netbsd
 #     https://man.netbsd.org/dirname.1
 #
-#     # OpenBSD
+#     # Openbsd
 #     https://man.openbsd.org/dirname
 #
-#     # BusyBox
+#     # Busybox
 #     http://www.busybox.net/downloads/BusyBox.html#dirname
 #
 #
@@ -2284,17 +2289,17 @@ exit 000
 #     https://ss64.com/mac/echo.html -- bash built-in
 #     # Apparently there\s a zsh built-in echo, but the man page link points to \alias\
 #
-#     # FreeBSD
+#     # Freebsd
 #     https://man.freebsd.org/cgi/man.cgi?query=echo&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD
+#     # Netbsd
 #     https://man.netbsd.org/echo.1 -- binary
 #     # No shell built-in
 #
-#     # OpenBSD
+#     # Openbsd
 #     https://man.openbsd.org/echo -- echo
 #
-#     # BusyBox
+#     # Busybox
 #     http://www.busybox.net/downloads/BusyBox.html#echo
 #     https://man.archlinux.org/man/busybox.1.en#sh
 #     https://man.archlinux.org/man/busybox.1.en#ash
@@ -2320,16 +2325,16 @@ exit 000
 #     # Mac
 #     https://ss64.com/mac/env.html
 #
-#     # FreeBSD
+#     # Freebsd
 #     https://man.freebsd.org/cgi/man.cgi?query=env&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD
+#     # Netbsd
 #     https://man.netbsd.org/env.1
 #
-#     # OpenBSD
+#     # Openbsd
 #     https://man.openbsd.org/env
 #
-#     # BusyBox
+#     # Busybox
 #     http://www.busybox.net/downloads/BusyBox.html#env
 #
 #
@@ -2361,16 +2366,16 @@ exit 000
 #     # Mac
 #     https://ss64.com/mac/file.html
 #
-#     # FreeBSD
+#     # Freebsd
 #     https://man.freebsd.org/cgi/man.cgi?query=file&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD
+#     # Netbsd
 #     https://man.netbsd.org/file.1
 #
-#     # OpenBSD
+#     # Openbsd
 #     https://man.openbsd.org/file
 #
-#     # BusyBox
+#     # Busybox
 #       NA
 #
 #
@@ -2393,16 +2398,16 @@ exit 000
 #     # Mac
 #     https://ss64.com/mac/find.html
 #
-#     # FreeBSD
+#     # Freebsd
 #     https://man.freebsd.org/cgi/man.cgi?query=find&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD
+#     # Netbsd
 #     https://man.netbsd.org/find.1
 #
-#     # OpenBSD
+#     # Openbsd
 #     https://man.openbsd.org/find
 #
-#     # BusyBox
+#     # Busybox
 #     http://www.busybox.net/downloads/BusyBox.html#find
 #
 #
@@ -2431,16 +2436,16 @@ exit 000
 #     # Mac
 #       NA
 #
-#     # FreeBSD
+#     # Freebsd
 #     https://man.freebsd.org/cgi/man.cgi?query=getconf&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD
+#     # Netbsd
 #     https://man.netbsd.org/getconf.1
 #
-#     # OpenBSD
+#     # Openbsd
 #     https://man.openbsd.org/getconf
 #
-#     # BusyBox
+#     # Busybox
 #       NA
 #
 #
@@ -2463,16 +2468,16 @@ exit 000
 #     # Mac
 #     https://ss64.com/mac/grep.html
 #
-#     # FreeBSD
+#     # Freebsd
 #     https://man.freebsd.org/cgi/man.cgi?query=grep&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD
+#     # Netbsd
 #     https://man.netbsd.org/grep.1
 #
-#     # OpenBSD
+#     # Openbsd
 #     https://man.openbsd.org/grep
 #
-#     # BusyBox
+#     # Busybox
 #     http://www.busybox.net/downloads/BusyBox.html#grep
 #
 #
@@ -2496,16 +2501,16 @@ exit 000
 #     # Mac
 #     https://ss64.com/mac/hash.html -- bash built-in
 #
-#     # FreeBSD
+#     # Freebsd
 #     https://man.freebsd.org/cgi/man.cgi?query=hash&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD
+#     # Netbsd
 #     https://man.netbsd.org/sh.1 -- shell built-in
 #
-#     # OpenBSD
+#     # Openbsd
 #     https://man.openbsd.org/sh -- shell built-in
 #
-#     # BusyBox - Not directly available - try BusyBox sh or ash
+#     # Busybox - Not directly available - try Busybox sh or ash
 #     https://man.archlinux.org/man/busybox.1.en#sh
 #     https://man.archlinux.org/man/busybox.1.en#ash
 #     # Per commandline: shell built-in in both busybox sh and ash
@@ -2530,16 +2535,16 @@ exit 000
 #     # Mac
 #     https://ss64.com/mac/id.html
 #
-#     # FreeBSD
+#     # Freebsd
 #     https://man.freebsd.org/cgi/man.cgi?query=id&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD
+#     # Netbsd
 #     https://man.netbsd.org/id.1
 #
-#     # OpenBSD
+#     # Openbsd
 #     https://man.openbsd.org/id
 #
-#     # BusyBox
+#     # Busybox
 #     http://www.busybox.net/downloads/BusyBox.html#id
 #
 #
@@ -2563,16 +2568,16 @@ exit 000
 #     # Mac
 #     https://ss64.com/mac/ln.html
 #
-#     # FreeBSD
+#     # Freebsd
 #     https://man.freebsd.org/cgi/man.cgi?query=ln&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD
+#     # Netbsd
 #     https://man.netbsd.org/ln.1
 #
-#     # OpenBSD
+#     # Openbsd
 #     https://man.openbsd.org/ln.1
 #
-#     # BusyBox
+#     # Busybox
 #     http://www.busybox.net/downloads/BusyBox.html#ln
 #
 #
@@ -2595,16 +2600,16 @@ exit 000
 #     # Mac
 #     https://ss64.com/mac/logname.html
 #
-#     # FreeBSD
+#     # Freebsd
 #     https://man.freebsd.org/cgi/man.cgi?query=logname&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD
+#     # Netbsd
 #     https://man.netbsd.org/logname.1
 #
-#     # OpenBSD
+#     # Openbsd
 #     https://man.openbsd.org/logname
 #
-#     # BusyBox
+#     # Busybox
 #     http://www.busybox.net/downloads/BusyBox.html#logname
 #
 #
@@ -2627,16 +2632,16 @@ exit 000
 #     # Mac
 #       NA
 #
-#     # FreeBSD
+#     # Freebsd
 #     https://man.freebsd.org/cgi/man.cgi?query=pathchk&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD
+#     # Netbsd
 #     https://man.netbsd.org/pathchk.1
 #
-#     # OpenBSD
+#     # Openbsd
 #       NA
 #
-#     # BusyBox
+#     # Busybox
 #       NA
 #
 #
@@ -2663,18 +2668,18 @@ exit 000
 #     # Mac
 #     https://ss64.com/mac/printf.html -- bash built-in
 #
-#     # FreeBSD
+#     # Freebsd
 #     https://man.freebsd.org/cgi/man.cgi?query=printf&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD
+#     # Netbsd
 #     https://man.netbsd.org/printf.1 -- binary
 #     # No shell built-in
 #
-#     # OpenBSD
+#     # Openbsd
 #     https://man.openbsd.org/printf -- binary
 #     https://man.openbsd.org/sh -- shell built-in
 #
-#     # BusyBox
+#     # Busybox
 #     http://www.busybox.net/downloads/BusyBox.html#printf
 #     https://man.archlinux.org/man/busybox.1.en#sh
 #     https://man.archlinux.org/man/busybox.1.en#ash
@@ -2702,17 +2707,17 @@ exit 000
 #     # Mac
 #     https://ss64.com/mac/pwd.html -- binary? man page is silent re built-ins
 #
-#     # FreeBSD
+#     # Freebsd
 #     https://man.freebsd.org/cgi/man.cgi?query=pwd&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD
+#     # Netbsd
 #     https://man.netbsd.org/pwd.1 -- binary?
 #     https://man.netbsd.org/sh.1 -- shell built-in
 #
-#     # OpenBSD
+#     # Openbsd
 #     https://man.openbsd.org/pwd
 #
-#     # BusyBox
+#     # Busybox
 #     http://www.busybox.net/downloads/BusyBox.html#pwd
 #     https://man.archlinux.org/man/busybox.1.en#sh
 #     https://man.archlinux.org/man/busybox.1.en#ash
@@ -2738,16 +2743,16 @@ exit 000
 #     # Mac
 #     https://ss64.com/mac/stat.html
 #
-#     # FreeBSD
+#     # Freebsd
 #     https://man.freebsd.org/cgi/man.cgi?query=readlink&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD
+#     # Netbsd
 #     https://man.netbsd.org/readlink.1
 #
-#     # OpenBSD
+#     # Openbsd
 #     https://man.openbsd.org/readlink.1
 #
-#     # BusyBox
+#     # Busybox
 #     http://www.busybox.net/downloads/BusyBox.html#readlink
 #
 #
@@ -2771,16 +2776,16 @@ exit 000
 #     # Mac
 #     https://ss64.com/mac/realpath.html
 #
-#     # FreeBSD
+#     # Freebsd
 #     https://man.freebsd.org/cgi/man.cgi?query=realpath&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD
+#     # Netbsd
 #     https://man.netbsd.org/realpath.1
 #
-#     # OpenBSD
+#     # Openbsd
 #     https://man.openbsd.org/realpath.1
 #
-#     # BusyBox
+#     # Busybox
 #     http://www.busybox.net/downloads/BusyBox.html#realpath
 #
 #
@@ -2803,16 +2808,16 @@ exit 000
 #     # Mac
 #     https://ss64.com/mac/sed.html
 #
-#     # FreeBSD
+#     # Freebsd
 #     https://man.freebsd.org/cgi/man.cgi?query=sed&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD
+#     # Netbsd
 #     https://man.netbsd.org/sed.1
 #
-#     # OpenBSD
+#     # Openbsd
 #     https://man.openbsd.org/sed
 #
-#     # BusyBox
+#     # Busybox
 #     http://www.busybox.net/downloads/BusyBox.html#sed
 #
 #
@@ -2837,22 +2842,22 @@ exit 000
 #
 #     # Mac
 #     https://ss64.com/mac/bash.html -- has --posix mode
-#     https://ss64.com/mac/zsh.html -- Zsh built-ins on MacOS
+#     https://ss64.com/mac/zsh.html -- Zsh built-ins on Mac-os
 #
-#     # FreeBSD
+#     # Freebsd
 #     https://man.freebsd.org/cgi/man.cgi?query=sed&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD
+#     # Netbsd
 #     https://man.netbsd.org/sh.1
 #
-#     # OpenBSD
+#     # Openbsd
 #     https://man.openbsd.org/sh
 #
-#     # BusyBox -- exists in BusyBox, but the full documentations is where??
+#     # Busybox -- exists in Busybox, but the full documentations is where??
 #     http://www.busybox.net/downloads/BusyBox.html#sh
 #     https://man.archlinux.org/man/busybox.1.en#sh
 #
-#       # See also, BusyBox ash
+#       # See also, Busybox ash
 #       http://www.busybox.net/downloads/BusyBox.html#ash
 #       https://man.archlinux.org/man/busybox.1.en#ash
 #
@@ -2876,16 +2881,16 @@ exit 000
 #     # Mac
 #       NA
 #
-#     # FreeBSD
+#     # Freebsd
 #     https://man.freebsd.org/cgi/man.cgi?query=strings&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD
+#     # Netbsd
 #     https://man.netbsd.org/strings.1
 #
-#     # OpenBSD
+#     # Openbsd
 #     https://man.openbsd.org/strings
 #
-#     # BusyBox
+#     # Busybox
 #     http://www.busybox.net/downloads/BusyBox.html#strings
 #
 #
@@ -2912,17 +2917,17 @@ exit 000
 #     # Mac
 #     https://ss64.com/mac/test.html -- bash utility and zsh built-in; one man page
 #
-#     # FreeBSD
+#     # Freebsd
 #     https://man.freebsd.org/cgi/man.cgi?query=test&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD
+#     # Netbsd
 #     https://man.netbsd.org/test.1 -- binary
 #     # No shell built-in
 #
-#     # OpenBSD
+#     # Openbsd
 #     https://man.openbsd.org/test -- binary
 #
-#     # BusyBox
+#     # Busybox
 #     http://www.busybox.net/downloads/BusyBox.html#test
 #     https://man.archlinux.org/man/busybox.1.en#sh
 #     https://man.archlinux.org/man/busybox.1.en#ash
@@ -2952,18 +2957,18 @@ exit 000
 #     # Mac
 #     https://ss64.com/mac/true.html -- binary?
 #
-#     # FreeBSD
+#     # Freebsd
 #     https://man.freebsd.org/cgi/man.cgi?query=true&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD
+#     # Netbsd
 #     https://man.netbsd.org/true.1 -- binary
 #     # No shell built-in
 #
-#     # OpenBSD
+#     # Openbsd
 #     https://man.openbsd.org/true -- binary
 #     https://man.openbsd.org/sh -- shell built-in
 #
-#     # BusyBox
+#     # Busybox
 #     http://www.busybox.net/downloads/BusyBox.html#true
 #     https://man.archlinux.org/man/busybox.1.en#sh
 #     https://man.archlinux.org/man/busybox.1.en#ash
@@ -2991,16 +2996,16 @@ exit 000
 #     https://ss64.com/mac/alias.html -- bash built-in
 #     https://ss64.com/mac/alias-zsh.html -- zsh built-in
 #
-#     # FreeBSD
+#     # Freebsd
 #     https://man.freebsd.org/cgi/man.cgi?query=unalias&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD
+#     # Netbsd
 #     https://man.netbsd.org/sh.1 -- shell built-in
 #
-#     # OpenBSD
+#     # Openbsd
 #     https://man.openbsd.org/sh -- shell built-in
 #
-#     # BusyBox
+#     # Busybox
 #     https://man.archlinux.org/man/busybox.1.en#sh
 #     https://man.archlinux.org/man/busybox.1.en#ash
 #     # Per commandline: shell built-in in both busybox sh and ash
@@ -3025,16 +3030,16 @@ exit 000
 #     # Mac
 #     https://ss64.com/mac/break.html -- bash and zsh built-ins; one man page
 #
-#     # FreeBSD
+#     # Freebsd
 #     https://man.freebsd.org/cgi/man.cgi?query=break&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD
+#     # Netbsd
 #     https://man.netbsd.org/sh.1 -- shell keyword
 #
-#     # OpenBSD
+#     # Openbsd
 #     https://man.openbsd.org/sh -- shell built-in
 #
-#     # BusyBox
+#     # Busybox
 #     https://man.archlinux.org/man/busybox.1.en#sh
 #     https://man.archlinux.org/man/busybox.1.en#ash
 #     # Per commandline: shell built-in in both busybox sh and ash
@@ -3058,16 +3063,16 @@ exit 000
 #     # Mac
 #       NA?
 #
-#     # FreeBSD
+#     # Freebsd
 #     https://man.freebsd.org/cgi/man.cgi?query=continue&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD
+#     # Netbsd
 #     https://man.netbsd.org/sh.1 -- shell built-in
 #
-#     # OpenBSD
+#     # Openbsd
 #     https://man.openbsd.org/sh -- shell built-in
 #
-#     # BusyBox
+#     # Busybox
 #     https://man.archlinux.org/man/busybox.1.en#sh
 #     https://man.archlinux.org/man/busybox.1.en#ash
 #     # Per commandline: shell built-in in both busybox sh and ash
@@ -3092,16 +3097,16 @@ exit 000
 #     # Mac
 #     https://ss64.com/mac/continue.html -- bash and zsh built-ins; one man page
 #
-#     # FreeBSD
+#     # Freebsd
 #     https://man.freebsd.org/cgi/man.cgi?query=continue&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD
+#     # Netbsd
 #     https://man.netbsd.org/sh.1 -- shell keyword
 #
-#     # OpenBSD
+#     # Openbsd
 #     https://man.openbsd.org/sh -- shell built-in
 #
-#     # BusyBox
+#     # Busybox
 #     https://man.archlinux.org/man/busybox.1.en#sh
 #     https://man.archlinux.org/man/busybox.1.en#ash
 #     # Per commandline: shell built-in in both busybox sh and ash
@@ -3126,16 +3131,16 @@ exit 000
 #     # Mac
 #     https://ss64.com/mac/eval.html -- bash and zsh built-in; one man page
 #
-#     # FreeBSD
+#     # Freebsd
 #     https://man.freebsd.org/cgi/man.cgi?query=eval&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD
+#     # Netbsd
 #     https://man.netbsd.org/sh.1 -- shell built-in
 #
-#     # OpenBSD
+#     # Openbsd
 #     https://man.openbsd.org/sh -- shell built-in
 #
-#     # BusyBox
+#     # Busybox
 #     https://man.archlinux.org/man/busybox.1.en#sh
 #     https://man.archlinux.org/man/busybox.1.en#ash
 #     # Per commandline: shell built-in in both busybox sh and ash
@@ -3160,16 +3165,16 @@ exit 000
 #     # Mac
 #     https://ss64.com/mac/exit.html -- bash and zsh built-in; one man page
 #
-#     # FreeBSD
+#     # Freebsd
 #     https://man.freebsd.org/cgi/man.cgi?query=exit&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD
+#     # Netbsd
 #     https://man.netbsd.org/sh.1 -- shell built-in
 #
-#     # OpenBSD
+#     # Openbsd
 #     https://man.openbsd.org/sh -- shell built-in
 #
-#     # BusyBox
+#     # Busybox
 #     https://man.archlinux.org/man/busybox.1.en#sh
 #     https://man.archlinux.org/man/busybox.1.en#ash
 #     # Per commandline: shell built-in in both busybox sh and ash
@@ -3194,16 +3199,16 @@ exit 000
 #     # Mac
 #     https://ss64.com/mac/readonly.html -- bash utility
 #
-#     # FreeBSD
+#     # Freebsd
 #     https://man.freebsd.org/cgi/man.cgi?query=readonly&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD
+#     # Netbsd
 #     https://man.netbsd.org/sh.1 -- shell built-in
 #
-#     # OpenBSD
+#     # Openbsd
 #     https://man.openbsd.org/sh -- shell built-in
 #
-#     # BusyBox
+#     # Busybox
 #     https://man.archlinux.org/man/busybox.1.en#sh
 #     https://man.archlinux.org/man/busybox.1.en#ash
 #     # Per commandline: shell built-in in both busybox sh and ash
@@ -3228,16 +3233,16 @@ exit 000
 #     # Mac
 #     https://ss64.com/mac/return.html -- bash built-in
 #
-#     # FreeBSD
+#     # Freebsd
 #     https://man.freebsd.org/cgi/man.cgi?query=return&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD
+#     # Netbsd
 #     https://man.netbsd.org/sh.1 -- shell built-in
 #
-#     # OpenBSD
+#     # Openbsd
 #     https://man.openbsd.org/sh -- shell built-in
 #
-#     # BusyBox
+#     # Busybox
 #     https://man.archlinux.org/man/busybox.1.en#sh
 #     https://man.archlinux.org/man/busybox.1.en#ash
 #     # Per commandline: shell built-in in both busybox sh and ash
@@ -3262,16 +3267,16 @@ exit 000
 #     # Mac
 #     https://ss64.com/mac/set.html -- bash built-in
 #
-#     # FreeBSD
+#     # Freebsd
 #     https://man.freebsd.org/cgi/man.cgi?query=set&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD
+#     # Netbsd
 #     https://man.netbsd.org/sh.1 -- shell built-in
 #
-#     # OpenBSD
+#     # Openbsd
 #     https://man.openbsd.org/sh -- shell built-in
 #
-#     # BusyBox
+#     # Busybox
 #     https://man.archlinux.org/man/busybox.1.en#sh
 #     https://man.archlinux.org/man/busybox.1.en#ash
 #     # Per commandline: shell built-in in both busybox sh and ash
@@ -3296,16 +3301,16 @@ exit 000
 #     # Mac
 #     https://ss64.com/mac/shift.html -- bash built-in
 #
-#     # FreeBSD
+#     # Freebsd
 #     https://man.freebsd.org/cgi/man.cgi?query=shift&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD
+#     # Netbsd
 #     https://man.netbsd.org/sh.1 -- shell built-in
 #
-#     # OpenBSD
+#     # Openbsd
 #     https://man.openbsd.org/sh -- shell built-in
 #
-#     # BusyBox
+#     # Busybox
 #     https://man.archlinux.org/man/busybox.1.en#sh
 #     https://man.archlinux.org/man/busybox.1.en#ash
 #     # Per commandline: shell built-in in both busybox sh and ash
@@ -3330,17 +3335,16 @@ exit 000
 #     # Mac
 #     https://ss64.com/mac/unset.html -- bash built-in
 #
-#     # FreeBSD
+#     # Freebsd
 #     https://man.freebsd.org/cgi/man.cgi?query=unset&apropos=0&sektion=0&manpath=FreeBSD+15.1-RELEASE+and+Ports.quarterly&format=html
 #
-#     # NetBSD
+#     # Netbsd
 #     https://man.netbsd.org/sh.1 -- shell built-in
 #
-#     # OpenBSD
+#     # Openbsd
 #     https://man.openbsd.org/sh -- shell built-in
 #
-#     # BusyBox
+#     # Busybox
 #     https://man.archlinux.org/man/busybox.1.en#sh
 #     https://man.archlinux.org/man/busybox.1.en#ash
 #     # Per commandline: shell built-in in both busybox sh and ash
-
