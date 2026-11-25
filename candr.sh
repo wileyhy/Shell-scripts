@@ -1,11 +1,11 @@
-#!/bin/env sh
+#!/bin/env bash
 # candr.xtrace / canonicalize-dir.sh
 # shellcheck disable=SC2028,SC2268,SC2310,SC2329
 #
 #set | sha256sum #>
 #set | wc #>
 set > output_tof_set.txt  #>
-script_version=26.11.22 # Script is incomplete & unfinished.
+script_version=26.11.24 # Script is incomplete & unfinished.
 #\set -x #>
 #
 #
@@ -28,100 +28,174 @@ script_version=26.11.22 # Script is incomplete & unfinished.
 
 
 
-#_  Notes:
-#_  - In Busybox 1.37, \unset\ without \-f\ doesn\t unset functions.
-#_      :-(
-#_  - In POSIX \08, for printing functions use \type\. The \set\
-#_  built-in does\t print them yet, as it does in version 5.3 of Bash.
-#_  - Not all \unset\s have \-f\, ie, Solaris 11.2 \sh\. However, the
-#_  Solaris 11.2 man page for unset\1\ reads, \\For each name,
-#_  \unset\ removes the corresponding variable or function value.\\
-#_  Still, historical versions of \unset\ may not have included the
-#_  unsetting of functions.
-#_  - In Posix \08, for Special Built-in \unset\, option \-f\ is
-#_  specified.
-#_  - In Posix \08 \sh\, the ENV parameter is not expanded in a non-
-#_  interactive shell. So any value of ENV won\t have any effect.
-#_  - In Bash 5.3, the BASH_ENV parameter is sourced by non-
-#_  interactive shells. When bash is invoked as \sh\, it enters posix
-#_  mode after reading the startup files. So a value of BASH_ENV
-#_  could have an effect, but only before the script is executed, so
-#_  unsetting BASH_ENV would not have any effect.
-#_  - In Posix \08 \awk\, \split()\ is indeed specified.
-#_  - Busybox \grep\ does have \-q\ as of v.1.37.0.
-#_  - Variable \cmd_str_*\ is defined as a particular invocation so
-#_  that (a) command execution and (b) the various related messages
-#_  can all use or reference the precise same command string.
-#_  - Re variables \function_variable__1\ and similar: these are
-#_  global variables.
-#_  - Re why filenames beginning with a hyphen are by default
-#_  disallowed in this script, see Posix \08, General Concepts 4.7.
-#_  - On Fedora 45, the default values according to \getconf\:
-#_  NAME_MAX = 255; PATH_MAX = 4096
-#_  - As of 12 Nov 2026, all non-built-ins are located in /usr/bin on
-#_  Fedora 45.
-#_  - Variables of the form \ec1\ are used for transmitting the
-#_  value of the exit code from the if list to \:\ into
-#_  \return_code_for_script\.
-#_  - \codeblocks\ is not Posix at all, 2008-2024, and not installed.
-#_  - Commands which are not Posix at all: \enable\ and \which\.
-#_  - In Bash on Fedoras 44 & 45, \PATH=${PATH}\ removes the hash
-#_  table as expected even if PATH is set as RO.
-#_  - Redirections are applied before any expansions occur.
-#_  - \#!/bin/env -i sh\ fails.
-#_  - LINENO does exist in Posix \08.
-#_  - Reportedly, Solaris 10 uses a Bourne sh which is not Posix
-#_  compliant.
-#_      https://unix.stackexchange.com/questions/322035/\
-#_        are-there-still-systems-around-with-a-bin-sh-binary
-#_  - Reportedly, in Busybox \awk\ is optional.
-#_  - When called from a restricted interactive shell, the script
-#_  does not inherit the restricted setting.
-#_  - Both \realpath\ and \readlink\ weren\t specified in Posix until
-#_  \24.
-#_  - The \-P\ option to \type\ is not portable.
-#_  - The \pathchk\ utility offers three separate sets of tests;
-#_  there is no overlap between said sets in the specification, but
-#_  in GNU utilities there is.
-#_  - The \-q\ option to \grep\ does exist in Posix \08.
-#_  - In Posix \08, the handling of \//\ is intentionally
-#_  implementation defined, so catch it, flag it as an error, and
-#_  write a warning to Stderr. See spec. on \dirname\.
-#_  - Defining directories with a trailing forward slash will
-#_  effect whether \[[\, \test\, \[\ and \stat\ dereference
-#_  symlinks. However, \realpath -e\ will still resolve such
-#_  strings correctly.
-#_  - The \-r\ option to \hash\ does exist in Posix \08.
-#_  - If PATH is set RO in the interactive calling shell, in the
-#_  script PATH can still be altered.
-#_  - For \readonly\ without arguments, the results are unspecified.
-#_  - Option \-v\ of utility \unset\ is in fact specified in \08.
-#_  - The \!\ keyword doesn\t print in xtrace.
-#_  - Reminder: don\t change the name of /etc/passwd. Bad things
-#_  happen.
-#_  - In Zsh...
-#_    - \set +x\ within a function appears to be in local scope.
-#_    - \command\ cannot find built-ins, apparently.
-#_  - In Oksh, evidently, \hash\ is not available.
-#_  - In Posix, \set -o posix\ DNE, in 2008 or 2024. Also, it appears
-#_  that POSIXLY_CORRECT also DNE exist in Posix \08 or \24.
-#_  - In Dash, \eval\ cannot accept the string \--\ to signify end
-#_  of options.
-#_  - The POSIXLY_CORRECT environment variable is from Bash; it is
-#_   not specified by Posix.
-#_  - Per testing, the Special Variable zero is of global scope.
-#_  - Re __check_for_variable_assignment__
-#_  This particular function is used in \if...fi\ tests, so the
-#_  fact that it ends with a pipeline which could return false is
-#_  intended. However, as a standalone function, if the variable at
-#_  \$1\ has no assigned value, or if the variable in question is not
-#_  included in the output of \set\, then errexit causes the script to
-#_  halt. To have halted would have been an error. Yet, it\s Posix
-#_  \08, so the least confusing workaround has been applied.
-#_
+#  Notes:
+#   - This script
+#     - Variable \cmd_str_*\ is defined as a particular invocation
+#     so that (a) command execution and (b) the various related
+#     messages can all use or reference the precise same command
+#     string.
+#     - Re variables \function_variable__1\ and similar: these are
+#     global variables.
+#     - Re why filenames beginning with a hyphen are by default
+#     disallowed in this script, see Posix \08, General Concepts
+#     4.7.
+#     - Variables of the form \ec1\ are used for transmitting the
+#     value of the exit code from the if list to \:\ into
+#     \return_code_for_script\.
+#     - Re __check_for_variable_assignment__
+#     This particular function is used in \if...fi\ tests, so the
+#     fact that it ends with a pipeline which could return false is
+#     intended. However, as a standalone function, if the variable at
+#     \$1\ has no assigned value, or if the variable in question is
+#     not included in the output of \set\, then errexit causes the
+#     script to halt. To have halted would have been an error. Yet,
+#     it\s Posix \08, so the least confusing workaround has been
+#     applied.
+#
+#   - Posix 2008
+#     - In Posix \08, the handling of \//\ is intentionally
+#     implementation defined, so catch it, flag it as an error, and
+#     write a warning to Stderr. See spec. on \dirname\.
+#
+#   - \!\
+#     - The \!\ keyword doesn\t print in xtrace in bash
+#
+#   - \$0\
+#     - Per testing in \bash\, the Special Variable zero is of
+#     global scope.
+#
+#   - \awk\
+#     - In Posix \08 \awk\, \split()\ is indeed specified.
+#     - Reportedly, in Busybox \awk\ is optional.
+#
+#   - \bash\
+#     - Redirections are applied before any expansions occur.
+#     - When called from a restricted interactive shell, the script
+#     does not inherit the restricted setting.
+#     - Defining directories with a trailing forward slash will
+#     effect whether \[[\, \test\, \[\ and \stat\ dereference
+#     symlinks. However, \realpath -e\ will still resolve such
+#     strings correctly.
+#     - If PATH is set RO in the interactive calling shell, in the
+#     script PATH can still be altered.
+#     - Evidently, PIPESTATUS cannot be removed from Bash\s
+#     environment.
+#  
+#   - \busybox\
+#     - Busybox \grep\ does have \-q\ as of v.1.37.0.
+#
+#   - \codeblocks\
+#     - \codeblocks\ is not Posix at all, 2008-2024, and not
+#     installed.
+#  
+#   - \dash\
+#     - In Dash, \eval\ cannot accept the string \--\ to signify end
+#     of options.
+#
+#   - \enable\
+#     - \enable\ is not Posix at all, 2008-2024, and is installed.
+#  
+#   - \env\ 
+#     - \#!/bin/env -i sh\ fails.
+#  
+#   - \getconf\
+#     - On Fedora 45, the default values according to \getconf\:
+#     NAME_MAX = 255; PATH_MAX = 4096
+#  
+#   - \grep\
+#     - The \-q\ option to \grep\ does exist in Posix \08.
+#
+#   - \hash\
+#     - The \-r\ option to \hash\ does exist in Posix \08.
+#     - evidently, \hash\ is not available in \oksh\
+#
+#   - \oksh\
+#     - evidently, \hash\ is not available.
+#
+#   - \pathchk\
+#     - The \pathchk\ utility offers three separate sets of tests;
+#     there is no overlap between said sets in the specification, but
+#     in GNU utilities there is.
+#
+#   - \readlink\
+#     - not specified in Posix until \24.
+#
+#   - \readonly\
+#     - For \readonly\ without arguments, the results are
+#     unspecified in Posix \08
+#   
+#   - \realpath\
+#     - not specified in Posix until \24.
+#
+#   - \set\
+#     - In Posix, \set -o posix\ DNE, in 2008 or 2024.
+#
+#   - \type\
+#     - In POSIX \08, for printing functions use \type\. The \set\
+#     built-in does\t print them yet, as it does in version 5.3 of
+#     Bash.
+#     - The \-P\ option to \type\ is not portable.
+#  
+#   - \unset\
+#     - In Busybox 1.37, \unset\ without \-f\ doesn\t unset
+#     functions.
+#     - Not all \unset\s have \-f\, ie, Solaris 11.2 \sh\. However,
+#     the Solaris 11.2 man page for unset\1\ reads, \\For each name,
+#     \unset\ removes the corresponding variable or function value.\\
+#     Still, historical versions of \unset\ may not have included the
+#     unsetting of functions.
+#     - In Posix \08, for Special Built-in \unset\, option \-f\ is
+#     specified.
+#     - Option \-v\ of utility \unset\ is in fact specified in \08.
+#  
+#   - \which\
+#     - \which\ is not Posix at all, 2008-2024, and is installed.
+#
+#   - \zsh\
+#     - \set +x\ within a function appears to be in local scope.
+#     - \command\ cannot find built-ins, apparently.
+#
+#   - BASH_ENV
+#     - In Bash 5.3, the BASH_ENV parameter is sourced by non-
+#     interactive shells. When bash is invoked as \sh\, it enters
+#     posix mode after reading the startup files. So a value of
+#     BASH_ENV could have an effect, but only before the script is
+#     executed, so unsetting BASH_ENV would not have any effect.
+#
+#   - ENV
+#     - In Posix \08 \sh\, the ENV parameter is not expanded in a
+#     noninteractive shell. So any value of ENV won\t have any
+#     effect.
+#
+#   - LINENO
+#     - LINENO does exist in Posix \08.
+#
+#   - POSIXLY_CORRECT
+#     - Also, it appears that POSIXLY_CORRECT also DNE exist in
+#     Posix \08 or \24.
+#     - The POSIXLY_CORRECT environment variable is from GNU -- see
+#     GNU Coreutils manual. 
+#
+#   - /etc/passwd
+#     - Reminder: don\t change the name of /etc/passwd. Bad things
+#     happen.
+#
+#   - OS, Fedora
+#     - As of 12 Nov 2026, all non-built-ins are located in /usr/bin
+#     on Fedora 45.
+#     - In Bash on Fedoras 44 & 45, \PATH=${PATH}\ removes the hash
+#     table as expected even if PATH is set as RO.
+#  
+#   - OS, Solaris
+#     - Reportedly, Solaris 10 uses a Bourne sh which is not Posix
+#     compliant.
+#       https://unix.stackexchange.com/questions/322035/\
+#         are-there-still-systems-around-with-a-bin-sh-binary
+#
+#
 
   #> Debug.
-  #reset; clear; grep -v -F -e '#>' -e '#_' ./candr.xtrace 2>&1 | less -RNS
+  #reset; clear; grep -v -F -e '#>' -e '#' ./candr.xtrace 2>&1 | less -RNS
   #\: #>
   #\: "Dash: $-" #>
   #\: "Pound: $#" #>
@@ -164,10 +238,14 @@ else
 fi
 
 # PATH could be set as RO.
-#_  - Some shells exit at an attempted assignment to a RO variable:
-#_    - In Bash 5.3, attempting in a script to assign a value to a RO
-#_    variable is a fatal error, but that doesn\t appear to have been
-#_    specified by Posix in \08.
+#  - Some shells exit at an attempted assignment to a RO variable:
+#    - In Bash 5.3, attempting in a script to assign a value to a RO
+#    variable is a fatal error, but that doesn\t appear to have been
+#    specified by Posix in \08.
+old_posixly_correct=${POSIXLY_CORRECT:-}
+POSIXLY_CORRECT=Yes
+old_lc_all=${LC_ALL:-}
+LC_ALL=C
 old_path=${PATH}
 if PATH="$( command -p getconf PATH ):${PATH}"
 then
@@ -198,12 +276,11 @@ command -p set -C
 
 
 :;: "Bootstrap Variables"
-old_posixly_correct=${POSIXLY_CORRECT}
-POSIXLY_CORRECT=Y
-old_lc_all=${LC_ALL:-}
-LC_ALL=C
 old_ld_preload=${LD_PRELOAD:-}
 command -p unset LD_PRELOAD
+old_cdpath=${CDPATH:-}
+old_oldpath=${OLDPATH:-}
+old_oldpwd=${PWD:-}
 global__yn__output_verbose_on=N
 return_code_for_script=0
 special_variable_zero=${0#./}
@@ -352,7 +429,7 @@ __unset_user_functions__ ()
   #>
   #> Debug
   #:;: #>
-  #__unset_user_functions__ "__reset_xtrace__" #>
+  #_unset_user_functions__ "__reset_xtrace__" #>
   #type __reset_xtrace__ #>
   #exit "${LINENO}" #>
   # __print_only__notice_stderr__ "Exiting"
@@ -466,10 +543,10 @@ __check_for_presence_of_commands__ "-pv" "Command is not in PATH" -- \
   "unalias"
 
 # Built-ins: Special and Regular
-#_  - Special Built-ins per Posix \08 -- break : continue . eval exec
-#_  exit export readonly return set shift times trap unset
-#_  - Names of Special Built-ins cannot be used as names of functions
-#_  (ie, \unset\), per testing with Bash in \--posix\ mode.
+#  - Special Built-ins per Posix \08 -- break : continue . eval exec
+#  exit export readonly return set shift times trap unset
+#  - Names of Special Built-ins cannot be used as names of functions
+#  (ie, \unset\), per testing with Bash in \--posix\ mode.
 __check_for_presence_of_commands__ "-v" "Built-in not available" -- \
   "break" \
   ":" \
@@ -500,7 +577,7 @@ else : "f:$?${LINENO}" #>
 fi
 
 # If any of the commands were missing, then exit.
-#__exit_per_return_code_for_script__
+#_exit_per_return_code_for_script__
   #>
   #set -x #>
   #exit "${LINENO}" #>
@@ -825,7 +902,7 @@ __print_only__results__ ()
     #exit "${LINENO}" #>
 }
   #>
-  #__reset_xtrace__ () { :; } #>
+  #_reset_xtrace__ () { :; } #>
   #type __reset_xtrace__ #>
   #:;: #>
   #>
@@ -1241,19 +1318,19 @@ done
 
 :;: "Make sure HOME is defined, for \\cd\\"
 home_original=${HOME}
-#_
-#_  Notes,
-#_    - Assigning PWD depends on HOME having a valid value.
-#_      ^^^ Is this statement accurate??
-#_      - \PWD\: \\An absolute pathname of the current working
-#_      directory. If an application sets or unsets the value of PWD,
-#_      the behavior of \pwd\ is unspecified.\\ - spec. on \pwd\.
-#_    - From Posix \08:
-#_      - Shell Command Language 2.6.1: \\If HOME is unset, the results
-#_      are unspecified.\\
-#_    - The \id\ utility has no knowledge of \sudo\ or means of
-#_    differentiating regular vs. elevated permissions.
-#_    - If the name of /etc/passwd is changed, \id\ throws an error.
+#
+#  Notes,
+#    - Assigning PWD depends on HOME having a valid value.
+#      ^^^ Is this statement accurate??
+#      - \PWD\: \\An absolute pathname of the current working
+#      directory. If an application sets or unsets the value of PWD,
+#      the behavior of \pwd\ is unspecified.\\ - spec. on \pwd\.
+#    - From Posix \08:
+#      - Shell Command Language 2.6.1: \\If HOME is unset, the results
+#      are unspecified.\\
+#    - The \id\ utility has no knowledge of \sudo\ or means of
+#    differentiating regular vs. elevated permissions.
+#    - If the name of /etc/passwd is changed, \id\ throws an error.
   #>
   #set -x #>
 
@@ -1282,23 +1359,23 @@ else
   __make_sure_variable_is_defined_properly__ \
       "HOME" "negative"
   alter_value__home_original="${global__assign_variable}"
-  #_ Note,
-  #_   Possible values for \alter_value__home_original\ are:
-  #_   - negative__HOME, or
-  #_   - Y__HOME
-  #_
+  # Note,
+  #   Possible values for \alter_value__home_original\ are:
+  #   - negative__HOME, or
+  #   - Y__HOME
+  #
   unset global__assign_variable
     #>
     #set -x #>
     : exit "${LINENO}" #>
 
-  #_ Note,
-  #_   - Spec. on \logname\: \\The logname utility explicitly ignores
-  #_   the LOGNAME environment variable because environment changes
-  #_   could produce erroneous results.\\
-  #_   - Therefore, use \logname\.
-  #_
-  #_ Question, These commands produce different results. Why? `sudo sh -c 'eval echo ~"$( logname )"' sh` `sudo sh -c 'eval echo ~"${LOGNAME}"' sh`
+  # Note,
+  #   - Spec. on \logname\: \\The logname utility explicitly ignores
+  #   the LOGNAME environment variable because environment changes
+  #   could produce erroneous results.\\
+  #   - Therefore, use \logname\.
+  #
+  # Question, These commands produce different results. Why? `sudo sh -c 'eval echo ~"$( logname )"' sh` `sudo sh -c 'eval echo ~"${LOGNAME}"' sh`
 
   :;: "Confirm the value of HOME in two different ways, if possible"
   #
@@ -1353,7 +1430,7 @@ else
     : exit "${LINENO}" #>
 
   # Check for conflicting results.
-  #_ Note, in theory, both variables could be of zero length.
+  # Note, in theory, both variables could be of zero length.
   if test "X${stdout_07_tilde_exp}" = "X${stdout_09_awk_etc_passwd}"
   then
     : "t:$?:${LINENO}" "Result confirmed" #>
@@ -1361,20 +1438,20 @@ else
     home_found=NA
   else
     : "f:$?:${LINENO}" #>
-    #__print_only__notice_stderr__ "Conflicting data" "Line:${LINENO}"
+    #_print_only__notice_stderr__ "Conflicting data" "Line:${LINENO}"
     home_confirmed="::Conflicting_data::"
     home_found=""
-    #_
-    #_  Note,
-    #_    If the data is incongruent, then which variable does the
-    #_  script use? Whichever one exists?
-    #_    Tilde Expansion is specified.
-    #_    The GNU Coreutils 9.11 version of \id\ requires
-    #_  /etc/passwd, but that doesn\t necessarily mean that other
-    #_  implementations do also. The Posix \08 spec. of \id\ doesn\t
-    #_  mention /etc/passwd at all.
-    #_    So prefer data from Tilde Expansion.
-    #_
+    #
+    #  Note,
+    #    If the data is incongruent, then which variable does the
+    #  script use? Whichever one exists?
+    #    Tilde Expansion is specified.
+    #    The GNU Coreutils 9.11 version of \id\ requires
+    #  /etc/passwd, but that doesn\t necessarily mean that other
+    #  implementations do also. The Posix \08 spec. of \id\ doesn\t
+    #  mention /etc/passwd at all.
+    #    So prefer data from Tilde Expansion.
+    #
     if test -n "${stdout_07_tilde_exp}"
     then
       : "t:$?:${LINENO}" #>
@@ -1402,11 +1479,11 @@ else
         "home_confirmed" "affirmative"
     alter_value__home_confirmed="${global__assign_variable}"
     alter_value__home_found="N"
-    #_
-    #_ Note, possible values for \alter_value__home_confirmed\ are:
-    #_   - affirmative__home_confirmed, or
-    #_   - Y__home_confirmed
-    #_
+    #
+    # Note, possible values for \alter_value__home_confirmed\ are:
+    #   - affirmative__home_confirmed, or
+    #   - Y__home_confirmed
+    #
     unset global__assign_variable
   else
     : "f:$?:${LINENO}" #>
@@ -1418,11 +1495,11 @@ else
       __make_sure_variable_is_defined_properly__ \
           "home_found" "affirmative"
       alter_value__home_found="${global__assign_variable}"
-      #_ Note,
-      #_   Possible values for \alter_value__home_found\, are:
-      #_   - affirmative__home_found, or
-      #_   - Y__home_found
-      #_
+      # Note,
+      #   Possible values for \alter_value__home_found\, are:
+      #   - affirmative__home_found, or
+      #   - Y__home_found
+      #
       unset global__assign_variable
     else
       : "f:$?:${LINENO}" #>
@@ -1439,175 +1516,175 @@ else
     : "alter_value__home_found: ${alter_value__home_found:-}" #>
     #exit "${LINENO}" #>
 
-    #_ Note,
-    #_   Var  HOME             could have values of  Y   or  negative
-    #_   Var  home_confirmed   could have values of  Y   or  affirmative
-    #_   Var  home_found       could have values of  Y   or  affirmative
+    # Note,
+    #   Var  HOME             could have values of  Y   or  negative
+    #   Var  home_confirmed   could have values of  Y   or  affirmative
+    #   Var  home_found       could have values of  Y   or  affirmative
 
   # Assign HOME accordingly.
-  #_ Do HOME and \home_confirmed\ have the same value?
+  # Do HOME and \home_confirmed\ have the same value?
   if test "${HOME:=}" = "${home_confirmed}"
   then
     : "t:$?:${LINENO}" #>
-    #_ Yes, HOME and \home_confirmed\ have the same value.
-    #_
-    #_ Did HOME pass all of the tests?
+    # Yes, HOME and \home_confirmed\ have the same value.
+    #
+    # Did HOME pass all of the tests?
     if test "negative__HOME" = "${alter_value__home_original}"
     then
       : "t:$?:${LINENO}" #>
-      #_ Yes, HOME passed all of the tests.
+      # Yes, HOME passed all of the tests.
       #if HOME=${HOME}; then : "t:$?:${LINENO}"; else : "f:$?:${LINENO}"; fi #>
-      #_ Done
+      # Done
     else
       : "f:$?:${LINENO}" #>
-      #_ No, HOME failed some of the tests.
-      #_
-      #_ But HOME is equivalent to \home_confirmed\, so you cannot use
-      #_ that value either.
-      #_
-      #_ Did the third variable, \home_found\, pass all of the tests?
+      # No, HOME failed some of the tests.
+      #
+      # But HOME is equivalent to \home_confirmed\, so you cannot use
+      # that value either.
+      #
+      # Did the third variable, \home_found\, pass all of the tests?
       if test "affirmative__home_found" = "${alter_value__home_found}"
       then
         : "t:$?:${LINENO}" #>
-        #_ Yes, \home_found\ passed all of the tests.
+        # Yes, \home_found\ passed all of the tests.
         if HOME=${home_found}
         then : "t:$?:${LINENO}"
         else : "f:$?:${LINENO}"
         fi
-        #_ Done
+        # Done
       else
         : "f:$?:${LINENO}" #>
-        #_ No, \home_found\ failed some of the tests.
-        #_
-        #_ So none of the possible values for HOME passed all of the
-        #_ tests.
-        #_
-        #_ So use the filesystem root directory. Rationale below.
+        # No, \home_found\ failed some of the tests.
+        #
+        # So none of the possible values for HOME passed all of the
+        # tests.
+        #
+        # So use the filesystem root directory. Rationale below.
         if HOME="/"
         then : "t:$?:${LINENO}"
         else : "f:$?:${LINENO}"
         fi
-        #_ Done
+        # Done
       fi
     fi
   else
     : "f:$?:${LINENO}" #>
-    #_ No, HOME and \home_confirmed\ do NOT have the same value.
-    #_
-    #_ Did HOME pass all of the tests?
+    # No, HOME and \home_confirmed\ do NOT have the same value.
+    #
+    # Did HOME pass all of the tests?
     if test "negative__HOME" = "${alter_value__home_original}"
     then
       : "t:$?:${LINENO}" #>
-      #_ Yes, HOME passed all of the tests.
-      #_
-      #_ But, HOME and \home_confirmed\ do not have the same value.
-      #_
-      #_ So, did \home_confirmed\ pass all of the tests?
+      # Yes, HOME passed all of the tests.
+      #
+      # But, HOME and \home_confirmed\ do not have the same value.
+      #
+      # So, did \home_confirmed\ pass all of the tests?
       if test "affirmative__home_confirmed" = "${alter_value__home_confirmed}"
       then
         : "t:$?:${LINENO}" #>
-        #_ Yes, \home_confirmed\ passed all of the tests.
-        #_
-        #_ So both values passed all of the tests.
-        #_
+        # Yes, \home_confirmed\ passed all of the tests.
+        #
+        # So both values passed all of the tests.
+        #
         # __print_only__warning_stderr__ "Conflicting data" "Line:${LINENO}"
-        #_ If \home_found\ also passed all of the tests, then use that
-        #_ one because \home_found\ is based on /etc/passwd.
-        #_
-        #_ Did \home_found\ pass all of the tests?
+        # If \home_found\ also passed all of the tests, then use that
+        # one because \home_found\ is based on /etc/passwd.
+        #
+        # Did \home_found\ pass all of the tests?
         if test "affirmative__home_found" = "${alter_value__home_found}"
         then
           : "t:$?:${LINENO}" #>
-          #_ Yes, \home_found\ passed all of the tests.
+          # Yes, \home_found\ passed all of the tests.
           if HOME=${home_found}
           then : "t:$?:${LINENO}"
           else : "f:$?:${LINENO}"
           fi
-          #_ Done
+          # Done
         else
           : "f:$?:${LINENO}" #>
-          #_ No, \home_found\ failed some of the tests.
-          #_
-          #_ Between both verified values HOME and \home_confirmed\,
-          #_ which should be used: the one set by the user or the one
-          #_ identified by Tilde Expansion?
-          #_
-          #_ The one set by the user could be malicious, so use the
-          #_ one identified by Tilde Expansion: \home_confirmed\.
+          # No, \home_found\ failed some of the tests.
+          #
+          # Between both verified values HOME and \home_confirmed\,
+          # which should be used: the one set by the user or the one
+          # identified by Tilde Expansion?
+          #
+          # The one set by the user could be malicious, so use the
+          # one identified by Tilde Expansion: \home_confirmed\.
           if HOME=${home_confirmed}
           then : "t:$?:${LINENO}"
           else : "f:$?:${LINENO}"
           fi
-          #_ Done
+          # Done
         fi
       else : "f:$?:${LINENO}" #>
-        #_ No, \home_confirmed\ failed some of the tests.
-        #_
-        #_ Since HOME passed all of the tests, and since HOME and
-        #_ \home_confirmed\ do not have the same value, keep the
-        #_ current value of HOME.
+        # No, \home_confirmed\ failed some of the tests.
+        #
+        # Since HOME passed all of the tests, and since HOME and
+        # \home_confirmed\ do not have the same value, keep the
+        # current value of HOME.
         #if HOME=${HOME}; then : "t:$?:${LINENO}"; else : "f:$?:${LINENO}"; fi #>
-        #_ Done
+        # Done
       fi
     else
       : "f:$?:${LINENO}" #>
-      #_ No, HOME failed some of the tests.
-      #_
-      #_ Since HOME and \home_confirmed\ do not have the same value,
-      #_
-      #_ Did \home_confirmed\ pass all of the tests?
+      # No, HOME failed some of the tests.
+      #
+      # Since HOME and \home_confirmed\ do not have the same value,
+      #
+      # Did \home_confirmed\ pass all of the tests?
       if test "affirmative__home_confirmed" = "${alter_value__home_confirmed}"
       then
         : "t:$?:${LINENO}" #>
-        #_ Yes, \home_confirmed\ passed all of the tests.
+        # Yes, \home_confirmed\ passed all of the tests.
         if HOME=${home_confirmed}
         then : "t:$?:${LINENO}"
         else : "f:$?:${LINENO}"
         fi
-        #_ Done.
+        # Done.
       else
         : "f:$?:${LINENO}" #>
-        #_ No, \home_confirmed\ failed some of the tests.
-        #_
-        #_ So both HOME and \home_confirmed\ failed some of the tests.
-        #_
-        #_ Did \home_found\ pass all of the tests?
+        # No, \home_confirmed\ failed some of the tests.
+        #
+        # So both HOME and \home_confirmed\ failed some of the tests.
+        #
+        # Did \home_found\ pass all of the tests?
         if test "affirmative__home_found" = "${alter_value__home_found}"
         then
           : "t:$?:${LINENO}" #>
-          #_ Yes, \home_found\ passed all of the tests.
+          # Yes, \home_found\ passed all of the tests.
           if HOME=${home_found}
           then : "t:$?:${LINENO}"
           else : "f:$?:${LINENO}"
           fi
-          #_ Done.
+          # Done.
         else
           : "f:$?:${LINENO}" #>
-          #_ No, \home_found\ failed some of the tests.
-          #_
-          #_ So all three values failed some of the tests.
-          #_
-          #_ So then which value should be used?
-          #_   - The invalid value from the user,
-          #_   - The invalid value from Tilde Expansion, or
-          #_   - The invalid value from /etc/passwd?
-          #_
-          #_ It depends on how each value failed the tests.
-          #_
-          #_ If any value failed with reason \.*__nosrch\, then use
-          #_ that value.
-          #_
-          #_ But, why on earth would a HOME directory not be
-          #_ searchable by USER??
-          #_
-          #_ ...yeah, there really isn\t a good reason why a value of
-          #_ HOME would be non-searchable directory. Yeah, no.
-          #_
-          #_ So use the NUL string? Use the filesystem root?
-          #_
-          #_ Honestly, the filesystem root might be the best choice.
-          #_ At least it\s guaranteed to always exist, as far as I
-          #_ know.
+          # No, \home_found\ failed some of the tests.
+          #
+          # So all three values failed some of the tests.
+          #
+          # So then which value should be used?
+          #   - The invalid value from the user,
+          #   - The invalid value from Tilde Expansion, or
+          #   - The invalid value from /etc/passwd?
+          #
+          # It depends on how each value failed the tests.
+          #
+          # If any value failed with reason \.*__nosrch\, then use
+          # that value.
+          #
+          # But, why on earth would a HOME directory not be
+          # searchable by USER??
+          #
+          # ...yeah, there really isn\t a good reason why a value of
+          # HOME would be non-searchable directory. Yeah, no.
+          #
+          # So use the NUL string? Use the filesystem root?
+          #
+          # Honestly, the filesystem root might be the best choice.
+          # At least it\s guaranteed to always exist, as far as I
+          # know.
           if HOME="/"
           then : "t:$?:${LINENO}"
           else : "f:$?:${LINENO}"
@@ -1627,81 +1704,81 @@ fi
 
 
 :;: "PWD aught to be defined, for \\cd\\ and \\pwd\\"
-#_ Notes,
-#_   - In Posix \08 effects of assignments to PWD are unspecified.
-#_   - In Bash 5.3.9+,
-#_     - If restricted mode is enabled and PWD is undefined, a call to
-#_     \cd\ will not assign a value to PWD.
-#_     - Values of HOME and PWD are inherited from the calling
-#_     interactive shell.
+# Notes,
+#   - In Posix \08 effects of assignments to PWD are unspecified.
+#   - In Bash 5.3.9+,
+#     - If restricted mode is enabled and PWD is undefined, a call to
+#     \cd\ will not assign a value to PWD.
+#     - Values of HOME and PWD are inherited from the calling
+#     interactive shell.
 if __check_for_variable_assignment__ "PWD"
 then
   : "t:$?:${LINENO}" #>
 else
   : "f:$?:${LINENO}" #>
 
-  #_ A call to \cd\ is supposed to assign a value to PWD.
-  #_
-  #_ Notes, from Posix \08:
-  #_  - Shell Command Language 2.6.1: \\If HOME is unset, the results
-  #_  are unspecified.\\
-  #_  - Spec. of \cd\, description of algorithm:
-  #_    - (Step 1) \\If no directory operand is given and the HOME
-  #_    environment variable is empty or undefined, the default
-  #_    behavior is implementation-defined and no further steps
-  #_    Shall be taken.\\
-  #_      -- HOME aught to be defined.
-  #_      -- A directory operand aught to be used.
-  #_    - (Step 2) \\If no directory operand is given and the HOME
-  #_    environment variable is set to a non-empty value, the cd
-  #_    utility Shall behave as if the directory named in the HOME
-  #_    environment variable was specified as the directory
-  #_    operand.\\
-  #_    - (Step 3) \\If the directory operand begins with a <slash>
-  #_    character, set curpath to the operand and proceed to step 7.\\
-  #_    - (Step 4) \\If the first component of the directory operand
-  #_    is dot or dot-dot, proceed to step 6.\\
-  #_    - (Step 6) \\If the -P option is in effect, set curpath to
-  #_    the directory operand. Otherwise....\\
-  #_      -- Use the -P option.
-  #_    - (Step 7) \\If the -P option is in effect, proceed to step
-  #_    10.\\
-  #_    - (Step 10) \\The cd utility Shall then perform actions
-  #_    equivalent to the chdir() function called with curpath as
-  #_    the path argument. If these actions fail for any reason, the
-  #_    cd utility Shall display an appropriate error message and the
-  #_    remainder of this step Shall not be executed. ... If the -P
-  #_    option is in effect, the PWD environment variable Shall be
-  #_    set to the string that would be output by pwd -P. If there is
-  #_    insufficient permission on the new directory, or on any
-  #_    parent of that directory, to determine the current working
-  #_    directory, the value of the PWD environment variable is
-  #_    unspecified.\\
-  #_      -- Any error message aught to be assigned to a variable.
-  #_      -- The output of \pwd -P\ is relevant.
-  #_    - \-P\: \\Handle the operand dot-dot physically; symbolic
-  #_    link components Shall be resolved before dot-dot components
-  #_    are processed.\\
-  #_    - SYNOPSIS:
-  #_      - \\cd [-L|-P] [directory]\\
-  #_        - \directory\: \\An absolute or relative pathname of the
-  #_        directory that Shall become the new working directory.
-  #_        The interpretation of a relative pathname by cd depends
-  #_        on the -L option and the CDPATH and PWD environment
-  #_        variables. If directory is an empty string, the results
-  #_        are unspecified.\\
-  #_        -- disallow empty strings as operands.
-  #_
-  #_  - Posix \08 \pwd\:
-  #_    - \\The pwd utility Shall write to standard output an
-  #_    absolute pathname of the current working directory, which
-  #_    does not contain the filenames dot or dot-dot.\\
-  #_    - \-P\: \\The pathname written to standard output Shall not
-  #_    contain any components that refer to files of type symbolic
-  #_    link.\\
-  #_    - \PWD\: \\An absolute pathname of the current working
-  #_    directory. If an application sets or unsets the value of PWD,
-  #_    the behavior of pwd is unspecified.\\
+  # A call to \cd\ is supposed to assign a value to PWD.
+  #
+  # Notes, from Posix \08:
+  #  - Shell Command Language 2.6.1: \\If HOME is unset, the results
+  #  are unspecified.\\
+  #  - Spec. of \cd\, description of algorithm:
+  #    - (Step 1) \\If no directory operand is given and the HOME
+  #    environment variable is empty or undefined, the default
+  #    behavior is implementation-defined and no further steps
+  #    Shall be taken.\\
+  #      -- HOME aught to be defined.
+  #      -- A directory operand aught to be used.
+  #    - (Step 2) \\If no directory operand is given and the HOME
+  #    environment variable is set to a non-empty value, the cd
+  #    utility Shall behave as if the directory named in the HOME
+  #    environment variable was specified as the directory
+  #    operand.\\
+  #    - (Step 3) \\If the directory operand begins with a <slash>
+  #    character, set curpath to the operand and proceed to step 7.\\
+  #    - (Step 4) \\If the first component of the directory operand
+  #    is dot or dot-dot, proceed to step 6.\\
+  #    - (Step 6) \\If the -P option is in effect, set curpath to
+  #    the directory operand. Otherwise....\\
+  #      -- Use the -P option.
+  #    - (Step 7) \\If the -P option is in effect, proceed to step
+  #    10.\\
+  #    - (Step 10) \\The cd utility Shall then perform actions
+  #    equivalent to the chdir() function called with curpath as
+  #    the path argument. If these actions fail for any reason, the
+  #    cd utility Shall display an appropriate error message and the
+  #    remainder of this step Shall not be executed. ... If the -P
+  #    option is in effect, the PWD environment variable Shall be
+  #    set to the string that would be output by pwd -P. If there is
+  #    insufficient permission on the new directory, or on any
+  #    parent of that directory, to determine the current working
+  #    directory, the value of the PWD environment variable is
+  #    unspecified.\\
+  #      -- Any error message aught to be assigned to a variable.
+  #      -- The output of \pwd -P\ is relevant.
+  #    - \-P\: \\Handle the operand dot-dot physically; symbolic
+  #    link components Shall be resolved before dot-dot components
+  #    are processed.\\
+  #    - SYNOPSIS:
+  #      - \\cd [-L|-P] [directory]\\
+  #        - \directory\: \\An absolute or relative pathname of the
+  #        directory that Shall become the new working directory.
+  #        The interpretation of a relative pathname by cd depends
+  #        on the -L option and the CDPATH and PWD environment
+  #        variables. If directory is an empty string, the results
+  #        are unspecified.\\
+  #        -- disallow empty strings as operands.
+  #
+  #  - Posix \08 \pwd\:
+  #    - \\The pwd utility Shall write to standard output an
+  #    absolute pathname of the current working directory, which
+  #    does not contain the filenames dot or dot-dot.\\
+  #    - \-P\: \\The pathname written to standard output Shall not
+  #    contain any components that refer to files of type symbolic
+  #    link.\\
+  #    - \PWD\: \\An absolute pathname of the current working
+  #    directory. If an application sets or unsets the value of PWD,
+  #    the behavior of pwd is unspecified.\\
   #+  - This \if..fi\ structure is a workaround for errexit and
   #+  xtrace visibility
   if stderr_cd_P=$( cd -- "${HOME}"; cd -P -- . 2>&1 >/dev/null )
@@ -1900,30 +1977,98 @@ echo not yet implemented
   #
   #: "global__yn__output_verbose_on: ${global__yn__output_verbose_on}" #>
   #exit "${LINENO}" #>
+  set -x #>
 
 
   # Bug, this section should probably go into a trap.
 
 :;: "Clean up"
 # In case the script is sourced.
+
+# Settings
 #
-# Reset variables.
+if test -n "${old_hyphen}"
+then
+  : "t:$?:${LINENO}"
+  set -- "-a" "-e" "-f" "-u" "-C"
+  for tT
+  do
+    tT=${tT#-}
+    if printf "${old_hyphen}" \
+      | grep "${tT}"
+    then
+      : "t:$?:${LINENO}"
+      set "-${tT}"
+    else
+      : "f:$?:${LINENO}"
+      set "+${tT}"
+    fi
+  done
+else
+  : "f:$?:${LINENO}"
+  echo error
+fi
 
-  # Bug, what if the env vars didn\t exist before, ie, CDPATH & OLDPATH?
 
-CDPATH=${old_cdpath:-}
-IFS=${old_ifs:-}
-LC_ALL=${old_lc_all:-}
-OLDPATH=${old_oldpath:-}
-PATH=${old_path:-}
+# Environment variables
+#
+# What if the env vars didn\t exist before, ie, CDPATH & OLDPATH?
+
+: "Define __crazy_awk_command__ " #>
+#
+# Usage:
+#   __crazy_awk_command__ \
+#       [string]    [regular expression in single quotes]
+#   __crazy_awk_command__ \
+#       "${rR}"     '^[A-Z]'
+#   __crazy_awk_command__ \
+#       "${rR}"     '^old_[a-z]'
+#
+__crazy_awk_command__ ()
+{
+  printf '%s\n' "${1}" \
+    | awk -F'[:{}"=]' \
+        '{
+          split($0, arr);
+          for (a in arr) {
+            if(arr[a] ~ /'"$2"'/) {
+              print arr[a]
+            }
+          }
+        }'
+}
+set -- \
+  'CDPATH=${old_cdpath:-}' \
+  'IFS=${old_ifs:-}' \
+  'LC_ALL=${old_lc_all:-}' \
+  'OLDPATH=${old_oldpath:-}' \
+  'PATH=${old_path:-}'
+for rR
+do
+  if old_var=$( __crazy_awk_command__ "${rR}" '^old_[a-z]');
+    env_var=$(  __crazy_awk_command__ "${rR}" '^[A-Z]');
+    declare -p old_var env_var
+    eval test -n \"\$"${old_var}"\"
+  then
+    : "t:$?:${LINENO}"
+    eval "${rR}"
+  else
+    : "f:$?:${LINENO}"
+    unset "${env_var}"
+  fi
+done
 
   # Bug, this \unset\ list is out of date
 
+unset \
 # Unset variables and functions
 set -- \
-  POSIXLY_CORRECT \
+  COLUMNS \
+    LINENO \
+    LINES \
+    POSIXLY_CORRECT \
   lL \
-    mM nN oO pP qQ \
+    mM nN oO pP qQ rR tT \
   alter_value__home_confirmed \
     alter_value__home_found \
     alter_value__home_original \
@@ -1934,6 +2079,7 @@ set -- \
     cmd_str_01 \
     cmd_str_02 \
     cmd_str_03 \
+  env_var \
   function_variable__1 \
     function_variable__2 \
     function_variable__3 \
@@ -1954,6 +2100,7 @@ set -- \
     old_oldpwd \
     old_path \
     old_posixly_correct \
+    old_var \
   return_code_for_script \
   stdout_00_hash \
     stdout_01_hash \
@@ -1972,6 +2119,7 @@ set -- \
   yn__print_only__value_of_path \
   __check_for_presence_of_commands__ \
   __check_for_variable_assignment__ \
+  __crazy_awk_command__ \
   __error_invalid_argument__ \
   __exit_per_return_code_for_script__ \
   __input_required__ \
@@ -1985,7 +2133,6 @@ set -- \
   __reset_xtrace__ \
   __xtrace_off__
   #>
-  set -x #>
 
 if unset -f "$@" 2>/dev/null
 then
@@ -2000,6 +2147,7 @@ else
   : "f:$?:${LINENO}"
 fi
   #>
+  set +x
   #set | sha256sum #>
   #set | wc #>
   set > output_eof_set.txt  #>
@@ -2836,7 +2984,7 @@ exit 000
 #
 #     # Oracle (Solaris)
 #     https://docs.oracle.com/cd/E36784_01/html/E36870/sh-1.html#scrolltoc
-#       #_ Note, Oracle has separate man pages for each of the shells:
+#       # Note, Oracle has separate man pages for each of the shells:
 #       #     bash, beansh, csh, git-sh, jsh, ksh, ksh88, ksh93, sh, tcsh, zsh.
 #       https://docs.oracle.com/cd/E36784_01/html/E36870/shell-built-ins-1.html#scrolltoc
 #
