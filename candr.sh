@@ -2,9 +2,11 @@
 # candr.xtrace / canonicalize-dir.sh
 # shellcheck disable=SC2028,SC2268,SC2310,SC2329
 #
-#set | sha256sum #>
-#set | wc #>
-set > output_tof_set.txt  #>
+#
+#     Ryan: Could you launch and ICBM horizontally?
+#     Tyler: Sure. Why would you want to?
+#
+#
 script_version=26.11.24 # Script is incomplete & unfinished.
 #\set -x #>
 #
@@ -15,8 +17,6 @@ script_version=26.11.24 # Script is incomplete & unfinished.
 #
 #   Goals: that this script...
 #     - Is written for any Posix 2008 compliant shell.
-#     - May be either executed or sourced.
-#     - Avoids any local side-effects.
 #
 #   (c) Wiley Young 2026, MIT License
 #
@@ -215,7 +215,6 @@ script_version=26.11.24 # Script is incomplete & unfinished.
 # its spec. for \command\.
 #
 # Value of IFS should include one tabstop.
-old_ifs=${IFS}
 IFS=' 	
 '
 \unalias -a
@@ -242,11 +241,8 @@ fi
 #    - In Bash 5.3, attempting in a script to assign a value to a RO
 #    variable is a fatal error, but that doesn\t appear to have been
 #    specified by Posix in \08.
-old_posixly_correct=${POSIXLY_CORRECT:-}
 POSIXLY_CORRECT=Yes
-old_lc_all=${LC_ALL:-}
 LC_ALL=C
-old_path=${PATH}
 if PATH="$( command -p getconf PATH ):${PATH}"
 then
   : "t:$?:${LINENO}" #>
@@ -273,6 +269,7 @@ command -p set -f # Disable pathname expansion
 command -p set -u
 #command -p set -x
 command -p set -C
+
 
 
 :;: "Bootstrap Variables"
@@ -1980,177 +1977,6 @@ echo not yet implemented
   set -x #>
 
 
-  # Bug, this section should probably go into a trap.
-
-:;: "Clean up"
-# In case the script is sourced.
-
-# Settings
-#
-if test -n "${old_hyphen}"
-then
-  : "t:$?:${LINENO}"
-  set -- "-a" "-e" "-f" "-u" "-C"
-  for tT
-  do
-    tT=${tT#-}
-    if printf "${old_hyphen}" \
-      | grep "${tT}"
-    then
-      : "t:$?:${LINENO}"
-      set "-${tT}"
-    else
-      : "f:$?:${LINENO}"
-      set "+${tT}"
-    fi
-  done
-else
-  : "f:$?:${LINENO}"
-  echo error
-fi
-
-
-# Environment variables
-#
-# What if the env vars didn\t exist before, ie, CDPATH & OLDPATH?
-
-: "Define __crazy_awk_command__ " #>
-#
-# Usage:
-#   __crazy_awk_command__ \
-#       [string]    [regular expression in single quotes]
-#   __crazy_awk_command__ \
-#       "${rR}"     '^[A-Z]'
-#   __crazy_awk_command__ \
-#       "${rR}"     '^old_[a-z]'
-#
-__crazy_awk_command__ ()
-{
-  printf '%s\n' "${1}" \
-    | awk -F'[:{}"=]' \
-        '{
-          split($0, arr);
-          for (a in arr) {
-            if(arr[a] ~ /'"$2"'/) {
-              print arr[a]
-            }
-          }
-        }'
-}
-set -- \
-  'CDPATH=${old_cdpath:-}' \
-  'IFS=${old_ifs:-}' \
-  'LC_ALL=${old_lc_all:-}' \
-  'OLDPATH=${old_oldpath:-}' \
-  'PATH=${old_path:-}'
-for rR
-do
-  if old_var=$( __crazy_awk_command__ "${rR}" '^old_[a-z]');
-    env_var=$(  __crazy_awk_command__ "${rR}" '^[A-Z]');
-    declare -p old_var env_var
-    eval test -n \"\$"${old_var}"\"
-  then
-    : "t:$?:${LINENO}"
-    eval "${rR}"
-  else
-    : "f:$?:${LINENO}"
-    unset "${env_var}"
-  fi
-done
-
-  # Bug, this \unset\ list is out of date
-
-unset \
-# Unset variables and functions
-set -- \
-  COLUMNS \
-    LINENO \
-    LINES \
-    POSIXLY_CORRECT \
-  lL \
-    mM nN oO pP qQ rR tT \
-  alter_value__home_confirmed \
-    alter_value__home_found \
-    alter_value__home_original \
-  ec0 \
-    ec1 ec2 ec3 ec4 ec5 ec6 \
-  canpth \
-  cmd_str_00 \
-    cmd_str_01 \
-    cmd_str_02 \
-    cmd_str_03 \
-  env_var \
-  function_variable__1 \
-    function_variable__2 \
-    function_variable__3 \
-    function_variable__4 \
-    function_variable__cmd_str \
-  global__assign_variable \
-  global__yn__output_verbose_on \
-  home_confirmed \
-    home_found \
-    home_original \
-  nsfod \
-  old_cdpath \
-    old_hyphen \
-    old_ifs \
-    old_lc_all \
-    old_ld_preload \
-    old_oldpath \
-    old_oldpwd \
-    old_path \
-    old_posixly_correct \
-    old_var \
-  return_code_for_script \
-  stdout_00_hash \
-    stdout_01_hash \
-    stdout_02_tr_d \
-    stdout_03_strings_n1 \
-    stdout_04_cut \
-    stdout_05_getconf_a \
-    stdout_06_readonly_awk \
-    stdout_07_tilde_exp \
-    stdout_08_id_un \
-    stdout_09_awk_etc_passwd \
-  script_version \
-  special_variable_zero \
-  usage_msg \
-  yn__allow_input_strings_to_begin_with_hyphens \
-  yn__print_only__value_of_path \
-  __check_for_presence_of_commands__ \
-  __check_for_variable_assignment__ \
-  __crazy_awk_command__ \
-  __error_invalid_argument__ \
-  __exit_per_return_code_for_script__ \
-  __input_required__ \
-  __make_sure_variable_is_defined_properly__ \
-  __print_only__error_stderr__ \
-  __print_only__message_stderr__ \
-  __print_only__notice_stderr__ \
-  __print_only__results__ \
-  __print_only__warning_stderr__ \
-  __unset_user_functions__ \
-  __reset_xtrace__ \
-  __xtrace_off__
-  #>
-
-if unset -f "$@" 2>/dev/null
-then
-  : "t:$?:${LINENO}"
-else
-  : "f:$?:${LINENO}"
-fi
-if unset "$@" 2>/dev/null
-then
-  : "t:$?:${LINENO}"
-else
-  : "f:$?:${LINENO}"
-fi
-  #>
-  set +x
-  #set | sha256sum #>
-  #set | wc #>
-  set > output_eof_set.txt  #>
 
 :;: "Done"
 exit 000
@@ -3496,3 +3322,4 @@ exit 000
 #     https://man.archlinux.org/man/busybox.1.en#sh
 #     https://man.archlinux.org/man/busybox.1.en#ash
 #     # Per commandline: shell built-in in both busybox sh and ash
+
