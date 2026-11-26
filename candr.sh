@@ -3,7 +3,7 @@
 # shellcheck disable=SC2028,SC2268,SC2310,SC2329
 #
 #
-#     Ryan: Could you launch and ICBM horizontally?
+#     Ryan: Could you launch an ICBM horizontally?
 #     Tyler: Sure. Why would you want to?
 #
 #
