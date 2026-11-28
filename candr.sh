@@ -3,7 +3,7 @@
 # shellcheck disable=SC2028,SC2268,SC2310,SC2329
 #
 #
-#     Ryan: Could you launch an ICBM horizontally?
+#     Ryan: Could you launch and ICBM horizontally?
 #     Tyler: Sure. Why would you want to?
 #
 #
@@ -273,11 +273,7 @@ command -p set -C
 
 
 :;: "Bootstrap Variables"
-old_ld_preload=${LD_PRELOAD:-}
 command -p unset LD_PRELOAD
-old_cdpath=${CDPATH:-}
-old_oldpath=${OLDPATH:-}
-old_oldpwd=${PWD:-}
 global__yn__output_verbose_on=N
 return_code_for_script=0
 special_variable_zero=${0#./}
@@ -572,13 +568,6 @@ then
     "$0" "${PATH}" 1>&2
 else : "f:$?${LINENO}" #>
 fi
-
-# If any of the commands were missing, then exit.
-#_exit_per_return_code_for_script__
-  #>
-  #set -x #>
-  #exit "${LINENO}" #>
-  #set +x #>
 
 
 
@@ -907,6 +896,13 @@ __print_only__results__ ()
   # __input_required__ "$@" #>
   #exit "${LINENO}" #>
 
+
+# If any of the commands were missing, then exit.
+__exit_per_return_code_for_script__
+  #>
+  #set -x #>
+  #exit "${LINENO}" #>
+  #set +x #>
 
 
 :;: "Input validation: \\tr\\, \\strings\\ and \\pathchk\\"
@@ -1250,10 +1246,6 @@ fi
   #set | grep -E "^${pP}=.+"; echo $? #>
   #LD_PRELOAD=x #>
   #>
-
-old_oldpwd=${OLDPWD:-}
-old_cdpath=${CDPATH:-}
-
 for pP in \
   CDPATH \
   OLDPWD
@@ -3322,4 +3314,3 @@ exit 000
 #     https://man.archlinux.org/man/busybox.1.en#sh
 #     https://man.archlinux.org/man/busybox.1.en#ash
 #     # Per commandline: shell built-in in both busybox sh and ash
-
