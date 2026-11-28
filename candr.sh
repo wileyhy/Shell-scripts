@@ -7,7 +7,7 @@
 #     Tyler: Sure. Why would you want to?
 #
 #
-script_version=26.11.25 # Script is incomplete & unfinished.
+script_version=26.11.27 # Script is incomplete & unfinished.
 #\set -x #>
 #
 #
